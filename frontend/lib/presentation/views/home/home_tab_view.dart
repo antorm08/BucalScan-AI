@@ -2,17 +2,19 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-import 'package:oral_lesion_detector/providers/prediction_provider.dart';
-import 'package:oral_lesion_detector/screens/result_screen.dart';
+import 'package:oral_lesion_detector/core/theme/app_colors.dart';
+import 'package:oral_lesion_detector/presentation/viewmodels/prediction_viewmodel.dart';
+import 'package:oral_lesion_detector/presentation/views/result/result_view.dart';
+import 'package:oral_lesion_detector/presentation/widgets/app_app_bar.dart';
 
-class HomeTab extends StatefulWidget {
-  const HomeTab({super.key});
+class HomeTabView extends StatefulWidget {
+  const HomeTabView({super.key});
 
   @override
-  State<HomeTab> createState() => _HomeTabState();
+  State<HomeTabView> createState() => _HomeTabViewState();
 }
 
-class _HomeTabState extends State<HomeTab> {
+class _HomeTabViewState extends State<HomeTabView> {
   final ImagePicker _picker = ImagePicker();
 
   Future<void> _pickImage(ImageSource source) async {
@@ -25,10 +27,10 @@ class _HomeTabState extends State<HomeTab> {
       );
       if (image != null) {
         if (mounted) {
-          context.read<PredictionProvider>().predictImage(File(image.path));
+          context.read<PredictionViewModel>().predictImage(File(image.path));
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const ResultScreen()),
+            MaterialPageRoute(builder: (_) => const ResultView()),
           );
         }
       }
@@ -71,49 +73,16 @@ class _HomeTabState extends State<HomeTab> {
 
   @override
   Widget build(BuildContext context) {
-    const primary = Color(0xFF00355F);
-    const surfaceContainerLowest = Colors.white;
-    const surfaceContainerHighest = Color(0xFFE0E3E5);
-    const onSurface = Color(0xFF191C1E);
-    const onSurfaceVariant = Color(0xFF42474F);
-    const secondaryFixedDim = Color(0xFFB7C8E1);
-    const error = Color(0xFFBA1A1A);
-    const background = Color(0xFFF7F9FB);
-
     return Scaffold(
-      backgroundColor: background,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: Row(
-          children: [
-            const Icon(Icons.medical_services, color: primary),
-            const SizedBox(width: 4),
-            Text(
-              'OralScan AI',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: primary,
-                letterSpacing: -0.5,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings, color: primary),
-            onPressed: () {},
-          ),
-        ],
-      ),
+      backgroundColor: AppColors.background,
+      appBar: const AppAppBar(),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: const EdgeInsets.only(bottom: 24),
+            const Padding(
+              padding: EdgeInsets.only(bottom: 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -123,15 +92,15 @@ class _HomeTabState extends State<HomeTab> {
                       fontSize: 32,
                       fontWeight: FontWeight.w600,
                       letterSpacing: -0.01,
-                      color: onSurface,
+                      color: AppColors.onSurface,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4),
                   Text(
                     'Aquí está su resumen clínico para hoy, 24 de octubre.',
                     style: TextStyle(
                       fontSize: 16,
-                      color: onSurfaceVariant,
+                      color: AppColors.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -161,81 +130,9 @@ class _HomeTabState extends State<HomeTab> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                Expanded(
+                const Expanded(
                   flex: 1,
-                  child: Card(
-                    color: surfaceContainerLowest,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(color: surfaceContainerHighest),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'RESUMEN DE HOY',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: 0.5,
-                                  color: onSurfaceVariant,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.baseline,
-                                textBaseline: TextBaseline.alphabetic,
-                                children: [
-                                  Text(
-                                    '12',
-                                    style: TextStyle(
-                                      fontSize: 40,
-                                      fontWeight: FontWeight.w700,
-                                      color: onSurface,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Flexible(
-                                    child: Text(
-                                      'Escaneos Analizados',
-                                      maxLines: 2,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: onSurfaceVariant,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                          Column(
-                            children: [
-                              _StatRow(
-                                color: secondaryFixedDim,
-                                label: 'Benigno',
-                                value: '11',
-                              ),
-                              const SizedBox(height: 8),
-                              _StatRow(
-                                color: error,
-                                label: 'Riesgo Maligno',
-                                value: '1',
-                                valueColor: error,
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                  child: _SummaryCard(),
                 ),
               ],
             ),
@@ -261,16 +158,13 @@ class _PrimaryActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const primaryContainer = Color(0xFF0F4C81);
-    const primaryFixed = Color(0xFFD2E4FF);
-
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: double.infinity,
         constraints: const BoxConstraints(minHeight: 160),
         decoration: BoxDecoration(
-          color: primaryContainer,
+          color: AppColors.primaryContainer,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Stack(
@@ -304,10 +198,7 @@ class _PrimaryActionCard extends StatelessWidget {
                         ),
                         child: Icon(icon, color: Colors.white, size: 32),
                       ),
-                      const Icon(
-                        Icons.arrow_forward,
-                        color: Color(0xFFD2E4FF),
-                      ),
+                      const Icon(Icons.arrow_forward, color: AppColors.primaryFixed),
                     ],
                   ),
                   Column(
@@ -324,9 +215,9 @@ class _PrimaryActionCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         subtitle,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 14,
-                          color: primaryFixed,
+                          color: AppColors.primaryFixed,
                         ),
                       ),
                     ],
@@ -356,23 +247,15 @@ class _SecondaryActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const primaryContainer = Color(0xFF0F4C81);
-    const surfaceContainerLowest = Colors.white;
-    const surfaceContainerLow = Color(0xFFF2F4F6);
-    const outlineVariant = Color(0xFFC2C7D1);
-    const onSurface = Color(0xFF191C1E);
-    const onSurfaceVariant = Color(0xFF42474F);
-    const outline = Color(0xFF727780);
-
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: double.infinity,
         constraints: const BoxConstraints(minHeight: 160),
         decoration: BoxDecoration(
-          color: surfaceContainerLowest,
+          color: AppColors.surfaceContainerLowest,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: outlineVariant),
+          border: Border.all(color: AppColors.outlineVariant),
         ),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -386,12 +269,12 @@ class _SecondaryActionCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: surfaceContainerLow,
+                      color: AppColors.surfaceContainerLow,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Icon(icon, color: primaryContainer, size: 32),
+                    child: Icon(icon, color: AppColors.primaryContainer, size: 32),
                   ),
-                  Icon(Icons.arrow_forward, color: outline),
+                  const Icon(Icons.arrow_forward, color: AppColors.outline),
                 ],
               ),
               Column(
@@ -399,24 +282,105 @@ class _SecondaryActionCard extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.w600,
-                      color: onSurface,
+                      color: AppColors.onSurface,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 14,
-                      color: onSurfaceVariant,
+                      color: AppColors.onSurfaceVariant,
                     ),
                   ),
                 ],
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SummaryCard extends StatelessWidget {
+  const _SummaryCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: AppColors.surfaceContainerLowest,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: AppColors.surfaceContainerHighest),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'RESUMEN DE HOY',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
+                    color: AppColors.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    const Text(
+                      '12',
+                      style: TextStyle(
+                        fontSize: 40,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.onSurface,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        'Escaneos Analizados',
+                        maxLines: 2,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            Column(
+              children: [
+                _StatRow(
+                  color: AppColors.secondaryFixedDim,
+                  label: 'Benigno',
+                  value: '11',
+                ),
+                const SizedBox(height: 8),
+                _StatRow(
+                  color: AppColors.error,
+                  label: 'Riesgo Maligno',
+                  value: '1',
+                  valueColor: AppColors.error,
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
@@ -438,8 +402,6 @@ class _StatRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const onSurface = Color(0xFF191C1E);
-
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -461,7 +423,7 @@ class _StatRow extends StatelessWidget {
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 13, color: onSurface),
+                  style: const TextStyle(fontSize: 13, color: AppColors.onSurface),
                 ),
               ),
             ],
@@ -472,7 +434,7 @@ class _StatRow extends StatelessWidget {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: valueColor ?? onSurface,
+            color: valueColor ?? AppColors.onSurface,
           ),
         ),
       ],

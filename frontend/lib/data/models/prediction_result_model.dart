@@ -1,20 +1,18 @@
-class PredictionResult {
+class PredictionResultModel {
   final String prediction;
   final double confidence;
   final String recommendation;
   final Map<String, double>? probabilities;
-  final DateTime timestamp;
 
-  PredictionResult({
+  PredictionResultModel({
     required this.prediction,
     required this.confidence,
     required this.recommendation,
     this.probabilities,
-    required this.timestamp,
   });
 
-  factory PredictionResult.fromJson(Map<String, dynamic> json) {
-    return PredictionResult(
+  factory PredictionResultModel.fromJson(Map<String, dynamic> json) {
+    return PredictionResultModel(
       prediction: json['prediction'] as String,
       confidence: (json['confidence'] as num).toDouble(),
       recommendation: json['recommendation'] as String,
@@ -22,7 +20,6 @@ class PredictionResult {
           ? Map<String, double>.from(
               json['probabilities'].map((k, v) => MapEntry(k, (v as num).toDouble())))
           : null,
-      timestamp: DateTime.now(),
     );
   }
 
@@ -32,7 +29,6 @@ class PredictionResult {
       'confidence': confidence,
       'recommendation': recommendation,
       'probabilities': probabilities,
-      'timestamp': timestamp.toIso8601String(),
     };
   }
 }

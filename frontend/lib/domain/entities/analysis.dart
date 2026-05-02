@@ -1,0 +1,15 @@
+class Analysis {
+  final int id;
+  final String prediction;
+  final double confidence;
+  final DateTime timestamp;
+  final String? imageUrl;
+
+  Analysis({
+    required this.id,
+    required this.prediction,
+    required this.confidence,
+    required this.timestamp,
+    this.imageUrl,
+  });
+}

@@ -2,17 +2,19 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-import 'package:oral_lesion_detector/providers/prediction_provider.dart';
-import 'package:oral_lesion_detector/screens/result_screen.dart';
+import 'package:oral_lesion_detector/core/theme/app_colors.dart';
+import 'package:oral_lesion_detector/presentation/viewmodels/prediction_viewmodel.dart';
+import 'package:oral_lesion_detector/presentation/views/result/result_view.dart';
+import 'package:oral_lesion_detector/presentation/widgets/app_app_bar.dart';
 
-class CaptureTab extends StatefulWidget {
-  const CaptureTab({super.key});
+class CaptureTabView extends StatefulWidget {
+  const CaptureTabView({super.key});
 
   @override
-  State<CaptureTab> createState() => _CaptureTabState();
+  State<CaptureTabView> createState() => _CaptureTabViewState();
 }
 
-class _CaptureTabState extends State<CaptureTab> {
+class _CaptureTabViewState extends State<CaptureTabView> {
   final ImagePicker _picker = ImagePicker();
   File? _selectedImage;
   bool _isAnalyzing = false;
@@ -68,32 +70,19 @@ class _CaptureTabState extends State<CaptureTab> {
   void _analyzeImage() {
     if (_selectedImage == null) return;
     setState(() => _isAnalyzing = true);
-    context.read<PredictionProvider>().predictImage(_selectedImage!);
+    context.read<PredictionViewModel>().predictImage(_selectedImage!);
     setState(() => _isAnalyzing = false);
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const ResultScreen()),
+      MaterialPageRoute(builder: (_) => const ResultView()),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    const primary = Color(0xFF00355F);
-    const primaryContainer = Color(0xFF0F4C81);
-    const onSurface = Color(0xFF191C1E);
-    const onSurfaceVariant = Color(0xFF42474F);
-    const outlineVariant = Color(0xFFC2C7D1);
-    const surfaceContainerLowest = Colors.white;
-    const surfaceContainerLow = Color(0xFFF2F4F6);
-    const background = Color(0xFFF7F9FB);
-
     return Scaffold(
-      backgroundColor: background,
-      appBar: AppBar(
-        title: const Text('Nueva Captura'),
-        backgroundColor: Colors.white,
-        elevation: 0,
-      ),
+      backgroundColor: AppColors.background,
+      appBar: const AppAppBar(title: 'Nueva Captura'),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -135,7 +124,7 @@ class _CaptureTabState extends State<CaptureTab> {
                           : const Icon(Icons.analytics, size: 18),
                       label: Text(_isAnalyzing ? 'Analizando...' : 'Analizar'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: primary,
+                        backgroundColor: AppColors.primary,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                     ),
@@ -148,9 +137,9 @@ class _CaptureTabState extends State<CaptureTab> {
                 child: Container(
                   height: 280,
                   decoration: BoxDecoration(
-                    border: Border.all(color: outlineVariant, width: 2),
+                    border: Border.all(color: AppColors.outlineVariant, width: 2),
                     borderRadius: BorderRadius.circular(12),
-                    color: surfaceContainerLow,
+                    color: AppColors.surfaceContainerLow,
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -158,19 +147,19 @@ class _CaptureTabState extends State<CaptureTab> {
                       Icon(
                         Icons.add_a_photo,
                         size: 64,
-                        color: primaryContainer,
+                        color: AppColors.primaryContainer,
                       ),
                       const SizedBox(height: 12),
-                      Text(
+                      const Text(
                         'Toque para agregar una imagen',
-                        style: TextStyle(fontSize: 16, color: onSurfaceVariant),
+                        style: TextStyle(fontSize: 16, color: AppColors.onSurfaceVariant),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'Cámara o galería',
                         style: TextStyle(
                           fontSize: 14,
-                          color: onSurfaceVariant.withOpacity(0.7),
+                          color: AppColors.onSurfaceVariant.withOpacity(0.7),
                         ),
                       ),
                     ],
@@ -180,13 +169,13 @@ class _CaptureTabState extends State<CaptureTab> {
             ],
             const SizedBox(height: 24),
             Card(
-              color: surfaceContainerLowest,
+              color: AppColors.surfaceContainerLowest,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
-                side: BorderSide(color: outlineVariant),
+                side: const BorderSide(color: AppColors.outlineVariant),
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
+              child: const Padding(
+                padding: EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -195,22 +184,13 @@ class _CaptureTabState extends State<CaptureTab> {
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
-                        color: onSurface,
+                        color: AppColors.onSurface,
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    _StepItem(
-                      number: 1,
-                      text: 'Capture o suba una imagen de la cavidad oral',
-                    ),
-                    _StepItem(
-                      number: 2,
-                      text: 'Nuestro modelo de IA analiza la imagen en segundos',
-                    ),
-                    _StepItem(
-                      number: 3,
-                      text: 'Obtenga clasificación y recomendaciones instantáneas',
-                    ),
+                    SizedBox(height: 12),
+                    _StepItem(number: 1, text: 'Capture o suba una imagen de la cavidad oral'),
+                    _StepItem(number: 2, text: 'Nuestro modelo de IA analiza la imagen en segundos'),
+                    _StepItem(number: 3, text: 'Obtenga clasificación y recomendaciones instantáneas'),
                   ],
                 ),
               ),
@@ -230,16 +210,13 @@ class _StepItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const primary = Color(0xFF00355F);
-    const onSurface = Color(0xFF191C1E);
-
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         children: [
           CircleAvatar(
             radius: 14,
-            backgroundColor: primary,
+            backgroundColor: AppColors.primary,
             child: Text(
               '$number',
               style: const TextStyle(color: Colors.white, fontSize: 12),
@@ -249,7 +226,7 @@ class _StepItem extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: TextStyle(fontSize: 14, color: onSurface),
+              style: const TextStyle(fontSize: 14, color: AppColors.onSurface),
             ),
           ),
         ],
