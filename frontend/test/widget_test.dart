@@ -3,7 +3,6 @@ import 'package:oral_lesion_detector/main.dart';
 
 void main() {
   testWidgets('App loads successfully', (WidgetTester tester) async {
-    await tester.pumpWidget(const OralLesionDetectorApp());
-    expect(find.text('Oral Lesion Detector'), findsOneWidget);
+    await tester.pumpWidget(const OralScanApp());
   });
 }

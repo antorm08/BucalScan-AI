@@ -1,57 +1,53 @@
 import 'package:flutter/material.dart';
-import 'package:oral_lesion_detector/screens/login_screen.dart';
+import 'package:provider/provider.dart';
+import 'package:oral_lesion_detector/core/theme/app_colors.dart';
+import 'package:oral_lesion_detector/presentation/viewmodels/auth_viewmodel.dart';
+import 'package:oral_lesion_detector/presentation/views/auth/login_view.dart';
+import 'package:oral_lesion_detector/presentation/widgets/app_app_bar.dart';
 
-class ProfileTab extends StatelessWidget {
-  const ProfileTab({super.key});
+class ProfileTabView extends StatelessWidget {
+  const ProfileTabView({super.key});
 
   @override
   Widget build(BuildContext context) {
-    const primaryContainer = Color(0xFF0F4C81);
-    const surfaceVariant = Color(0xFFE0E3E5);
-    const onSurface = Color(0xFF191C1E);
-    const onSurfaceVariant = Color(0xFF42474F);
-    const background = Color(0xFFF7F9FB);
+    final user = context.watch<AuthViewModel>().currentUser;
 
     return Scaffold(
-      backgroundColor: background,
-      appBar: AppBar(
-        title: const Text('Perfil'),
-        backgroundColor: Colors.white,
-        elevation: 0,
-      ),
+      backgroundColor: AppColors.background,
+      appBar: const AppAppBar(title: 'Perfil'),
       body: SingleChildScrollView(
         child: Column(
           children: [
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(24),
-              color: Colors.white,
+              color: AppColors.surfaceContainerLowest,
               child: Column(
                 children: [
                   CircleAvatar(
                     radius: 48,
-                    backgroundColor: primaryContainer,
+                    backgroundColor: AppColors.primaryContainer,
                     child: const Icon(
                       Icons.person,
                       size: 48,
-                      color: Color(0xFF8EBDF9),
+                      color: AppColors.onPrimaryContainer,
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
-                    'Dra. Jenkins',
-                    style: TextStyle(
+                  Text(
+                    user?.fullName ?? 'Dra. Jenkins',
+                    style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.w600,
-                      color: onSurface,
+                      color: AppColors.onSurface,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'dr.jenkins@hospital.org',
-                    style: TextStyle(
+                    user?.email ?? 'dr.jenkins@hospital.org',
+                    style: const TextStyle(
                       fontSize: 14,
-                      color: onSurfaceVariant,
+                      color: AppColors.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -59,22 +55,22 @@ class ProfileTab extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Container(
-              color: Colors.white,
+              color: AppColors.surfaceContainerLowest,
               child: Column(
                 children: [
-                  _ProfileTile(
+                  const _ProfileTile(
                     icon: Icons.badge,
                     title: 'ID Médico',
                     subtitle: 'MD-12345678',
                   ),
-                  Divider(height: 1, color: surfaceVariant),
-                  _ProfileTile(
+                  const Divider(height: 1, color: AppColors.surfaceVariant),
+                  const _ProfileTile(
                     icon: Icons.local_hospital,
                     title: 'Centro médico',
                     subtitle: 'Hospital General',
                   ),
-                  Divider(height: 1, color: surfaceVariant),
-                  _ProfileTile(
+                  const Divider(height: 1, color: AppColors.surfaceVariant),
+                  const _ProfileTile(
                     icon: Icons.calendar_today,
                     title: 'Miembro desde',
                     subtitle: 'Octubre 2024',
@@ -84,33 +80,34 @@ class ProfileTab extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Container(
-              color: Colors.white,
+              color: AppColors.surfaceContainerLowest,
               child: Column(
                 children: [
                   ListTile(
-                    leading: Icon(Icons.settings, color: onSurfaceVariant),
+                    leading: const Icon(Icons.settings, color: AppColors.onSurfaceVariant),
                     title: const Text('Configuración'),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () {},
                   ),
-                  Divider(height: 1, color: surfaceVariant),
+                  const Divider(height: 1, color: AppColors.surfaceVariant),
                   ListTile(
-                    leading: Icon(Icons.help_outline, color: onSurfaceVariant),
+                    leading: const Icon(Icons.help_outline, color: AppColors.onSurfaceVariant),
                     title: const Text('Ayuda y soporte'),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () {},
                   ),
-                  Divider(height: 1, color: surfaceVariant),
+                  const Divider(height: 1, color: AppColors.surfaceVariant),
                   ListTile(
-                    leading: const Icon(Icons.logout, color: Colors.red),
+                    leading: const Icon(Icons.logout, color: AppColors.error),
                     title: const Text(
                       'Cerrar sesión',
-                      style: TextStyle(color: Colors.red),
+                      style: TextStyle(color: AppColors.error),
                     ),
                     onTap: () {
+                      context.read<AuthViewModel>().logout();
                       Navigator.pushAndRemoveUntil(
                         context,
-                        MaterialPageRoute(builder: (_) => const LoginScreen()),
+                        MaterialPageRoute(builder: (_) => const LoginView()),
                         (route) => false,
                       );
                     },
@@ -138,12 +135,9 @@ class _ProfileTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const onSurface = Color(0xFF191C1E);
-    const onSurfaceVariant = Color(0xFF42474F);
-
     return ListTile(
-      leading: Icon(icon, color: onSurfaceVariant),
-      title: Text(title, style: TextStyle(color: onSurface)),
+      leading: Icon(icon, color: AppColors.onSurfaceVariant),
+      title: Text(title, style: const TextStyle(color: AppColors.onSurface)),
       subtitle: Text(subtitle),
     );
   }

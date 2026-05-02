@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:oral_lesion_detector/providers/prediction_provider.dart';
+import 'package:oral_lesion_detector/core/theme/app_colors.dart';
+import 'package:oral_lesion_detector/presentation/viewmodels/prediction_viewmodel.dart';
+import 'package:oral_lesion_detector/presentation/widgets/app_app_bar.dart';
 
-class ResultScreen extends StatelessWidget {
-  const ResultScreen({super.key});
+class ResultView extends StatelessWidget {
+  const ResultView({super.key});
 
   Color _getPredictionColor(String prediction) {
     switch (prediction.toLowerCase()) {
@@ -12,7 +14,7 @@ class ResultScreen extends StatelessWidget {
       case 'opmd':
         return Colors.orange;
       case 'malignant':
-        return Colors.red;
+        return AppColors.error;
       default:
         return Colors.grey;
     }
@@ -31,12 +33,25 @@ class ResultScreen extends StatelessWidget {
     }
   }
 
+  String _getDisplayLabel(String prediction) {
+    switch (prediction.toLowerCase()) {
+      case 'benign':
+        return 'Benigna';
+      case 'opmd':
+        return 'OPMD';
+      case 'malignant':
+        return 'Maligna';
+      default:
+        return prediction;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final provider = context.watch<PredictionProvider>();
-    final result = provider.lastResult;
+    final viewModel = context.watch<PredictionViewModel>();
+    final result = viewModel.result;
 
-    if (provider.isLoading) {
+    if (viewModel.isLoading) {
       return const Scaffold(
         body: Center(
           child: Column(
@@ -44,33 +59,33 @@ class ResultScreen extends StatelessWidget {
             children: [
               CircularProgressIndicator(),
               SizedBox(height: 16),
-              Text('Analyzing image...'),
+              Text('Analizando imagen...'),
             ],
           ),
         ),
       );
     }
 
-    if (provider.error != null) {
+    if (viewModel.error != null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Error')),
+        appBar: const AppAppBar(title: 'Error'),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                const Icon(Icons.error_outline, size: 64, color: AppColors.error),
                 const SizedBox(height: 16),
                 Text(
-                  provider.error!,
+                  viewModel.error!,
                   textAlign: TextAlign.center,
                   style: const TextStyle(fontSize: 16),
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Go Back'),
+                  child: const Text('Volver'),
                 ),
               ],
             ),
@@ -80,17 +95,18 @@ class ResultScreen extends StatelessWidget {
     }
 
     if (result == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Result')),
-        body: const Center(child: Text('No result available')),
+      return const Scaffold(
+        appBar: AppAppBar(title: 'Resultado'),
+        body: Center(child: Text('No hay resultado disponible')),
       );
     }
 
     final color = _getPredictionColor(result.prediction);
     final icon = _getPredictionIcon(result.prediction);
+    final displayLabel = _getDisplayLabel(result.prediction);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Analysis Result')),
+      appBar: const AppAppBar(title: 'Resultado'),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -105,7 +121,7 @@ class ResultScreen extends StatelessWidget {
                     Icon(icon, size: 64, color: color),
                     const SizedBox(height: 16),
                     Text(
-                      result.prediction.toUpperCase(),
+                      displayLabel.toUpperCase(),
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
@@ -114,7 +130,7 @@ class ResultScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Confidence: ${(result.confidence * 100).toStringAsFixed(1)}%',
+                      'Confianza: ${(result.confidence * 100).toStringAsFixed(1)}%',
                       style: const TextStyle(fontSize: 18),
                     ),
                     const SizedBox(height: 16),
@@ -135,10 +151,10 @@ class ResultScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Recommendation',
+                      'Recomendación',
                       style: TextStyle(
                         fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -159,10 +175,10 @@ class ResultScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'Detailed Probabilities',
+                        'Probabilidades detalladas',
                         style: TextStyle(
                           fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -174,7 +190,7 @@ class ResultScreen extends StatelessWidget {
                               SizedBox(
                                 width: 100,
                                 child: Text(
-                                  entry.key.toUpperCase(),
+                                  _getDisplayLabel(entry.key).toUpperCase(),
                                   style: const TextStyle(fontSize: 14),
                                 ),
                               ),
@@ -204,11 +220,11 @@ class ResultScreen extends StatelessWidget {
             const SizedBox(height: 24),
             ElevatedButton.icon(
               onPressed: () {
-                provider.clearResult();
+                viewModel.clearResult();
                 Navigator.pop(context);
               },
               icon: const Icon(Icons.arrow_back),
-              label: const Text('Back to Home'),
+              label: const Text('Volver al inicio'),
             ),
           ],
         ),

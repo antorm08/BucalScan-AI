@@ -1,7 +1,8 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
-import 'package:oral_lesion_detector/models/prediction_result.dart';
-import 'package:oral_lesion_detector/utils/constants.dart';
+import 'package:oral_lesion_detector/core/constants/app_constants.dart';
+import 'package:oral_lesion_detector/data/models/analysis_model.dart';
+import 'package:oral_lesion_detector/data/models/prediction_result_model.dart';
 
 class ApiService {
   final Dio _dio;
@@ -12,7 +13,7 @@ class ApiService {
     receiveTimeout: const Duration(seconds: 30),
   ));
 
-  Future<PredictionResult> predictImage(File image) async {
+  Future<PredictionResultModel> predictImage(File image) async {
     try {
       final formData = FormData.fromMap({
         'file': await MultipartFile.fromFile(image.path),
@@ -23,7 +24,7 @@ class ApiService {
         data: formData,
       );
 
-      return PredictionResult.fromJson(response.data);
+      return PredictionResultModel.fromJson(response.data);
     } on DioException catch (e) {
       throw Exception('Prediction failed: ${e.message}');
     }
@@ -67,12 +68,13 @@ class ApiService {
     }
   }
 
-  Future<List<dynamic>> getHistory(int userId) async {
+  Future<List<AnalysisModel>> getHistory(int userId) async {
     try {
       final response = await _dio.get(
         '${AppConstants.apiVersion}/history/$userId',
       );
-      return response.data;
+      final List<dynamic> data = response.data;
+      return data.map((json) => AnalysisModel.fromJson(json)).toList();
     } on DioException catch (e) {
       throw Exception('Failed to fetch history: ${e.message}');
     }
