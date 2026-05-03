@@ -5,6 +5,7 @@ __pycache__/
 .Python
 env/
 venv/
+.venv/
 ENV/
 *.egg-info/
 dist/
@@ -13,6 +14,10 @@ build/
 *.pyc
 .env
 *.log
-models/
 *.pth
 *.pt
+oral_lesion.db
+uploads/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
