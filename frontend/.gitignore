@@ -54,3 +54,14 @@ app.*.map.json
 **/windows/flutter/generated_plugin_registrant.cc
 **/windows/flutter/generated_plugin_registrant.h
 **/windows/flutter/generated_plugins.cmake
+
+# Flutter iOS generated
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/Flutter/Generated.xcconfig
+
+# Flutter macOS generated
+**/macos/Flutter/ephemeral/Flutter-Generated.xcconfig
+**/macos/Flutter/ephemeral/flutter_export_environment.sh
+
+# Android local properties
+**/android/local.properties
