@@ -94,7 +94,7 @@ class _LoginViewState extends State<LoginView> {
                           ),
                           const SizedBox(height: 12),
                           const Text(
-                            'Clinical AI',
+                            'DeepOral-DX',
                             style: TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.w600,

@@ -25,7 +25,7 @@ class AppAppBar extends StatelessWidget implements PreferredSizeWidget {
             const SizedBox(width: 4),
           ],
           Text(
-            title.isEmpty ? 'OralScan AI' : title,
+            title.isEmpty ? 'DeepOral-DX' : title,
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,

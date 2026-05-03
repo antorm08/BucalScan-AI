@@ -26,13 +26,13 @@ void main() {
         ChangeNotifierProvider(create: (_) => HistoryViewModel(historyRepository)),
         ChangeNotifierProvider(create: (_) => ProfileViewModel()),
       ],
-      child: const OralScanApp(),
+      child: const DeepOralDxApp(),
     ),
   );
 }
 
-class OralScanApp extends StatelessWidget {
-  const OralScanApp({super.key});
+class DeepOralDxApp extends StatelessWidget {
+  const DeepOralDxApp({super.key});
 
   @override
   Widget build(BuildContext context) {

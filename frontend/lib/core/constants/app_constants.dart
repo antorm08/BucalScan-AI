@@ -1,5 +1,5 @@
 class AppConstants {
-  static const String appName = 'OralScan AI';
+  static const String appName = 'DeepOral-DX';
   static const String apiBaseUrl = 'http://localhost:8000';
   static const String apiVersion = '/api/v1';
 
