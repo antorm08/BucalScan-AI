@@ -1,6 +1,6 @@
-# Oral Lesion Detection System
+# DeepOral-DX
 
-AI-powered mobile application for early detection of oral cancer lesions using Deep Learning.
+AI-powered mobile application for binary oral lesion screening using Deep Learning.
 
 ## Project Structure
 
@@ -74,7 +74,7 @@ flutter run
 
 - **RF-001**: Real-time camera capture
 - **RF-002**: Gallery image upload
-- **RF-003**: AI classification (benign, OPMD, malignant)
+- **RF-003**: AI classification (benign, malignant)
 - **RF-004**: Results with confidence levels
 - **RF-005**: Analysis history
 - **RF-006**: Medical recommendations

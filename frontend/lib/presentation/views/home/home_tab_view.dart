@@ -374,7 +374,7 @@ class _SummaryCard extends StatelessWidget {
                 const SizedBox(height: 8),
                 _StatRow(
                   color: AppColors.error,
-                  label: 'Riesgo Maligno',
+                  label: 'Maligno',
                   value: '1',
                   valueColor: AppColors.error,
                 ),

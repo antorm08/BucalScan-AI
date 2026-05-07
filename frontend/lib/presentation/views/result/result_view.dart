@@ -11,8 +11,6 @@ class ResultView extends StatelessWidget {
     switch (prediction.toLowerCase()) {
       case 'benign':
         return Colors.green;
-      case 'opmd':
-        return Colors.orange;
       case 'malignant':
         return AppColors.error;
       default:
@@ -24,8 +22,6 @@ class ResultView extends StatelessWidget {
     switch (prediction.toLowerCase()) {
       case 'benign':
         return Icons.check_circle;
-      case 'opmd':
-        return Icons.warning;
       case 'malignant':
         return Icons.error;
       default:
@@ -36,11 +32,9 @@ class ResultView extends StatelessWidget {
   String _getDisplayLabel(String prediction) {
     switch (prediction.toLowerCase()) {
       case 'benign':
-        return 'Benigna';
-      case 'opmd':
-        return 'OPMD';
+        return 'Benigno';
       case 'malignant':
-        return 'Maligna';
+        return 'Maligno';
       default:
         return prediction;
     }

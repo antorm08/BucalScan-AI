@@ -213,8 +213,10 @@ class _LoginViewState extends State<LoginView> {
                           top: BorderSide(color: AppColors.surfaceVariant, width: 1),
                         ),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                      child: Wrap(
+                        alignment: WrapAlignment.center,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 4,
                         children: [
                           const Text(
                             '¿No tienes una cuenta?',

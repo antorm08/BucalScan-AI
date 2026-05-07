@@ -1,38 +1,79 @@
-import torch
-import torch.nn as nn
-from torchvision import transforms
-from PIL import Image
-import numpy as np
+from pathlib import Path
 
-CLASSES = ["benign", "opmd", "malignant"]
+import numpy as np
+try:
+    import onnxruntime as ort
+except ImportError:  # pragma: no cover - dependency may be missing locally
+    ort = None
+from PIL import Image
+
+from config import settings
+
+CLASSES = ["benign", "malignant"]
 
 class OralLesionClassifier:
     def __init__(self, model_path: str = None):
         self.model = None
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.transform = transforms.Compose([
-            transforms.Resize((224, 224)),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-        ])
-        
-        if model_path:
-            self.load_model(model_path)
-    
+        self.input_name = None
+        self.model_path = Path(model_path or settings.model_path)
+
+        if self.model_path.exists():
+            self.load_model(str(self.model_path))
+
     def load_model(self, model_path: str):
-        # TODO: Load pre-trained CNN model
-        self.model = None
-    
+        if ort is None:
+            raise RuntimeError("onnxruntime is not installed. Add it to the backend environment to load the model.")
+
+        self.model_path = Path(model_path)
+        self.model = ort.InferenceSession(str(self.model_path), providers=["CPUExecutionProvider"])
+        self.input_name = self.model.get_inputs()[0].name
+
+    def _preprocess(self, image: Image.Image) -> np.ndarray:
+        image = image.convert("RGB").resize((224, 224))
+        image_array = np.asarray(image, dtype=np.float32) / 255.0
+
+        mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)
+        std = np.array([0.229, 0.224, 0.225], dtype=np.float32)
+        image_array = (image_array - mean) / std
+
+        image_array = np.transpose(image_array, (2, 0, 1))
+        return np.expand_dims(image_array, axis=0)
+
     def predict(self, image: Image.Image) -> dict:
-        # TODO: Implement actual inference
-        image_tensor = self.transform(image).unsqueeze(0).to(self.device)
-        
-        return {
-            "prediction": "benign",
-            "confidence": 0.95,
-            "probabilities": {
-                "benign": 0.95,
-                "opmd": 0.03,
-                "malignant": 0.02
+        if self.model is None or self.input_name is None:
+            raise RuntimeError(
+                f"Model file not loaded. Place mobilenetv2_oral.onnx at {self.model_path} or set MODEL_PATH in backend/.env."
+            )
+
+        image_tensor = self._preprocess(image)
+        outputs = self.model.run(None, {self.input_name: image_tensor})
+        raw_output = np.asarray(outputs[0], dtype=np.float32).squeeze()
+        values = np.atleast_1d(raw_output)
+
+        if values.shape[0] == 1:
+            malignant_probability = float(1.0 / (1.0 + np.exp(-values[0])))
+            probabilities = {
+                "benign": float(1.0 - malignant_probability),
+                "malignant": malignant_probability,
             }
+            predicted_index = 1 if malignant_probability >= 0.5 else 0
+            confidence = probabilities[CLASSES[predicted_index]]
+        elif values.shape[0] == len(CLASSES):
+            shifted = values - np.max(values)
+            probabilities_array = np.exp(shifted) / np.sum(np.exp(shifted))
+            probabilities = {
+                class_name: float(probabilities_array[index])
+                for index, class_name in enumerate(CLASSES)
+            }
+            predicted_index = int(np.argmax(probabilities_array))
+            confidence = probabilities[CLASSES[predicted_index]]
+        else:
+            raise RuntimeError(
+                f"Expected 1 binary output or {len(CLASSES)} class outputs ({CLASSES}), but the model returned shape {tuple(values.shape)}."
+            )
+
+        return {
+            "prediction": CLASSES[predicted_index],
+            "confidence": float(confidence),
+            "probabilities": probabilities,
         }

@@ -8,9 +8,8 @@ class AppConstants {
   static const String loginEndpoint = '$apiBaseUrl$apiVersion/auth/login';
   static const String historyEndpoint = '$apiBaseUrl$apiVersion/history';
 
-  static const List<String> lesionClasses = ['benign', 'opmd', 'malignant'];
+  static const List<String> lesionClasses = ['benign', 'malignant'];
 
   static const String recommendationBenign = 'No immediate concern. Regular check-ups recommended.';
-  static const String recommendationOPMD = 'Potentially malignant lesion detected. Consult a specialist for further evaluation.';
   static const String recommendationMalignant = 'Malignant lesion suspected. Immediate medical attention required.';
 }

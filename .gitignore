@@ -43,6 +43,7 @@ migrate_working_dir/
 **/venv/
 **/.env
 **/oral_lesion.db
+**/deeporal_dx.db
 **/uploads/
 
 # Symbolication related

@@ -26,13 +26,6 @@ class HistoryCard extends StatelessWidget {
         badgeIconColor = AppColors.onErrorContainer;
         badgeIcon = Icons.warning;
         break;
-      case 'opmd':
-        accentColor = Colors.orange;
-        badgeBg = AppColors.opmdBg;
-        badgeText = AppColors.opmdText;
-        badgeIconColor = AppColors.opmdText;
-        badgeIcon = Icons.warning;
-        break;
       default:
         accentColor = const Color(0xFF4CAF50);
         badgeBg = AppColors.benignBg;
@@ -41,11 +34,7 @@ class HistoryCard extends StatelessWidget {
         badgeIcon = Icons.check_circle;
     }
 
-    final displayLabel = prediction == 'malignant'
-        ? 'Maligna'
-        : prediction == 'opmd'
-            ? 'OPMD'
-            : 'Benigna';
+    final displayLabel = prediction == 'malignant' ? 'Maligno' : 'Benigno';
 
     return GestureDetector(
       onTap: onTap,

@@ -37,8 +37,6 @@ class AppColors {
 
   static const benignBg = Color(0xFFE8F5E9);
   static const benignText = Color(0xFF1B5E20);
-  static const opmdBg = Color(0xFFFFF3E0);
-  static const opmdText = Color(0xFFE65100);
 
   static const inactiveNav = Color(0xFF9CA3AF);
   static const activeNavBg = Color(0xFFEFF6FF);
