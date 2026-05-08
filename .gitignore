@@ -58,3 +58,4 @@ app.*.map.json
 /android/app/release
 AGENTS.md
 Plan de Desarrollo.txt
+backend/bucalscan_ai.db
