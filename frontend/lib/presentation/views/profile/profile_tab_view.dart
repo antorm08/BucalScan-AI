@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:oral_lesion_detector/core/theme/app_colors.dart';
-import 'package:oral_lesion_detector/presentation/viewmodels/auth_viewmodel.dart';
-import 'package:oral_lesion_detector/presentation/views/auth/login_view.dart';
-import 'package:oral_lesion_detector/presentation/widgets/app_app_bar.dart';
+import 'package:bucalscan_ai/core/theme/app_colors.dart';
+import 'package:bucalscan_ai/presentation/viewmodels/auth_viewmodel.dart';
+import 'package:bucalscan_ai/presentation/views/auth/login_view.dart';
+import 'package:bucalscan_ai/presentation/widgets/app_app_bar.dart';
 
 class ProfileTabView extends StatelessWidget {
   const ProfileTabView({super.key});

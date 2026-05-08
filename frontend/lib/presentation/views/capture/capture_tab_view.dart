@@ -2,10 +2,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-import 'package:oral_lesion_detector/core/theme/app_colors.dart';
-import 'package:oral_lesion_detector/presentation/viewmodels/prediction_viewmodel.dart';
-import 'package:oral_lesion_detector/presentation/views/result/result_view.dart';
-import 'package:oral_lesion_detector/presentation/widgets/app_app_bar.dart';
+import 'package:bucalscan_ai/core/theme/app_colors.dart';
+import 'package:bucalscan_ai/presentation/viewmodels/prediction_viewmodel.dart';
+import 'package:bucalscan_ai/presentation/views/result/result_view.dart';
+import 'package:bucalscan_ai/presentation/widgets/app_app_bar.dart';
 
 class CaptureTabView extends StatefulWidget {
   const CaptureTabView({super.key});
@@ -20,6 +20,8 @@ class _CaptureTabViewState extends State<CaptureTabView> {
   bool _isAnalyzing = false;
 
   Future<void> _pickImage(ImageSource source) async {
+    final predictionViewModel = context.read<PredictionViewModel>();
+
     try {
       final XFile? image = await _picker.pickImage(
         source: source,
@@ -27,7 +29,12 @@ class _CaptureTabViewState extends State<CaptureTabView> {
         maxHeight: 1024,
         imageQuality: 85,
       );
+      if (!mounted) {
+        return;
+      }
+
       if (image != null) {
+        predictionViewModel.clearResult();
         setState(() => _selectedImage = File(image.path));
       }
     } catch (e) {
@@ -67,27 +74,72 @@ class _CaptureTabViewState extends State<CaptureTabView> {
     );
   }
 
-  void _analyzeImage() {
+  Future<void> _analyzeImage() async {
     if (_selectedImage == null) return;
+    final viewModel = context.read<PredictionViewModel>();
     setState(() => _isAnalyzing = true);
-    context.read<PredictionViewModel>().predictImage(_selectedImage!);
-    setState(() => _isAnalyzing = false);
+    viewModel.clearResult();
+    final predictionFuture = viewModel.predictImage(_selectedImage!);
+
+    if (!mounted) {
+      return;
+    }
+
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const ResultView()),
     );
+
+    await predictionFuture;
+
+    if (mounted) {
+      setState(() => _isAnalyzing = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: const AppAppBar(title: 'Nueva Captura'),
+      appBar: const AppAppBar(title: 'Captura para análisis'),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            Card(
+              color: AppColors.surfaceContainerLowest,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: const BorderSide(color: AppColors.outlineVariant),
+              ),
+              child: const Padding(
+                padding: EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Capture una imagen para BucalScan AI',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.onSurface,
+                      ),
+                    ),
+                    SizedBox(height: 6),
+                    Text(
+                      'Seleccione una foto nítida de la cavidad oral para preparar el análisis clínico.',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppColors.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
             if (_selectedImage != null) ...[
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
@@ -105,7 +157,7 @@ class _CaptureTabViewState extends State<CaptureTabView> {
                     child: OutlinedButton.icon(
                       onPressed: _showImageSourceDialog,
                       icon: const Icon(Icons.refresh, size: 18),
-                      label: const Text('Cambiar'),
+                      label: const Text('Cambiar imagen'),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
@@ -122,7 +174,11 @@ class _CaptureTabViewState extends State<CaptureTabView> {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Icon(Icons.analytics, size: 18),
-                      label: Text(_isAnalyzing ? 'Analizando...' : 'Analizar'),
+                      label: Text(
+                        _isAnalyzing
+                            ? 'Preparando análisis...'
+                            : 'Iniciar análisis',
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         padding: const EdgeInsets.symmetric(vertical: 12),
@@ -137,7 +193,10 @@ class _CaptureTabViewState extends State<CaptureTabView> {
                 child: Container(
                   height: 280,
                   decoration: BoxDecoration(
-                    border: Border.all(color: AppColors.outlineVariant, width: 2),
+                    border: Border.all(
+                      color: AppColors.outlineVariant,
+                      width: 2,
+                    ),
                     borderRadius: BorderRadius.circular(12),
                     color: AppColors.surfaceContainerLow,
                   ),
@@ -151,15 +210,20 @@ class _CaptureTabViewState extends State<CaptureTabView> {
                       ),
                       const SizedBox(height: 12),
                       const Text(
-                        'Toque para agregar una imagen',
-                        style: TextStyle(fontSize: 16, color: AppColors.onSurfaceVariant),
+                        'Seleccione una imagen clínica',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: AppColors.onSurfaceVariant,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Cámara o galería',
+                        'Use cámara o galería para continuar con el análisis',
                         style: TextStyle(
                           fontSize: 14,
-                          color: AppColors.onSurfaceVariant.withOpacity(0.7),
+                          color: AppColors.onSurfaceVariant.withValues(
+                            alpha: 0.7,
+                          ),
                         ),
                       ),
                     ],
@@ -180,7 +244,7 @@ class _CaptureTabViewState extends State<CaptureTabView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Cómo funciona',
+                      'Guía rápida',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
@@ -188,9 +252,21 @@ class _CaptureTabViewState extends State<CaptureTabView> {
                       ),
                     ),
                     SizedBox(height: 12),
-                    _StepItem(number: 1, text: 'Capture o suba una imagen de la cavidad oral'),
-                    _StepItem(number: 2, text: 'Nuestro modelo de IA analiza la imagen en segundos'),
-                    _StepItem(number: 3, text: 'Obtenga clasificación y recomendaciones instantáneas'),
+                    _StepItem(
+                      number: 1,
+                      text:
+                          'Tome o cargue una imagen bien iluminada de la cavidad oral',
+                    ),
+                    _StepItem(
+                      number: 2,
+                      text:
+                          'Revise la imagen antes de enviarla para evitar errores de análisis',
+                    ),
+                    _StepItem(
+                      number: 3,
+                      text:
+                          'Consulte el resultado y la confianza estimada al finalizar',
+                    ),
                   ],
                 ),
               ),

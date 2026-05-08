@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:oral_lesion_detector/domain/entities/user.dart';
+import 'package:bucalscan_ai/domain/entities/user.dart';
 
 class ProfileViewModel extends ChangeNotifier {
   User? _user;

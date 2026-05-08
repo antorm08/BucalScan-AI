@@ -14,11 +14,11 @@ load_dotenv(BASE_DIR / ".env")
 
 @dataclass(frozen=True)
 class Settings:
-    app_name: str = os.getenv("APP_NAME", "DeepOral-DX")
+    app_name: str = os.getenv("APP_NAME", "BucalScan AI")
     jwt_secret: str = os.getenv("JWT_SECRET", "change-me-in-production")
     database_url: str = os.getenv(
         "DATABASE_URL",
-        f"sqlite:///{(BASE_DIR / 'deeporal_dx.db').as_posix()}",
+        f"sqlite:///{(BASE_DIR / 'bucalscan_ai.db').as_posix()}",
     )
     model_path: str = os.getenv(
         "MODEL_PATH",

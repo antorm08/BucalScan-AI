@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
-import 'package:oral_lesion_detector/data/repositories/auth_repository.dart';
-import 'package:oral_lesion_detector/domain/entities/user.dart';
+import 'package:bucalscan_ai/data/repositories/auth_repository.dart';
+import 'package:bucalscan_ai/domain/entities/user.dart';
 
 class AuthViewModel extends ChangeNotifier {
   final AuthRepository _repository;

@@ -1,14 +1,14 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
-import 'package:oral_lesion_detector/main.dart';
-import 'package:oral_lesion_detector/data/repositories/auth_repository.dart';
-import 'package:oral_lesion_detector/data/repositories/history_repository.dart';
-import 'package:oral_lesion_detector/data/repositories/prediction_repository.dart';
-import 'package:oral_lesion_detector/data/services/api_service.dart';
-import 'package:oral_lesion_detector/presentation/viewmodels/auth_viewmodel.dart';
-import 'package:oral_lesion_detector/presentation/viewmodels/history_viewmodel.dart';
-import 'package:oral_lesion_detector/presentation/viewmodels/prediction_viewmodel.dart';
-import 'package:oral_lesion_detector/presentation/viewmodels/profile_viewmodel.dart';
+import 'package:bucalscan_ai/main.dart';
+import 'package:bucalscan_ai/data/repositories/auth_repository.dart';
+import 'package:bucalscan_ai/data/repositories/history_repository.dart';
+import 'package:bucalscan_ai/data/repositories/prediction_repository.dart';
+import 'package:bucalscan_ai/data/services/api_service.dart';
+import 'package:bucalscan_ai/presentation/viewmodels/auth_viewmodel.dart';
+import 'package:bucalscan_ai/presentation/viewmodels/history_viewmodel.dart';
+import 'package:bucalscan_ai/presentation/viewmodels/prediction_viewmodel.dart';
+import 'package:bucalscan_ai/presentation/viewmodels/profile_viewmodel.dart';
 
 void main() {
   testWidgets('App loads successfully', (WidgetTester tester) async {
@@ -26,10 +26,10 @@ void main() {
           ),
           ChangeNotifierProvider(create: (_) => ProfileViewModel()),
         ],
-        child: const DeepOralDxApp(),
+        child: const BucalScanAiApp(),
       ),
     );
 
-    expect(find.text('DeepOral-DX'), findsOneWidget);
+    expect(find.text('BucalScan AI'), findsOneWidget);
   });
 }

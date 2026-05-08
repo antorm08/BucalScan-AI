@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:oral_lesion_detector/core/theme/app_colors.dart';
-import 'package:oral_lesion_detector/presentation/viewmodels/history_viewmodel.dart';
-import 'package:oral_lesion_detector/presentation/widgets/app_app_bar.dart';
-import 'package:oral_lesion_detector/presentation/widgets/history_card.dart';
+import 'package:bucalscan_ai/core/theme/app_colors.dart';
+import 'package:bucalscan_ai/presentation/viewmodels/history_viewmodel.dart';
+import 'package:bucalscan_ai/presentation/widgets/app_app_bar.dart';
+import 'package:bucalscan_ai/presentation/widgets/history_card.dart';
 
 class HistoryTabView extends StatefulWidget {
   const HistoryTabView({super.key});

@@ -1,6 +1,6 @@
 class AppConstants {
-  static const String appName = 'DeepOral-DX';
-  static const String apiBaseUrl = 'http://localhost:8000';
+  static const String appName = 'BucalScan AI';
+  static const String apiBaseUrl = 'http://10.64.64.168:8000';
   static const String apiVersion = '/api/v1';
 
   static const String predictEndpoint = '$apiBaseUrl$apiVersion/predict';

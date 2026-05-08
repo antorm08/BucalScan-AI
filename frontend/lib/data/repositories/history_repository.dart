@@ -1,5 +1,5 @@
-import 'package:oral_lesion_detector/data/models/analysis_model.dart';
-import 'package:oral_lesion_detector/data/services/api_service.dart';
+import 'package:bucalscan_ai/data/models/analysis_model.dart';
+import 'package:bucalscan_ai/data/services/api_service.dart';
 
 class HistoryRepository {
   final ApiService _apiService;

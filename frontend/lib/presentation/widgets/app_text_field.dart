@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:oral_lesion_detector/core/theme/app_colors.dart';
+import 'package:bucalscan_ai/core/theme/app_colors.dart';
 
 class AppTextField extends StatelessWidget {
   final TextEditingController controller;

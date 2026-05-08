@@ -2,10 +2,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-import 'package:oral_lesion_detector/core/theme/app_colors.dart';
-import 'package:oral_lesion_detector/presentation/viewmodels/prediction_viewmodel.dart';
-import 'package:oral_lesion_detector/presentation/views/result/result_view.dart';
-import 'package:oral_lesion_detector/presentation/widgets/app_app_bar.dart';
+import 'package:bucalscan_ai/core/theme/app_colors.dart';
+import 'package:bucalscan_ai/presentation/viewmodels/prediction_viewmodel.dart';
+import 'package:bucalscan_ai/presentation/views/result/result_view.dart';
+import 'package:bucalscan_ai/presentation/widgets/app_app_bar.dart';
 
 class HomeTabView extends StatefulWidget {
   const HomeTabView({super.key});
@@ -17,6 +17,23 @@ class HomeTabView extends StatefulWidget {
 class _HomeTabViewState extends State<HomeTabView> {
   final ImagePicker _picker = ImagePicker();
 
+  Future<void> _startAnalysis(File imageFile) async {
+    final viewModel = context.read<PredictionViewModel>();
+    viewModel.clearResult();
+    final predictionFuture = viewModel.predictImage(imageFile);
+
+    if (!mounted) {
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const ResultView()),
+    );
+
+    await predictionFuture;
+  }
+
   Future<void> _pickImage(ImageSource source) async {
     try {
       final XFile? image = await _picker.pickImage(
@@ -27,11 +44,7 @@ class _HomeTabViewState extends State<HomeTabView> {
       );
       if (image != null) {
         if (mounted) {
-          context.read<PredictionViewModel>().predictImage(File(image.path));
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const ResultView()),
-          );
+          await _startAnalysis(File(image.path));
         }
       }
     } catch (e) {
@@ -87,7 +100,7 @@ class _HomeTabViewState extends State<HomeTabView> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Bienvenida de nuevo, Dra. Jenkins',
+                    'Flujo de análisis clínico',
                     style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.w600,
@@ -97,7 +110,7 @@ class _HomeTabViewState extends State<HomeTabView> {
                   ),
                   SizedBox(height: 4),
                   Text(
-                    'Aquí está su resumen clínico para hoy, 24 de octubre.',
+                    'Inicie una nueva captura o revise el estado general del análisis de hoy.',
                     style: TextStyle(
                       fontSize: 16,
                       color: AppColors.onSurfaceVariant,
@@ -115,25 +128,24 @@ class _HomeTabViewState extends State<HomeTabView> {
                     children: [
                       _PrimaryActionCard(
                         icon: Icons.add_a_photo,
-                        title: 'Iniciar Nueva Captura',
-                        subtitle: 'Capturar imágenes del paciente a través de cámara clínica externa',
+                        title: 'Nueva captura',
+                        subtitle:
+                            'Abra la cámara o seleccione una imagen clínica para iniciar el análisis',
                         onTap: _showImageSourceDialog,
                       ),
                       const SizedBox(height: 12),
                       _SecondaryActionCard(
                         icon: Icons.upload_file,
-                        title: 'Subir Imagen de Galería',
-                        subtitle: 'Analizar escaneos de pacientes existentes de la galería',
+                        title: 'Cargar desde galería',
+                        subtitle:
+                            'Use una imagen existente para revisar el resultado del análisis',
                         onTap: () => _pickImage(ImageSource.gallery),
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(width: 12),
-                const Expanded(
-                  flex: 1,
-                  child: _SummaryCard(),
-                ),
+                const Expanded(flex: 1, child: _SummaryCard()),
               ],
             ),
           ],
@@ -177,7 +189,7 @@ class _PrimaryActionCard extends StatelessWidget {
                 height: 120,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white.withOpacity(0.05),
+                  color: Colors.white.withValues(alpha: 0.05),
                 ),
               ),
             ),
@@ -193,12 +205,15 @@ class _PrimaryActionCard extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Icon(icon, color: Colors.white, size: 32),
                       ),
-                      const Icon(Icons.arrow_forward, color: AppColors.primaryFixed),
+                      const Icon(
+                        Icons.arrow_forward,
+                        color: AppColors.primaryFixed,
+                      ),
                     ],
                   ),
                   Column(
@@ -272,7 +287,11 @@ class _SecondaryActionCard extends StatelessWidget {
                       color: AppColors.surfaceContainerLow,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Icon(icon, color: AppColors.primaryContainer, size: 32),
+                    child: Icon(
+                      icon,
+                      color: AppColors.primaryContainer,
+                      size: 32,
+                    ),
                   ),
                   const Icon(Icons.arrow_forward, color: AppColors.outline),
                 ],
@@ -352,7 +371,7 @@ class _SummaryCard extends StatelessWidget {
                     const SizedBox(width: 6),
                     Flexible(
                       child: Text(
-                        'Escaneos Analizados',
+                        'Análisis procesados',
                         maxLines: 2,
                         style: TextStyle(
                           fontSize: 12,
@@ -412,10 +431,7 @@ class _StatRow extends StatelessWidget {
               Container(
                 width: 8,
                 height: 8,
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                ),
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
               ),
               const SizedBox(width: 8),
               Flexible(
@@ -423,7 +439,10 @@ class _StatRow extends StatelessWidget {
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 13, color: AppColors.onSurface),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.onSurface,
+                  ),
                 ),
               ),
             ],
