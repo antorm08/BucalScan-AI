@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
-import 'package:oral_lesion_detector/data/repositories/history_repository.dart';
-import 'package:oral_lesion_detector/domain/entities/analysis.dart';
+import 'package:bucalscan_ai/data/repositories/history_repository.dart';
+import 'package:bucalscan_ai/domain/entities/analysis.dart';
 
 class HistoryViewModel extends ChangeNotifier {
   final HistoryRepository _repository;

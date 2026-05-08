@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
-import 'package:oral_lesion_detector/data/repositories/prediction_repository.dart';
-import 'package:oral_lesion_detector/domain/entities/prediction_result.dart';
+import 'package:bucalscan_ai/data/repositories/prediction_repository.dart';
+import 'package:bucalscan_ai/domain/entities/prediction_result.dart';
 
 class PredictionViewModel extends ChangeNotifier {
   final PredictionRepository _repository;

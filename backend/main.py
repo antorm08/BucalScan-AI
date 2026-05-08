@@ -10,8 +10,8 @@ from routers.predict import router as predict_router
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
-    title="DeepOral-DX API",
-    description="Backend API for DeepOral-DX.",
+    title="BucalScan AI API",
+    description="Backend API for BucalScan AI.",
     version="1.0.0"
 )
 

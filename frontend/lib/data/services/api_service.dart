@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
-import 'package:oral_lesion_detector/core/constants/app_constants.dart';
-import 'package:oral_lesion_detector/data/models/analysis_model.dart';
-import 'package:oral_lesion_detector/data/models/prediction_result_model.dart';
+import 'package:bucalscan_ai/core/constants/app_constants.dart';
+import 'package:bucalscan_ai/data/models/analysis_model.dart';
+import 'package:bucalscan_ai/data/models/prediction_result_model.dart';
 
 class ApiService {
   final Dio _dio;

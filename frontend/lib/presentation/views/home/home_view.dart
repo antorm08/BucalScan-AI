@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:oral_lesion_detector/core/theme/app_colors.dart';
-import 'package:oral_lesion_detector/presentation/views/capture/capture_tab_view.dart';
-import 'package:oral_lesion_detector/presentation/views/history/history_tab_view.dart';
-import 'package:oral_lesion_detector/presentation/views/home/home_tab_view.dart';
-import 'package:oral_lesion_detector/presentation/views/profile/profile_tab_view.dart';
-import 'package:oral_lesion_detector/presentation/widgets/nav_bar_item.dart';
+import 'package:bucalscan_ai/core/theme/app_colors.dart';
+import 'package:bucalscan_ai/presentation/views/capture/capture_tab_view.dart';
+import 'package:bucalscan_ai/presentation/views/history/history_tab_view.dart';
+import 'package:bucalscan_ai/presentation/views/home/home_tab_view.dart';
+import 'package:bucalscan_ai/presentation/views/profile/profile_tab_view.dart';
+import 'package:bucalscan_ai/presentation/widgets/nav_bar_item.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -30,10 +30,12 @@ class _HomeViewState extends State<HomeView> {
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: AppColors.surfaceContainerLowest,
-          border: const Border(top: BorderSide(color: AppColors.surfaceVariant)),
+          border: const Border(
+            top: BorderSide(color: AppColors.surfaceVariant),
+          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 12,
               offset: const Offset(0, -4),
             ),

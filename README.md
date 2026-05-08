@@ -1,4 +1,4 @@
-# DeepOral-DX
+# BucalScan AI
 
 AI-powered mobile application for binary oral lesion screening using Deep Learning.
 

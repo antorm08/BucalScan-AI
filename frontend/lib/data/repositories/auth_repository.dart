@@ -1,4 +1,4 @@
-import 'package:oral_lesion_detector/data/services/api_service.dart';
+import 'package:bucalscan_ai/data/services/api_service.dart';
 
 class AuthRepository {
   final ApiService _apiService;

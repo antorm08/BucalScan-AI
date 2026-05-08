@@ -1,16 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:oral_lesion_detector/core/theme/app_colors.dart';
-import 'package:oral_lesion_detector/domain/entities/analysis.dart';
+import 'package:bucalscan_ai/core/theme/app_colors.dart';
+import 'package:bucalscan_ai/domain/entities/analysis.dart';
 
 class HistoryCard extends StatelessWidget {
   final Analysis analysis;
   final VoidCallback? onTap;
 
-  const HistoryCard({
-    super.key,
-    required this.analysis,
-    this.onTap,
-  });
+  const HistoryCard({super.key, required this.analysis, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +41,7 @@ class HistoryCard extends StatelessWidget {
           border: Border.all(color: AppColors.surfaceContainerHigh),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.03),
+              color: Colors.black.withValues(alpha: 0.03),
               blurRadius: 4,
               offset: const Offset(0, 1),
             ),
@@ -81,7 +77,7 @@ class HistoryCard extends StatelessWidget {
                     ),
                     child: Icon(
                       Icons.image,
-                      color: AppColors.onSurfaceVariant.withOpacity(0.5),
+                      color: AppColors.onSurfaceVariant.withValues(alpha: 0.5),
                       size: 28,
                     ),
                   ),
@@ -109,7 +105,10 @@ class HistoryCard extends StatelessWidget {
                             ),
                             const SizedBox(width: 4),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
                                 color: badgeBg,
                                 borderRadius: BorderRadius.circular(4),
@@ -117,7 +116,11 @@ class HistoryCard extends StatelessWidget {
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(badgeIcon, size: 14, color: badgeIconColor),
+                                  Icon(
+                                    badgeIcon,
+                                    size: 14,
+                                    color: badgeIconColor,
+                                  ),
                                   const SizedBox(width: 2),
                                   Text(
                                     displayLabel,
@@ -167,7 +170,20 @@ class HistoryCard extends StatelessWidget {
   }
 
   String _formatDate(DateTime date) {
-    final months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    final months = [
+      'Ene',
+      'Feb',
+      'Mar',
+      'Abr',
+      'May',
+      'Jun',
+      'Jul',
+      'Ago',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dic',
+    ];
     return '${date.day} ${months[date.month - 1]}, ${date.year}';
   }
 }

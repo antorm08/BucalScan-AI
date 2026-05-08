@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:oral_lesion_detector/core/theme/app_colors.dart';
+import 'package:bucalscan_ai/core/theme/app_colors.dart';
 
 class AppAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
@@ -25,7 +25,7 @@ class AppAppBar extends StatelessWidget implements PreferredSizeWidget {
             const SizedBox(width: 4),
           ],
           Text(
-            title.isEmpty ? 'DeepOral-DX' : title,
+            title.isEmpty ? 'BucalScan AI' : title,
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:oral_lesion_detector/core/theme/app_colors.dart';
-import 'package:oral_lesion_detector/presentation/viewmodels/auth_viewmodel.dart';
-import 'package:oral_lesion_detector/presentation/views/home/home_view.dart';
-import 'package:oral_lesion_detector/presentation/views/auth/register_view.dart';
-import 'package:oral_lesion_detector/presentation/widgets/app_text_field.dart';
+import 'package:bucalscan_ai/core/theme/app_colors.dart';
+import 'package:bucalscan_ai/presentation/viewmodels/auth_viewmodel.dart';
+import 'package:bucalscan_ai/presentation/views/home/home_view.dart';
+import 'package:bucalscan_ai/presentation/views/auth/register_view.dart';
+import 'package:bucalscan_ai/presentation/widgets/app_text_field.dart';
 
 class LoginView extends StatefulWidget {
   const LoginView({super.key});
@@ -56,18 +56,27 @@ class _LoginViewState extends State<LoginView> {
                 color: AppColors.surfaceContainerLowest,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
-                  side: const BorderSide(color: AppColors.surfaceVariant, width: 1),
+                  side: const BorderSide(
+                    color: AppColors.surfaceVariant,
+                    width: 1,
+                  ),
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 32,
+                      ),
                       decoration: const BoxDecoration(
                         color: AppColors.background,
                         border: Border(
-                          bottom: BorderSide(color: AppColors.surfaceVariant, width: 1),
+                          bottom: BorderSide(
+                            color: AppColors.surfaceVariant,
+                            width: 1,
+                          ),
                         ),
                       ),
                       child: Column(
@@ -80,7 +89,9 @@ class _LoginViewState extends State<LoginView> {
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.primary.withOpacity(0.1),
+                                  color: AppColors.primary.withValues(
+                                    alpha: 0.1,
+                                  ),
                                   blurRadius: 8,
                                   offset: const Offset(0, 2),
                                 ),
@@ -94,7 +105,7 @@ class _LoginViewState extends State<LoginView> {
                           ),
                           const SizedBox(height: 12),
                           const Text(
-                            'DeepOral-DX',
+                            'BucalScan AI',
                             style: TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.w600,
@@ -158,16 +169,23 @@ class _LoginViewState extends State<LoginView> {
                                     padding: const EdgeInsets.only(bottom: 12),
                                     child: Text(
                                       viewModel.error!,
-                                      style: const TextStyle(color: AppColors.error, fontSize: 14),
+                                      style: const TextStyle(
+                                        color: AppColors.error,
+                                        fontSize: 14,
+                                      ),
                                       textAlign: TextAlign.center,
                                     ),
                                   ),
                                 ElevatedButton(
-                                  onPressed: viewModel.isLoading ? null : _handleLogin,
+                                  onPressed: viewModel.isLoading
+                                      ? null
+                                      : _handleLogin,
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: AppColors.primary,
                                     foregroundColor: AppColors.onPrimary,
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 12,
+                                    ),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(8),
                                     ),
@@ -179,7 +197,10 @@ class _LoginViewState extends State<LoginView> {
                                           width: 20,
                                           child: CircularProgressIndicator(
                                             strokeWidth: 2,
-                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                                  Colors.white,
+                                                ),
                                           ),
                                         )
                                       : const Row(
@@ -206,11 +227,17 @@ class _LoginViewState extends State<LoginView> {
                     ),
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 16,
+                      ),
                       decoration: const BoxDecoration(
                         color: AppColors.background,
                         border: Border(
-                          top: BorderSide(color: AppColors.surfaceVariant, width: 1),
+                          top: BorderSide(
+                            color: AppColors.surfaceVariant,
+                            width: 1,
+                          ),
                         ),
                       ),
                       child: Wrap(
@@ -229,7 +256,9 @@ class _LoginViewState extends State<LoginView> {
                             onPressed: () {
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (_) => const RegisterView()),
+                                MaterialPageRoute(
+                                  builder: (_) => const RegisterView(),
+                                ),
                               );
                             },
                             style: TextButton.styleFrom(
