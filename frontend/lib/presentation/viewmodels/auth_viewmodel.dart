@@ -39,7 +39,7 @@ class AuthViewModel extends ChangeNotifier {
     }
   }*/
 
-  // Just navigate to home screen after login without calling API, since we don't have backend yet
+  // Temporary mocked login until backend JWT integration is ready
   Future<bool> login({required String email, required String password}) async {
     _isLoading = true;
     _error = null;
@@ -48,6 +48,7 @@ class AuthViewModel extends ChangeNotifier {
     _currentUser = User(
       id: 1,
       fullName: 'John Doe',
+      doctorId: 'MD-DEMO-001',
       email: email,
     );
     _isLoading = false;
@@ -57,6 +58,8 @@ class AuthViewModel extends ChangeNotifier {
 
   Future<bool> register({
     required String fullName,
+    required String doctorId,
+    String? medicalCenter,
     required String email,
     required String password,
   }) async {
@@ -67,6 +70,8 @@ class AuthViewModel extends ChangeNotifier {
     try {
       await _repository.register(
         fullName: fullName,
+        doctorId: doctorId,
+        medicalCenter: medicalCenter,
         email: email,
         password: password,
       );

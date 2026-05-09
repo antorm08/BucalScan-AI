@@ -32,6 +32,8 @@ class ApiService {
 
   Future<Map<String, dynamic>> register({
     required String fullName,
+    required String doctorId,
+    String? medicalCenter,
     required String email,
     required String password,
   }) async {
@@ -40,6 +42,9 @@ class ApiService {
         '${AppConstants.apiVersion}/auth/register',
         data: {
           'full_name': fullName,
+          'doctor_id': doctorId,
+          if (medicalCenter != null && medicalCenter.isNotEmpty)
+            'medical_center': medicalCenter,
           'email': email,
           'password': password,
         },

@@ -13,6 +13,8 @@ def create_user(db: Session, user: UserCreate):
     hashed_password = get_password_hash(user.password)
     db_user = models.User(
         full_name=user.full_name,
+        doctor_id=user.doctor_id,
+        medical_center=user.medical_center,
         email=user.email,
         hashed_password=hashed_password
     )

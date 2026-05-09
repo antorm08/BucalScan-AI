@@ -15,7 +15,7 @@ load_dotenv(BASE_DIR / ".env")
 @dataclass(frozen=True)
 class Settings:
     app_name: str = os.getenv("APP_NAME", "BucalScan AI")
-    jwt_secret: str = os.getenv("JWT_SECRET", "change-me-in-production")
+    jwt_secret: str = os.environ["JWT_SECRET"]
     database_url: str = os.getenv(
         "DATABASE_URL",
         f"sqlite:///{(BASE_DIR / 'bucalscan_ai.db').as_posix()}",
