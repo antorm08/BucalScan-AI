@@ -7,11 +7,14 @@ import 'package:bucalscan_ai/data/models/prediction_result_model.dart';
 class ApiService {
   final Dio _dio;
 
-  ApiService() : _dio = Dio(BaseOptions(
-    baseUrl: AppConstants.apiBaseUrl,
-    connectTimeout: const Duration(seconds: 30),
-    receiveTimeout: const Duration(seconds: 30),
-  ));
+  ApiService()
+    : _dio = Dio(
+        BaseOptions(
+          baseUrl: AppConstants.apiBaseUrl,
+          connectTimeout: const Duration(seconds: 30),
+          receiveTimeout: const Duration(seconds: 30),
+        ),
+      );
 
   Future<PredictionResultModel> predictImage(File image) async {
     try {
@@ -26,7 +29,12 @@ class ApiService {
 
       return PredictionResultModel.fromJson(response.data);
     } on DioException catch (e) {
-      throw Exception('Prediction failed: ${e.message}');
+      throw Exception(
+        _buildApiErrorMessage(
+          e,
+          fallback: 'No se pudo completar el analisis de la imagen.',
+        ),
+      );
     }
   }
 
@@ -38,15 +46,13 @@ class ApiService {
     try {
       final response = await _dio.post(
         '${AppConstants.apiVersion}/auth/register',
-        data: {
-          'full_name': fullName,
-          'email': email,
-          'password': password,
-        },
+        data: {'full_name': fullName, 'email': email, 'password': password},
       );
       return response.data;
     } on DioException catch (e) {
-      throw Exception('Registration failed: ${e.message}');
+      throw Exception(
+        _buildApiErrorMessage(e, fallback: 'No se pudo completar el registro.'),
+      );
     }
   }
 
@@ -57,14 +63,13 @@ class ApiService {
     try {
       final response = await _dio.post(
         '${AppConstants.apiVersion}/auth/login',
-        data: {
-          'email': email,
-          'password': password,
-        },
+        data: {'email': email, 'password': password},
       );
       return response.data;
     } on DioException catch (e) {
-      throw Exception('Login failed: ${e.message}');
+      throw Exception(
+        _buildApiErrorMessage(e, fallback: 'No se pudo iniciar sesion.'),
+      );
     }
   }
 
@@ -76,7 +81,31 @@ class ApiService {
       final List<dynamic> data = response.data;
       return data.map((json) => AnalysisModel.fromJson(json)).toList();
     } on DioException catch (e) {
-      throw Exception('Failed to fetch history: ${e.message}');
+      throw Exception(
+        _buildApiErrorMessage(e, fallback: 'No se pudo cargar el historial.'),
+      );
     }
+  }
+
+  String _buildApiErrorMessage(DioException error, {required String fallback}) {
+    final data = error.response?.data;
+
+    if (data is Map<String, dynamic>) {
+      final detail = data['detail'] ?? data['message'] ?? data['error'];
+      if (detail is String && detail.trim().isNotEmpty) {
+        return detail;
+      }
+    }
+
+    if (data is String && data.trim().isNotEmpty) {
+      return data;
+    }
+
+    final message = error.message;
+    if (message != null && message.trim().isNotEmpty) {
+      return '$fallback $message';
+    }
+
+    return fallback;
   }
 }
