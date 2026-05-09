@@ -8,6 +8,8 @@ class User(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     full_name = Column(String, nullable=False)
+    doctor_id = Column(String, unique=True, index=True, nullable=False)
+    medical_center = Column(String, nullable=True)
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)

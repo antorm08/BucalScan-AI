@@ -2,13 +2,12 @@ fastapi==0.115.0
 uvicorn==0.30.6
 python-multipart==0.0.9
 pydantic==2.9.2
-torch==2.4.0
-torchvision==0.19.0
 Pillow==10.4.0
-numpy==1.26.4
+numpy>=2.1.0
 sqlalchemy==2.0.35
 passlib[bcrypt]==1.7.4
 bcrypt==4.0.1
 python-jose[cryptography]==3.3.0
 python-dotenv==1.0.1
 onnxruntime==1.20.1
+# Training-only deps (torch, torchvision) → see requirements-train.txt

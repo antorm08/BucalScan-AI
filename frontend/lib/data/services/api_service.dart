@@ -40,13 +40,22 @@ class ApiService {
 
   Future<Map<String, dynamic>> register({
     required String fullName,
+    required String doctorId,
+    String? medicalCenter,
     required String email,
     required String password,
   }) async {
     try {
       final response = await _dio.post(
         '${AppConstants.apiVersion}/auth/register',
-        data: {'full_name': fullName, 'email': email, 'password': password},
+        data: {
+          'full_name': fullName,
+          'doctor_id': doctorId,
+          if (medicalCenter != null && medicalCenter.isNotEmpty)
+            'medical_center': medicalCenter,
+          'email': email,
+          'password': password,
+        },
       );
       return response.data;
     } on DioException catch (e) {
