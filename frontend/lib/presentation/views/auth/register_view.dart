@@ -15,6 +15,8 @@ class RegisterView extends StatefulWidget {
 class _RegisterViewState extends State<RegisterView> {
   final _formKey = GlobalKey<FormState>();
   final _fullNameController = TextEditingController();
+  final _doctorIdController = TextEditingController();
+  final _medicalCenterController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -23,6 +25,8 @@ class _RegisterViewState extends State<RegisterView> {
   @override
   void dispose() {
     _fullNameController.dispose();
+    _doctorIdController.dispose();
+    _medicalCenterController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -40,6 +44,10 @@ class _RegisterViewState extends State<RegisterView> {
       final viewModel = context.read<AuthViewModel>();
       final success = await viewModel.register(
         fullName: _fullNameController.text.trim(),
+        doctorId: _doctorIdController.text.trim(),
+        medicalCenter: _medicalCenterController.text.trim().isEmpty
+            ? null
+            : _medicalCenterController.text.trim(),
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
@@ -115,6 +123,29 @@ class _RegisterViewState extends State<RegisterView> {
                                     if (value == null || value.isEmpty) {
                                       return 'Ingrese su nombre completo';
                                     }
+                                    return null;
+                                  },
+                                ),
+                                const SizedBox(height: 16),
+                                AppTextField(
+                                  controller: _doctorIdController,
+                                  label: 'Número de licencia médica',
+                                  hint: 'MD-123456',
+                                  icon: Icons.badge,
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return 'Ingrese su número de licencia';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                                const SizedBox(height: 16),
+                                AppTextField(
+                                  controller: _medicalCenterController,
+                                  label: 'Centro médico (opcional)',
+                                  hint: 'Hospital Central',
+                                  icon: Icons.local_hospital,
+                                  validator: (value) {
                                     return null;
                                   },
                                 ),
