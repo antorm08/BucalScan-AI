@@ -29,6 +29,18 @@ class OralLesionClassifier:
         self.input_name = self.model.get_inputs()[0].name
 
     def _preprocess(self, image: Image.Image) -> np.ndarray:
+        """Convert a PIL image to a normalized float32 tensor [1, 3, 224, 224].
+
+        Pipeline:
+          1. convert("RGB")          – discard alpha, enforce 3 channels
+          2. resize((224, 224))      – PIL default resampling (BILINEAR)
+          3. / 255.0                 – scale to [0.0, 1.0]
+          4. - mean / std            – ImageNet normalization per channel
+                                       mean=[0.485, 0.456, 0.406]
+                                       std =[0.229, 0.224, 0.225]
+          5. transpose (2,0,1)       – HWC → CHW
+          6. expand_dims(axis=0)     – add batch dim → [1, 3, 224, 224]
+        """
         image = image.convert("RGB").resize((224, 224))
         image_array = np.asarray(image, dtype=np.float32) / 255.0
 

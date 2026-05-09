@@ -5,7 +5,7 @@ class PredictionResponse(BaseModel):
     prediction: str
     confidence: float
     recommendation: str
-    probabilities: Optional[dict] = None
+    probabilities: Optional[dict[str, float]] = None
 
 class UserCreate(BaseModel):
     full_name: str
