@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -19,8 +20,7 @@ class _HomeTabViewState extends State<HomeTabView> {
 
   Future<void> _startAnalysis(File imageFile) async {
     final viewModel = context.read<PredictionViewModel>();
-    viewModel.clearResult();
-    final predictionFuture = viewModel.predictImage(imageFile);
+    unawaited(viewModel.predictImage(imageFile));
 
     if (!mounted) {
       return;
@@ -28,10 +28,8 @@ class _HomeTabViewState extends State<HomeTabView> {
 
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const ResultView()),
+      MaterialPageRoute(builder: (_) => ResultView(imageFile: imageFile)),
     );
-
-    await predictionFuture;
   }
 
   Future<void> _pickImage(ImageSource source) async {

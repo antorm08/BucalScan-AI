@@ -12,13 +12,28 @@ class PredictionResultModel {
   });
 
   factory PredictionResultModel.fromJson(Map<String, dynamic> json) {
+    final rawProbabilities = json['probabilities'];
+
     return PredictionResultModel(
-      prediction: json['prediction'] as String,
-      confidence: (json['confidence'] as num).toDouble(),
-      recommendation: json['recommendation'] as String,
-      probabilities: json['probabilities'] != null
+      prediction:
+          (json['prediction'] ?? json['class'] ?? json['label'] ?? 'unknown')
+              .toString(),
+      confidence:
+          ((json['confidence'] ?? json['score'] ?? json['probability'] ?? 0)
+                  as num)
+              .toDouble(),
+      recommendation:
+          (json['recommendation'] ??
+                  json['message'] ??
+                  'Consulte el resultado con un profesional de salud para una evaluacion clinica completa.')
+              .toString(),
+      probabilities: rawProbabilities is Map
           ? Map<String, double>.from(
-              json['probabilities'].map((k, v) => MapEntry(k, (v as num).toDouble())))
+              rawProbabilities.map(
+                (key, value) =>
+                    MapEntry(key.toString(), (value as num).toDouble()),
+              ),
+            )
           : null,
     );
   }
