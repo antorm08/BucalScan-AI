@@ -28,6 +28,8 @@ mobile-app-g6/
 
 ## Backend Setup (FastAPI)
 
+Production backend deployed at `https://bucalscan-ai.onrender.com`.
+
 1. Navigate to backend directory:
 ```bash
 cd backend
@@ -51,7 +53,8 @@ pip install -r requirements.txt
 uvicorn main:app --reload
 ```
 
-API available at `http://localhost:8000` | Docs at `http://localhost:8000/docs`
+Local API available at `http://localhost:8000` | Local docs at `http://localhost:8000/docs`
+Public API available at `https://bucalscan-ai.onrender.com` | Public docs at `https://bucalscan-ai.onrender.com/docs`
 
 ## Frontend Setup (Flutter)
 
@@ -70,12 +73,14 @@ flutter pub get
 flutter run
 ```
 
+By default, the app uses the deployed backend at `https://bucalscan-ai.onrender.com`.
+
 4. Optional: override backend URL without editing code:
 ```bash
 flutter run --dart-define=API_BASE_URL=http://localhost:8000
 ```
 
-For a deployed backend, replace the value with your public URL, for example:
+For a different deployed backend, replace the value with your public URL, for example:
 ```bash
 flutter run --dart-define=API_BASE_URL=https://your-backend.onrender.com
 ```

@@ -2,6 +2,8 @@
 
 FastAPI backend for the oral lesion detection system.
 
+Production deployment: `https://bucalscan-ai.onrender.com`
+
 ## Setup
 
 1. Create a virtual environment:
@@ -27,12 +29,25 @@ pip install -r requirements.txt
 uvicorn main:app --reload
 ```
 
-The API will be available at `http://localhost:8000`
+Local API: `http://localhost:8000`
+Production API: `https://bucalscan-ai.onrender.com`
 
 ## API Documentation
 
-- Swagger UI: `http://localhost:8000/docs`
-- ReDoc: `http://localhost:8000/redoc`
+- Local Swagger UI: `http://localhost:8000/docs`
+- Local ReDoc: `http://localhost:8000/redoc`
+- Production Swagger UI: `https://bucalscan-ai.onrender.com/docs`
+- Production ReDoc: `https://bucalscan-ai.onrender.com/redoc`
+
+## Render Deployment
+
+- Root Directory: `backend`
+- Build Command: `pip install -r requirements.txt`
+- Start Command: `uvicorn main:app --host 0.0.0.0 --port $PORT`
+- Required environment variables:
+  - `APP_NAME=BucalScan AI`
+  - `JWT_SECRET=<your-secret>`
+  - `MODEL_PATH=models/mobilenetv2_oral.onnx`
 
 ## Endpoints
 

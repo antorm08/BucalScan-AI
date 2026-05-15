@@ -2,7 +2,7 @@ class AppConstants {
   static const String appName = 'BucalScan AI';
   static const String apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://192.168.1.45:8000',
+    defaultValue: 'https://bucalscan-ai.onrender.com',
   );
   static const String apiVersion = '/api/v1';
 
