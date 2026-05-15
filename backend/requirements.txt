@@ -9,5 +9,5 @@ passlib[bcrypt]==1.7.4
 bcrypt==4.0.1
 python-jose[cryptography]==3.3.0
 python-dotenv==1.0.1
-onnxruntime==1.20.1
+onnxruntime==1.25.1
 # Training-only deps (torch, torchvision) → see requirements-train.txt
