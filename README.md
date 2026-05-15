@@ -70,6 +70,16 @@ flutter pub get
 flutter run
 ```
 
+4. Optional: override backend URL without editing code:
+```bash
+flutter run --dart-define=API_BASE_URL=http://localhost:8000
+```
+
+For a deployed backend, replace the value with your public URL, for example:
+```bash
+flutter run --dart-define=API_BASE_URL=https://your-backend.onrender.com
+```
+
 ## Features
 
 - **RF-001**: Real-time camera capture
