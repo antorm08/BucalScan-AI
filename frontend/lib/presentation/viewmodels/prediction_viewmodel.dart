@@ -12,23 +12,39 @@ class PredictionViewModel extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
   String? _analysisStatusMessage;
+  String? _patientId;
+  String? _patientName;
 
   PredictionResult? get result => _result;
   bool get isLoading => _isLoading;
   String? get error => _error;
   String? get analysisStatusMessage => _analysisStatusMessage;
+  String? get patientId => _patientId;
+  String? get patientName => _patientName;
 
-  Future<void> predictImage(File image) async {
+  Future<void> predictImage(
+    File image, {
+    int userId = 1,
+    String? patientId,
+    String? patientName,
+  }) async {
     final stopwatch = Stopwatch()..start();
 
     _isLoading = true;
     _result = null;
     _error = null;
+    _patientId = patientId;
+    _patientName = patientName;
     _analysisStatusMessage = 'Enviando imagen para analisis...';
     notifyListeners();
 
     try {
-      final model = await _repository.predictImage(image);
+      final model = await _repository.predictImage(
+        image,
+        userId: userId,
+        patientId: patientId,
+        patientName: patientName,
+      );
       _analysisStatusMessage = 'Procesando resultado...';
       _result = PredictionResult(
         prediction: model.prediction,
@@ -56,6 +72,8 @@ class PredictionViewModel extends ChangeNotifier {
   void clearResult() {
     _result = null;
     _error = null;
+    _patientId = null;
+    _patientName = null;
     _analysisStatusMessage = null;
     notifyListeners();
   }
