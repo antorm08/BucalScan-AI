@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
+import 'package:bucalscan_ai/presentation/viewmodels/history_viewmodel.dart';
 import 'package:bucalscan_ai/presentation/viewmodels/prediction_viewmodel.dart';
 import 'package:bucalscan_ai/presentation/views/result/result_view.dart';
 import 'package:bucalscan_ai/presentation/widgets/app_app_bar.dart';
@@ -328,78 +329,93 @@ class _SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      color: AppColors.surfaceContainerLowest,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: AppColors.surfaceContainerHighest),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
+    return Consumer<HistoryViewModel>(
+      builder: (context, viewModel, _) {
+        final now = DateTime.now();
+        final todayAnalyses = viewModel.history.where((a) {
+          return a.timestamp.year == now.year &&
+              a.timestamp.month == now.month &&
+              a.timestamp.day == now.day;
+        }).toList();
+
+        final total = todayAnalyses.length;
+        final benign = todayAnalyses.where((a) => a.prediction.toLowerCase() == 'benign').length;
+        final malignant = todayAnalyses.where((a) => a.prediction.toLowerCase() == 'malignant').length;
+
+        return Card(
+          color: AppColors.surfaceContainerLowest,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: const BorderSide(color: AppColors.surfaceContainerHighest),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'RESUMEN DE HOY',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.5,
-                    color: AppColors.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      '12',
+                      'RESUMEN DE HOY',
                       style: TextStyle(
-                        fontSize: 40,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.onSurface,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                        color: AppColors.onSurfaceVariant,
                       ),
                     ),
-                    const SizedBox(width: 6),
-                    Flexible(
-                      child: Text(
-                        'Análisis procesados',
-                        maxLines: 2,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.onSurfaceVariant,
+                    const SizedBox(height: 8),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        Text(
+                          '$total',
+                          style: const TextStyle(
+                            fontSize: 40,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.onSurface,
+                          ),
                         ),
-                      ),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            'Análisis procesados',
+                            maxLines: 2,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                Column(
+                  children: [
+                    _StatRow(
+                      color: AppColors.secondaryFixedDim,
+                      label: 'Benigno',
+                      value: '$benign',
+                    ),
+                    const SizedBox(height: 8),
+                    _StatRow(
+                      color: AppColors.error,
+                      label: 'Maligno',
+                      value: '$malignant',
+                      valueColor: AppColors.error,
                     ),
                   ],
                 ),
               ],
             ),
-            Column(
-              children: [
-                _StatRow(
-                  color: AppColors.secondaryFixedDim,
-                  label: 'Benigno',
-                  value: '11',
-                ),
-                const SizedBox(height: 8),
-                _StatRow(
-                  color: AppColors.error,
-                  label: 'Maligno',
-                  value: '1',
-                  valueColor: AppColors.error,
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

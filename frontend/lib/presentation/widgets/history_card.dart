@@ -138,7 +138,10 @@ class HistoryCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Paciente #ID-${analysis.id}',
+                          analysis.patientName ??
+                              (analysis.patientId != null
+                                  ? 'ID: ${analysis.patientId}'
+                                  : 'Paciente #ID-${analysis.id}'),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
