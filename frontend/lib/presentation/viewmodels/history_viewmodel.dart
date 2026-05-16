@@ -36,7 +36,9 @@ class HistoryViewModel extends ChangeNotifier {
       filtered = filtered.where((a) {
         return a.prediction.toLowerCase().contains(query) ||
             a.timestamp.toString().toLowerCase().contains(query) ||
-            a.id.toString().contains(query);
+            a.id.toString().contains(query) ||
+            (a.patientId?.toLowerCase().contains(query) ?? false) ||
+            (a.patientName?.toLowerCase().contains(query) ?? false);
       }).toList();
     }
 
@@ -64,6 +66,8 @@ class HistoryViewModel extends ChangeNotifier {
           confidence: m.confidence,
           timestamp: parsedTimestamp,
           imageUrl: m.imageUrl,
+          patientId: m.patientId,
+          patientName: m.patientName,
         );
       }));
     } catch (e) {

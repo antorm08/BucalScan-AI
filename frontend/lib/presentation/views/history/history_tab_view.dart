@@ -135,6 +135,32 @@ class _HistoryTabViewState extends State<HistoryTabView> {
           Expanded(
             child: Consumer<HistoryViewModel>(
               builder: (context, viewModel, _) {
+                if (viewModel.isLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (viewModel.error != null) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.error_outline, size: 48, color: AppColors.onSurfaceVariant),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'No se pudo cargar el historial',
+                          style: TextStyle(fontSize: 16, color: AppColors.onSurfaceVariant),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          viewModel.error!,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontSize: 13, color: AppColors.onSurfaceVariant),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
                 final history = viewModel.history;
 
                 if (history.isEmpty) {
