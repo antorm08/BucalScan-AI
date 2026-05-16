@@ -28,12 +28,14 @@ def get_user_analyses(db: Session, user_id: int, skip: int = 0, limit: int = 100
         models.Analysis.user_id == user_id
     ).order_by(models.Analysis.timestamp.desc()).offset(skip).limit(limit).all()
 
-def create_analysis(db: Session, user_id: int, prediction: str, confidence: float, image_path: str = None):
+def create_analysis(db: Session, user_id: int, prediction: str, confidence: float, image_path: str = None, patient_id: str = None, patient_name: str = None):
     db_analysis = models.Analysis(
         user_id=user_id,
         prediction=prediction,
         confidence=confidence,
-        image_path=image_path
+        image_path=image_path,
+        patient_id=patient_id,
+        patient_name=patient_name,
     )
     db.add(db_analysis)
     db.commit()

@@ -34,3 +34,8 @@ class AnalysisHistory(BaseModel):
     confidence: float
     timestamp: str
     image_url: Optional[str] = None
+    patient_id: Optional[str] = None
+    patient_name: Optional[str] = None
+
+    class Config:
+        from_attributes = True

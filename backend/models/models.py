@@ -24,6 +24,8 @@ class Analysis(Base):
     prediction = Column(String, nullable=False)
     confidence = Column(Float, nullable=False)
     image_path = Column(String, nullable=True)
+    patient_id = Column(String, nullable=True)
+    patient_name = Column(String, nullable=True)
     timestamp = Column(DateTime, default=datetime.utcnow)
     
     owner = relationship("User", back_populates="analyses")
