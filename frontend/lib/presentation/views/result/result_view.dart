@@ -249,6 +249,33 @@ class ResultView extends StatelessWidget {
                   children: [
                     Icon(icon, size: 64, color: color),
                     const SizedBox(height: 16),
+                    if (viewModel.patientName != null || viewModel.patientId != null) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.person_outline, size: 14, color: AppColors.onSurfaceVariant),
+                            const SizedBox(width: 6),
+                            Text(
+                              [
+                                if (viewModel.patientName != null) viewModel.patientName!,
+                                if (viewModel.patientId != null) 'ID: ${viewModel.patientId!}',
+                              ].join(' · '),
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: AppColors.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
                     const Text(
                       'Resultado principal',
                       style: TextStyle(
