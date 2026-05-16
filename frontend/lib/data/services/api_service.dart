@@ -16,10 +16,18 @@ class ApiService {
         ),
       );
 
-  Future<PredictionResultModel> predictImage(File image) async {
+  Future<PredictionResultModel> predictImage(
+    File image, {
+    int userId = 1,
+    String? patientId,
+    String? patientName,
+  }) async {
     try {
       final formData = FormData.fromMap({
         'file': await MultipartFile.fromFile(image.path),
+        'user_id': userId,
+        if (patientId != null && patientId.isNotEmpty) 'patient_id': patientId,
+        if (patientName != null && patientName.isNotEmpty) 'patient_name': patientName,
       });
 
       final response = await _dio.post(
