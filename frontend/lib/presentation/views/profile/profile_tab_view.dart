@@ -58,16 +58,16 @@ class ProfileTabView extends StatelessWidget {
               color: AppColors.surfaceContainerLowest,
               child: Column(
                 children: [
-                  const _ProfileTile(
+                  _ProfileTile(
                     icon: Icons.badge,
                     title: 'ID Médico',
-                    subtitle: 'MD-12345678',
+                    subtitle: user?.doctorId ?? '—',
                   ),
                   const Divider(height: 1, color: AppColors.surfaceVariant),
-                  const _ProfileTile(
+                  _ProfileTile(
                     icon: Icons.local_hospital,
                     title: 'Centro médico',
-                    subtitle: 'Hospital General',
+                    subtitle: user?.medicalCenter ?? '—',
                   ),
                   const Divider(height: 1, color: AppColors.surfaceVariant),
                   const _ProfileTile(

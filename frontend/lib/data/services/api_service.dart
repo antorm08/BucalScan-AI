@@ -8,14 +8,18 @@ import 'package:bucalscan_ai/data/models/prediction_result_model.dart';
 class ApiService {
   final Dio _dio;
 
-  ApiService()
+  ApiService({List<Interceptor> interceptors = const []})
     : _dio = Dio(
         BaseOptions(
           baseUrl: AppConstants.apiBaseUrl,
           connectTimeout: const Duration(seconds: 30),
           receiveTimeout: const Duration(seconds: 30),
         ),
-      );
+      ) {
+    if (interceptors.isNotEmpty) {
+      _dio.interceptors.addAll(interceptors);
+    }
+  }
 
   Future<PredictionResultModel> predictImage(
     File image, {
@@ -87,6 +91,22 @@ class ApiService {
     } on DioException catch (e) {
       throw Exception(
         _buildApiErrorMessage(e, fallback: 'No se pudo iniciar sesion.'),
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> me() async {
+    try {
+      final response = await _dio.get(
+        '${AppConstants.apiVersion}/auth/me',
+      );
+      return response.data;
+    } on DioException catch (e) {
+      throw Exception(
+        _buildApiErrorMessage(
+          e,
+          fallback: 'No se pudo validar la sesion.',
+        ),
       );
     }
   }
