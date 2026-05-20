@@ -14,8 +14,10 @@ import 'package:bucalscan_ai/presentation/viewmodels/history_viewmodel.dart';
 import 'package:bucalscan_ai/presentation/viewmodels/prediction_viewmodel.dart';
 import 'package:bucalscan_ai/presentation/viewmodels/profile_viewmodel.dart';
 import 'package:bucalscan_ai/presentation/viewmodels/summary_viewmodel.dart';
+import 'package:bucalscan_ai/presentation/views/startup/startup_view.dart';
 import 'package:bucalscan_ai/presentation/views/auth/login_view.dart';
 import 'package:bucalscan_ai/presentation/views/home/home_view.dart';
+
 
 void main() {
   final authStorage = AuthStorageService();
@@ -37,10 +39,11 @@ void main() {
         ChangeNotifierProvider(create: (_) => SummaryViewModel(summaryRepository)),
         ChangeNotifierProvider(create: (_) => ProfileViewModel()),
       ],
-      child: const BucalScanAiApp(),
+      child: BucalScanAiApp(apiService: apiService),
     ),
   );
 }
+
 
 class BucalScanAiApp extends StatefulWidget {
   const BucalScanAiApp({super.key});
@@ -87,6 +90,7 @@ class _BucalScanAiAppState extends State<BucalScanAiApp> {
           elevation: 0,
         ),
       ),
+
       home: _isLoading
           ? const _SplashScreen()
           : _isAuthenticated
