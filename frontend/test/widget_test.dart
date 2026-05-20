@@ -35,7 +35,7 @@ void main() {
           ),
           ChangeNotifierProvider(create: (_) => ProfileViewModel()),
         ],
-        child: BucalScanAiApp(apiService: apiService),
+        child: BucalScanAiApp(apiService: apiService, skipStartupWakeup: true),
       ),
     );
 

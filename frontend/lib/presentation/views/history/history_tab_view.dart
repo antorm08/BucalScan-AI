@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
 import 'package:bucalscan_ai/domain/entities/analysis.dart';
-import 'package:bucalscan_ai/presentation/viewmodels/auth_viewmodel.dart';
 import 'package:bucalscan_ai/presentation/viewmodels/history_viewmodel.dart';
 import 'package:bucalscan_ai/presentation/widgets/app_app_bar.dart';
 import 'package:bucalscan_ai/presentation/widgets/history_card.dart';
@@ -25,8 +24,7 @@ class _HistoryTabViewState extends State<HistoryTabView> {
         return;
       }
 
-      final userId = context.read<AuthViewModel>().currentUser?.id ?? 1;
-      context.read<HistoryViewModel>().fetchHistory(userId);
+      context.read<HistoryViewModel>().fetchHistory();
     });
   }
 
@@ -464,8 +462,7 @@ class _HistoryTabViewState extends State<HistoryTabView> {
                             const SizedBox(height: 16),
                             ElevatedButton.icon(
                               onPressed: () {
-                                final userId = context.read<AuthViewModel>().currentUser?.id ?? 1;
-                                context.read<HistoryViewModel>().fetchHistory(userId);
+                                context.read<HistoryViewModel>().fetchHistory();
                               },
                               icon: const Icon(Icons.refresh),
                               label: const Text('Reintentar'),

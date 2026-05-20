@@ -3,12 +3,16 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
 import 'package:bucalscan_ai/data/services/api_service.dart';
-import 'package:bucalscan_ai/presentation/views/auth/login_view.dart';
 
 class StartupView extends StatefulWidget {
   final ApiService apiService;
+  final Future<void> Function() onReady;
 
-  const StartupView({super.key, required this.apiService});
+  const StartupView({
+    super.key,
+    required this.apiService,
+    required this.onReady,
+  });
 
   @override
   State<StartupView> createState() => _StartupViewState();
@@ -21,6 +25,7 @@ class _StartupViewState extends State<StartupView> {
   String? _error;
   String _statusMessage = 'Conectando con el servidor...';
   int _currentAttempt = 0;
+  bool _hasContinued = false;
 
   @override
   void initState() {
@@ -34,9 +39,14 @@ class _StartupViewState extends State<StartupView> {
       _error = null;
       _currentAttempt = 0;
       _statusMessage = 'Conectando con el servidor...';
+      _hasContinued = false;
     });
 
     while (mounted) {
+      if (_hasContinued) {
+        return;
+      }
+
       final attempt = _currentAttempt + 1;
 
       if (!mounted) {
@@ -65,10 +75,8 @@ class _StartupViewState extends State<StartupView> {
           return;
         }
 
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const LoginView()),
-        );
+        _hasContinued = true;
+        await widget.onReady();
         return;
       } catch (e) {
         if (!mounted) {
@@ -86,10 +94,8 @@ class _StartupViewState extends State<StartupView> {
   }
 
   void _continueToLogin() {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const LoginView()),
-    );
+    _hasContinued = true;
+    unawaited(widget.onReady());
   }
 
   @override

@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
-import 'package:bucalscan_ai/presentation/viewmodels/auth_viewmodel.dart';
 import 'package:bucalscan_ai/presentation/viewmodels/prediction_viewmodel.dart';
 import 'package:bucalscan_ai/presentation/views/result/result_view.dart';
 import 'package:bucalscan_ai/presentation/widgets/app_app_bar.dart';
@@ -73,13 +72,11 @@ class _CaptureTabViewState extends State<CaptureTabView> {
     }
 
     final imageFile = _selectedImage!;
-    final userId = context.read<AuthViewModel>().currentUser?.id ?? 1;
     final patientId = _patientIdController.text.trim();
     final patientName = _patientNameController.text.trim();
 
     unawaited(viewModel.predictImage(
       imageFile,
-      userId: userId,
       patientId: patientId.isEmpty ? null : patientId,
       patientName: patientName.isEmpty ? null : patientName,
     ));

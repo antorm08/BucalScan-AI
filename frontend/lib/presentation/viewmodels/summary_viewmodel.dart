@@ -16,13 +16,13 @@ class SummaryViewModel extends ChangeNotifier {
   String? get error => _error;
   bool get isEmpty => (_summary?.total ?? 0) == 0;
 
-  Future<void> fetchTodaySummary(int userId) async {
+  Future<void> fetchTodaySummary() async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      final model = await _repository.getTodaySummary(userId);
+      final model = await _repository.getTodaySummary();
       DateTime? latestAnalysisAt;
       if (model.latestAnalysisAt != null && model.latestAnalysisAt!.isNotEmpty) {
         try {
