@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
+import 'package:bucalscan_ai/presentation/viewmodels/auth_viewmodel.dart';
 import 'package:bucalscan_ai/presentation/viewmodels/prediction_viewmodel.dart';
 import 'package:bucalscan_ai/presentation/views/result/result_view.dart';
 import 'package:bucalscan_ai/presentation/widgets/app_app_bar.dart';
@@ -18,6 +19,15 @@ class CaptureTabView extends StatefulWidget {
 class _CaptureTabViewState extends State<CaptureTabView> {
   final ImagePicker _picker = ImagePicker();
   File? _selectedImage;
+  final TextEditingController _patientIdController = TextEditingController();
+  final TextEditingController _patientNameController = TextEditingController();
+
+  @override
+  void dispose() {
+    _patientIdController.dispose();
+    _patientNameController.dispose();
+    super.dispose();
+  }
 
   Future<void> _pickImage(ImageSource source) async {
     final predictionViewModel = context.read<PredictionViewModel>();
@@ -38,6 +48,8 @@ class _CaptureTabViewState extends State<CaptureTabView> {
       }
 
       predictionViewModel.clearResult();
+      _patientIdController.clear();
+      _patientNameController.clear();
       setState(() => _selectedImage = File(image.path));
     } catch (e) {
       if (mounted) {
@@ -61,7 +73,16 @@ class _CaptureTabViewState extends State<CaptureTabView> {
     }
 
     final imageFile = _selectedImage!;
-    unawaited(viewModel.predictImage(imageFile));
+    final userId = context.read<AuthViewModel>().currentUser?.id ?? 1;
+    final patientId = _patientIdController.text.trim();
+    final patientName = _patientNameController.text.trim();
+
+    unawaited(viewModel.predictImage(
+      imageFile,
+      userId: userId,
+      patientId: patientId.isEmpty ? null : patientId,
+      patientName: patientName.isEmpty ? null : patientName,
+    ));
 
     if (!mounted) {
       return;
@@ -184,6 +205,71 @@ class _CaptureTabViewState extends State<CaptureTabView> {
                     ),
                   ),
                 ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Card(
+              color: AppColors.surfaceContainerLowest,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: const BorderSide(color: AppColors.outlineVariant),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Datos del paciente (opcional)',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: _patientIdController,
+                      decoration: InputDecoration(
+                        labelText: 'ID del Paciente',
+                        hintText: 'Ej: PAC-001',
+                        prefixIcon: const Icon(Icons.badge_outlined, size: 20),
+                        filled: true,
+                        fillColor: AppColors.surfaceContainerLow,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: AppColors.outlineVariant),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: AppColors.outlineVariant),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _patientNameController,
+                      decoration: InputDecoration(
+                        labelText: 'Nombre del Paciente',
+                        hintText: 'Ej: Juan Pérez',
+                        prefixIcon: const Icon(Icons.person_outline, size: 20),
+                        filled: true,
+                        fillColor: AppColors.surfaceContainerLow,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: AppColors.outlineVariant),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: AppColors.outlineVariant),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 12),
