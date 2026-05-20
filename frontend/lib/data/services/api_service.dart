@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:bucalscan_ai/core/constants/app_constants.dart';
 import 'package:bucalscan_ai/data/models/analysis_model.dart';
+import 'package:bucalscan_ai/data/models/daily_summary_model.dart';
 import 'package:bucalscan_ai/data/models/prediction_result_model.dart';
 
 class ApiService {
@@ -100,6 +101,19 @@ class ApiService {
     } on DioException catch (e) {
       throw Exception(
         _buildApiErrorMessage(e, fallback: 'No se pudo cargar el historial.'),
+      );
+    }
+  }
+
+  Future<DailySummaryModel> getTodaySummary(int userId) async {
+    try {
+      final response = await _dio.get(
+        '${AppConstants.apiVersion}/summary/today/$userId',
+      );
+      return DailySummaryModel.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception(
+        _buildApiErrorMessage(e, fallback: 'No se pudo cargar el resumen de hoy.'),
       );
     }
   }

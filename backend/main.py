@@ -6,6 +6,7 @@ from database import Base, engine, ensure_sqlite_schema
 from routers.auth import router as auth_router
 from routers.history import router as history_router
 from routers.predict import router as predict_router
+from routers.summary import router as summary_router
 
 Base.metadata.create_all(bind=engine)
 ensure_sqlite_schema()
@@ -35,3 +36,4 @@ async def health_check():
 app.include_router(auth_router)
 app.include_router(predict_router)
 app.include_router(history_router)
+app.include_router(summary_router)
