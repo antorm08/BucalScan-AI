@@ -21,6 +21,45 @@ class ResultView extends StatefulWidget {
 class _ResultViewState extends State<ResultView> {
   bool _hasSyncedPostAnalysis = false;
 
+  ({String title, String message, IconData icon}) _getErrorPresentation(String error) {
+    final normalized = error.toLowerCase();
+
+    if (normalized.contains('invalid file type') ||
+        normalized.contains('cannot decode image file')) {
+      return (
+        title: 'Imagen invalida',
+        message:
+            'La imagen seleccionada no pudo analizarse. Use una foto JPG, PNG o WEBP valida y vuelva a intentarlo.',
+        icon: Icons.image_not_supported_outlined,
+      );
+    }
+
+    if (normalized.contains('no se pudo conectar con el servidor') ||
+        normalized.contains('no respondio a tiempo')) {
+      return (
+        title: 'Servidor no disponible',
+        message:
+            'No fue posible comunicarse con el backend de analisis. Verifique la conexion o vuelva a intentar en unos minutos.',
+        icon: Icons.cloud_off_outlined,
+      );
+    }
+
+    if (normalized.contains('no incluyo todos los datos esperados')) {
+      return (
+        title: 'Respuesta incompleta',
+        message:
+            'El servidor respondio, pero no envio todos los datos necesarios para mostrar el resultado.',
+        icon: Icons.data_object_outlined,
+      );
+    }
+
+    return (
+      title: 'Error en el analisis',
+      message: error.replaceFirst('Exception: ', ''),
+      icon: Icons.error_outline,
+    );
+  }
+
   String _normalizePrediction(String prediction) {
     return prediction.trim().toLowerCase();
   }
@@ -150,6 +189,8 @@ class _ResultViewState extends State<ResultView> {
     }
 
     if (viewModel.error != null) {
+      final errorUi = _getErrorPresentation(viewModel.error!);
+
       return Scaffold(
         appBar: const AppAppBar(title: 'Error en el análisis'),
         body: Center(
@@ -157,17 +198,23 @@ class _ResultViewState extends State<ResultView> {
             padding: const EdgeInsets.all(24.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
-                children: [
+              children: [
                 _AnalyzedImageCard(imageFile: widget.imageFile, compact: true),
                 const SizedBox(height: 24),
-                const Icon(
-                  Icons.error_outline,
+                Icon(
+                  errorUi.icon,
                   size: 64,
                   color: AppColors.error,
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  viewModel.error!.replaceFirst('Exception: ', ''),
+                  errorUi.title,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  errorUi.message,
                   textAlign: TextAlign.center,
                   style: const TextStyle(fontSize: 16),
                 ),

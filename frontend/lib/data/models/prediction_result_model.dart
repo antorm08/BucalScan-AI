@@ -12,16 +12,27 @@ class PredictionResultModel {
   });
 
   factory PredictionResultModel.fromJson(Map<String, dynamic> json) {
+    final rawPrediction = json['prediction'] ?? json['class'] ?? json['label'];
+    final rawConfidence = json['confidence'] ?? json['score'] ?? json['probability'];
+
+    if (rawPrediction == null || rawConfidence == null) {
+      throw const FormatException('incomplete_prediction_response');
+    }
+
+    final prediction = rawPrediction.toString().trim();
+    if (prediction.isEmpty) {
+      throw const FormatException('incomplete_prediction_response');
+    }
+
+    if (rawConfidence is! num) {
+      throw const FormatException('incomplete_prediction_response');
+    }
+
     final rawProbabilities = json['probabilities'];
 
     return PredictionResultModel(
-      prediction:
-          (json['prediction'] ?? json['class'] ?? json['label'] ?? 'unknown')
-              .toString(),
-      confidence:
-          ((json['confidence'] ?? json['score'] ?? json['probability'] ?? 0)
-                  as num)
-              .toDouble(),
+      prediction: prediction,
+      confidence: rawConfidence.toDouble(),
       recommendation:
           (json['recommendation'] ??
                   json['message'] ??
