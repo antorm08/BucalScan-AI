@@ -345,19 +345,38 @@ class _HistoryTabViewState extends State<HistoryTabView> {
                           final filter = filters[index];
                           final isActive = filter == viewModel.filter;
                           Color bgColor, textColor;
+                          Border? border;
+                          List<BoxShadow>? boxShadow;
+                          IconData? trailingIcon;
 
                           if (filter == 'Maligna' && isActive) {
                             bgColor = AppColors.errorContainer;
                             textColor = AppColors.onErrorContainer;
+                            border = Border.all(color: AppColors.error);
                           } else if (filter == 'Benigna' && isActive) {
                             bgColor = AppColors.benignBg;
                             textColor = AppColors.benignText;
+                            border = Border.all(color: AppColors.benignText);
                           } else if (isActive) {
-                            bgColor = AppColors.surfaceContainerHighest;
-                            textColor = AppColors.onSurface;
+                            bgColor = AppColors.surfaceContainerLowest;
+                            textColor = AppColors.primary;
+                            border = Border.all(color: AppColors.primary, width: 1.4);
+                            boxShadow = [
+                              BoxShadow(
+                                color: AppColors.primary.withValues(alpha: 0.08),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ];
                           } else {
                             bgColor = AppColors.surfaceContainerHighest;
                             textColor = AppColors.onSurface;
+                          }
+
+                          if (filter == 'Fecha' && isActive) {
+                            trailingIcon = viewModel.dateSortDescending
+                                ? Icons.south_rounded
+                                : Icons.north_rounded;
                           }
 
                           return GestureDetector(
@@ -367,19 +386,26 @@ class _HistoryTabViewState extends State<HistoryTabView> {
                               decoration: BoxDecoration(
                                 color: bgColor,
                                 borderRadius: BorderRadius.circular(999),
-                                border: filter == 'Maligna' && isActive
-                                    ? Border.all(color: AppColors.error)
-                                    : null,
+                                border: border,
+                                boxShadow: boxShadow,
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   if (filter == 'Fecha') ...[
-                                    const Icon(Icons.calendar_today, size: 16, color: AppColors.onSurfaceVariant),
+                                    Icon(
+                                      Icons.calendar_today,
+                                      size: 16,
+                                      color: isActive ? textColor : AppColors.onSurfaceVariant,
+                                    ),
                                     const SizedBox(width: 4),
                                   ],
                                   if (filter == 'Todos') ...[
-                                    const Icon(Icons.filter_list, size: 16, color: AppColors.onSurfaceVariant),
+                                    Icon(
+                                      Icons.filter_list,
+                                      size: 16,
+                                      color: isActive ? textColor : AppColors.onSurfaceVariant,
+                                    ),
                                     const SizedBox(width: 4),
                                   ],
                                   Text(
@@ -391,6 +417,10 @@ class _HistoryTabViewState extends State<HistoryTabView> {
                                       color: textColor,
                                     ),
                                   ),
+                                  if (trailingIcon != null) ...[
+                                    const SizedBox(width: 4),
+                                    Icon(trailingIcon, size: 16, color: textColor),
+                                  ],
                                 ],
                               ),
                             ),
