@@ -102,67 +102,93 @@ class _HomeTabViewState extends State<HomeTabView> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: const AppAppBar(),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Padding(
-              padding: EdgeInsets.only(bottom: 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Flujo de análisis clínico',
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: -0.01,
-                      color: AppColors.onSurface,
-                    ),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    'Inicie una nueva captura o revise el estado general del análisis de hoy.',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: AppColors.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Row(
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final isCompact = constraints.maxWidth < 720;
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  flex: 2,
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 24),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _PrimaryActionCard(
-                        icon: Icons.add_a_photo,
-                        title: 'Nueva captura',
-                        subtitle:
-                            'Abra la cámara o seleccione una imagen clínica para iniciar el análisis',
-                        onTap: _showImageSourceDialog,
+                      Text(
+                        'Flujo de análisis clínico',
+                        style: TextStyle(
+                          fontSize: isCompact ? 28 : 32,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: -0.01,
+                          color: AppColors.onSurface,
+                        ),
                       ),
-                      const SizedBox(height: 12),
-                      _SecondaryActionCard(
-                        icon: Icons.upload_file,
-                        title: 'Cargar desde galería',
-                        subtitle:
-                            'Use una imagen existente para revisar el resultado del análisis',
-                        onTap: () => _pickImage(ImageSource.gallery),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Inicie una nueva captura o revise el estado general del análisis de hoy.',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: AppColors.onSurfaceVariant,
+                        ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 12),
-                const Expanded(flex: 1, child: _SummaryCard()),
+                if (isCompact) ...[
+                  _PrimaryActionCard(
+                    icon: Icons.add_a_photo,
+                    title: 'Nueva captura',
+                    subtitle:
+                        'Abra la cámara o seleccione una imagen clínica para iniciar el análisis',
+                    onTap: _showImageSourceDialog,
+                  ),
+                  const SizedBox(height: 12),
+                  _SecondaryActionCard(
+                    icon: Icons.upload_file,
+                    title: 'Cargar desde galería',
+                    subtitle:
+                        'Use una imagen existente para revisar el resultado del análisis',
+                    onTap: () => _pickImage(ImageSource.gallery),
+                  ),
+                  const SizedBox(height: 12),
+                  const _SummaryCard(),
+                ] else ...[
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        flex: 2,
+                        child: Column(
+                          children: [
+                            _PrimaryActionCard(
+                              icon: Icons.add_a_photo,
+                              title: 'Nueva captura',
+                              subtitle:
+                                  'Abra la cámara o seleccione una imagen clínica para iniciar el análisis',
+                              onTap: _showImageSourceDialog,
+                            ),
+                            const SizedBox(height: 12),
+                            _SecondaryActionCard(
+                              icon: Icons.upload_file,
+                              title: 'Cargar desde galería',
+                              subtitle:
+                                  'Use una imagen existente para revisar el resultado del análisis',
+                              onTap: () => _pickImage(ImageSource.gallery),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(flex: 1, child: _SummaryCard()),
+                    ],
+                  ),
+                ],
               ],
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
