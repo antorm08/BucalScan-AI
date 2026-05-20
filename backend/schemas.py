@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
+from datetime import datetime
 
 class PredictionResponse(BaseModel):
     prediction: str
@@ -36,10 +37,17 @@ class AnalysisHistory(BaseModel):
     id: int
     prediction: str
     confidence: float
-    timestamp: str
+    timestamp: datetime
     image_url: Optional[str] = None
     patient_id: Optional[str] = None
     patient_name: Optional[str] = None
 
     class Config:
         from_attributes = True
+
+
+class DailySummary(BaseModel):
+    total: int
+    benign: int
+    malignant: int
+    latest_analysis_at: Optional[datetime] = None

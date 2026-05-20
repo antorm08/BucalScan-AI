@@ -22,9 +22,14 @@ class HistoryViewModel extends ChangeNotifier {
   List<Analysis> get _filteredHistory {
     var filtered = List<Analysis>.from(_history);
 
+    if (_filter == 'Fecha') {
+      filtered.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    }
+
     if (_filter != 'Todos') {
       filtered = filtered.where((a) {
         final pred = a.prediction.toLowerCase();
+        if (_filter == 'Fecha') return true;
         if (_filter == 'Maligna') return pred == 'malignant';
         if (_filter == 'Benigna') return pred == 'benign';
         return true;

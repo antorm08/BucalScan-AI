@@ -3,13 +3,23 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
+import 'package:bucalscan_ai/presentation/viewmodels/auth_viewmodel.dart';
+import 'package:bucalscan_ai/presentation/viewmodels/history_viewmodel.dart';
 import 'package:bucalscan_ai/presentation/viewmodels/prediction_viewmodel.dart';
+import 'package:bucalscan_ai/presentation/viewmodels/summary_viewmodel.dart';
 import 'package:bucalscan_ai/presentation/widgets/app_app_bar.dart';
 
-class ResultView extends StatelessWidget {
+class ResultView extends StatefulWidget {
   final File imageFile;
 
   const ResultView({super.key, required this.imageFile});
+
+  @override
+  State<ResultView> createState() => _ResultViewState();
+}
+
+class _ResultViewState extends State<ResultView> {
+  bool _hasSyncedPostAnalysis = false;
 
   String _normalizePrediction(String prediction) {
     return prediction.trim().toLowerCase();
@@ -107,6 +117,19 @@ class ResultView extends StatelessWidget {
     final viewModel = context.watch<PredictionViewModel>();
     final result = viewModel.result;
 
+    if (!_hasSyncedPostAnalysis && !viewModel.isLoading && viewModel.error == null && result != null) {
+      _hasSyncedPostAnalysis = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          return;
+        }
+
+        final userId = context.read<AuthViewModel>().currentUser?.id ?? 1;
+        context.read<SummaryViewModel>().fetchTodaySummary(userId);
+        context.read<HistoryViewModel>().fetchHistory(userId);
+      });
+    }
+
     if (viewModel.isLoading) {
       return Scaffold(
         appBar: const AppAppBar(title: 'Resultado del análisis'),
@@ -134,8 +157,8 @@ class ResultView extends StatelessWidget {
             padding: const EdgeInsets.all(24.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _AnalyzedImageCard(imageFile: imageFile, compact: true),
+                children: [
+                _AnalyzedImageCard(imageFile: widget.imageFile, compact: true),
                 const SizedBox(height: 24),
                 const Icon(
                   Icons.error_outline,
@@ -231,10 +254,10 @@ class ResultView extends StatelessWidget {
       appBar: const AppAppBar(title: 'Resultado del análisis'),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
+            child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _AnalyzedImageCard(imageFile: imageFile),
+            _AnalyzedImageCard(imageFile: widget.imageFile),
             const SizedBox(height: 16),
             Card(
               color: color.withValues(alpha: 0.1),
@@ -249,6 +272,33 @@ class ResultView extends StatelessWidget {
                   children: [
                     Icon(icon, size: 64, color: color),
                     const SizedBox(height: 16),
+                    if (viewModel.patientName != null || viewModel.patientId != null) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.person_outline, size: 14, color: AppColors.onSurfaceVariant),
+                            const SizedBox(width: 6),
+                            Text(
+                              [
+                                if (viewModel.patientName != null) viewModel.patientName!,
+                                if (viewModel.patientId != null) 'ID: ${viewModel.patientId!}',
+                              ].join(' · '),
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: AppColors.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
                     const Text(
                       'Resultado principal',
                       style: TextStyle(

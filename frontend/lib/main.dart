@@ -5,6 +5,7 @@ import 'package:bucalscan_ai/core/theme/app_colors.dart';
 import 'package:bucalscan_ai/data/repositories/auth_repository.dart';
 import 'package:bucalscan_ai/data/repositories/history_repository.dart';
 import 'package:bucalscan_ai/data/repositories/prediction_repository.dart';
+import 'package:bucalscan_ai/data/repositories/summary_repository.dart';
 import 'package:bucalscan_ai/data/services/api_service.dart';
 import 'package:bucalscan_ai/data/services/auth_interceptor.dart';
 import 'package:bucalscan_ai/data/services/auth_storage_service.dart';
@@ -12,6 +13,7 @@ import 'package:bucalscan_ai/presentation/viewmodels/auth_viewmodel.dart';
 import 'package:bucalscan_ai/presentation/viewmodels/history_viewmodel.dart';
 import 'package:bucalscan_ai/presentation/viewmodels/prediction_viewmodel.dart';
 import 'package:bucalscan_ai/presentation/viewmodels/profile_viewmodel.dart';
+import 'package:bucalscan_ai/presentation/viewmodels/summary_viewmodel.dart';
 import 'package:bucalscan_ai/presentation/views/auth/login_view.dart';
 import 'package:bucalscan_ai/presentation/views/home/home_view.dart';
 
@@ -22,6 +24,7 @@ void main() {
   final authRepository = AuthRepository(apiService);
   final predictionRepository = PredictionRepository(apiService);
   final historyRepository = HistoryRepository(apiService);
+  final summaryRepository = SummaryRepository(apiService);
 
   runApp(
     MultiProvider(
@@ -31,6 +34,7 @@ void main() {
         ),
         ChangeNotifierProvider(create: (_) => PredictionViewModel(predictionRepository)),
         ChangeNotifierProvider(create: (_) => HistoryViewModel(historyRepository)),
+        ChangeNotifierProvider(create: (_) => SummaryViewModel(summaryRepository)),
         ChangeNotifierProvider(create: (_) => ProfileViewModel()),
       ],
       child: const BucalScanAiApp(),

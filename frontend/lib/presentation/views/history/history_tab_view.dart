@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
+import 'package:bucalscan_ai/presentation/viewmodels/auth_viewmodel.dart';
 import 'package:bucalscan_ai/presentation/viewmodels/history_viewmodel.dart';
 import 'package:bucalscan_ai/presentation/widgets/app_app_bar.dart';
 import 'package:bucalscan_ai/presentation/widgets/history_card.dart';
@@ -14,6 +15,19 @@ class HistoryTabView extends StatefulWidget {
 
 class _HistoryTabViewState extends State<HistoryTabView> {
   final _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+
+      final userId = context.read<AuthViewModel>().currentUser?.id ?? 1;
+      context.read<HistoryViewModel>().fetchHistory(userId);
+    });
+  }
 
   @override
   void dispose() {
@@ -155,6 +169,15 @@ class _HistoryTabViewState extends State<HistoryTabView> {
                           viewModel.error!,
                           textAlign: TextAlign.center,
                           style: const TextStyle(fontSize: 13, color: AppColors.onSurfaceVariant),
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            final userId = context.read<AuthViewModel>().currentUser?.id ?? 1;
+                            context.read<HistoryViewModel>().fetchHistory(userId);
+                          },
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Reintentar'),
                         ),
                       ],
                     ),
