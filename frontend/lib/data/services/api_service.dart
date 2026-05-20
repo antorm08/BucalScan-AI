@@ -37,6 +37,10 @@ class ApiService {
       );
 
       return PredictionResultModel.fromJson(response.data);
+    } on FormatException {
+      throw Exception(
+        'La respuesta del servidor no incluyo todos los datos esperados del analisis.',
+      );
     } on DioException catch (e) {
       throw Exception(
         _buildApiErrorMessage(
@@ -119,6 +123,16 @@ class ApiService {
   }
 
   String _buildApiErrorMessage(DioException error, {required String fallback}) {
+    if (error.type == DioExceptionType.connectionTimeout ||
+        error.type == DioExceptionType.sendTimeout ||
+        error.type == DioExceptionType.receiveTimeout) {
+      return 'El servidor de analisis no respondio a tiempo. Intente nuevamente.';
+    }
+
+    if (error.type == DioExceptionType.connectionError) {
+      return 'No se pudo conectar con el servidor de analisis.';
+    }
+
     final data = error.response?.data;
 
     if (data is Map<String, dynamic>) {
