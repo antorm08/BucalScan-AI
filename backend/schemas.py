@@ -18,6 +18,10 @@ class UserLogin(BaseModel):
     email: str
     password: str
 
+class TokenData(BaseModel):
+    sub: str
+    email: str
+
 class UserProfile(BaseModel):
     id: int
     full_name: str
