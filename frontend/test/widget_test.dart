@@ -5,6 +5,7 @@ import 'package:bucalscan_ai/data/repositories/auth_repository.dart';
 import 'package:bucalscan_ai/data/repositories/history_repository.dart';
 import 'package:bucalscan_ai/data/repositories/prediction_repository.dart';
 import 'package:bucalscan_ai/data/services/api_service.dart';
+import 'package:bucalscan_ai/data/services/auth_storage_service.dart';
 import 'package:bucalscan_ai/presentation/viewmodels/auth_viewmodel.dart';
 import 'package:bucalscan_ai/presentation/viewmodels/history_viewmodel.dart';
 import 'package:bucalscan_ai/presentation/viewmodels/prediction_viewmodel.dart';
@@ -13,11 +14,14 @@ import 'package:bucalscan_ai/presentation/viewmodels/profile_viewmodel.dart';
 void main() {
   testWidgets('App loads successfully', (WidgetTester tester) async {
     final apiService = ApiService();
+    final authStorage = AuthStorageService();
 
     await tester.pumpWidget(
       MultiProvider(
         providers: [
-          ChangeNotifierProvider(create: (_) => AuthViewModel(AuthRepository(apiService))),
+          ChangeNotifierProvider(
+            create: (_) => AuthViewModel(AuthRepository(apiService), authStorage),
+          ),
           ChangeNotifierProvider(
             create: (_) => PredictionViewModel(PredictionRepository(apiService)),
           ),
