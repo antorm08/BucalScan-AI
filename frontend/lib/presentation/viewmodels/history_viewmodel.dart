@@ -12,18 +12,23 @@ class HistoryViewModel extends ChangeNotifier {
   String? _error;
   String _filter = 'Todos';
   String _searchQuery = '';
+  bool _dateSortDescending = true;
 
   List<Analysis> get history => _filteredHistory;
   bool get isLoading => _isLoading;
   String? get error => _error;
   String get filter => _filter;
   String get searchQuery => _searchQuery;
+  bool get dateSortDescending => _dateSortDescending;
 
   List<Analysis> get _filteredHistory {
     var filtered = List<Analysis>.from(_history);
 
     if (_filter == 'Fecha') {
-      filtered.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+      filtered.sort((a, b) {
+        final comparison = a.timestamp.compareTo(b.timestamp);
+        return _dateSortDescending ? -comparison : comparison;
+      });
     }
 
     if (_filter != 'Todos') {
@@ -84,7 +89,18 @@ class HistoryViewModel extends ChangeNotifier {
   }
 
   void setFilter(String filter) {
+    if (filter == 'Fecha' && _filter == 'Fecha') {
+      _dateSortDescending = !_dateSortDescending;
+      notifyListeners();
+      return;
+    }
+
     _filter = filter;
+
+    if (filter == 'Fecha') {
+      _dateSortDescending = true;
+    }
+
     notifyListeners();
   }
 
@@ -98,6 +114,7 @@ class HistoryViewModel extends ChangeNotifier {
     _error = null;
     _filter = 'Todos';
     _searchQuery = '';
+    _dateSortDescending = true;
     notifyListeners();
   }
 }
