@@ -39,6 +39,8 @@ def _resolve_database_url(database_url: str) -> str:
 class Settings:
     app_name: str = os.getenv("APP_NAME", "BucalScan AI")
     jwt_secret: str = os.environ["JWT_SECRET"]
+    jwt_algorithm: str = os.getenv("JWT_ALGORITHM", "HS256")
+    jwt_expiration_minutes: int = int(os.getenv("JWT_EXPIRATION_MINUTES", "1440"))
     database_url: str = _resolve_database_url(
         os.getenv(
             "DATABASE_URL",
