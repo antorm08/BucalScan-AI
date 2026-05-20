@@ -168,17 +168,17 @@ class _StartupViewState extends State<StartupView> {
                             color: AppColors.onSurface,
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          _currentAttempt > 0
-                              ? 'Intento $_currentAttempt. Si Render estaba suspendido, la app seguira consultando hasta que el backend responda.'
-                              : 'Si Render estaba suspendido, este paso puede tardar algunos segundos.',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: AppColors.onSurfaceVariant,
+                        if (_currentAttempt > 1) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            'Intento $_currentAttempt. La app seguira consultando hasta que el backend responda.',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: AppColors.onSurfaceVariant,
+                            ),
                           ),
-                        ),
+                        ],
                         if (_error != null) ...[
                           const SizedBox(height: 12),
                           Text(
