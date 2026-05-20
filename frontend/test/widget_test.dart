@@ -4,12 +4,14 @@ import 'package:bucalscan_ai/main.dart';
 import 'package:bucalscan_ai/data/repositories/auth_repository.dart';
 import 'package:bucalscan_ai/data/repositories/history_repository.dart';
 import 'package:bucalscan_ai/data/repositories/prediction_repository.dart';
+import 'package:bucalscan_ai/data/repositories/summary_repository.dart';
 import 'package:bucalscan_ai/data/services/api_service.dart';
 import 'package:bucalscan_ai/data/services/auth_storage_service.dart';
 import 'package:bucalscan_ai/presentation/viewmodels/auth_viewmodel.dart';
 import 'package:bucalscan_ai/presentation/viewmodels/history_viewmodel.dart';
 import 'package:bucalscan_ai/presentation/viewmodels/prediction_viewmodel.dart';
 import 'package:bucalscan_ai/presentation/viewmodels/profile_viewmodel.dart';
+import 'package:bucalscan_ai/presentation/viewmodels/summary_viewmodel.dart';
 
 void main() {
   testWidgets('App loads successfully', (WidgetTester tester) async {
@@ -28,9 +30,12 @@ void main() {
           ChangeNotifierProvider(
             create: (_) => HistoryViewModel(HistoryRepository(apiService)),
           ),
+          ChangeNotifierProvider(
+            create: (_) => SummaryViewModel(SummaryRepository(apiService)),
+          ),
           ChangeNotifierProvider(create: (_) => ProfileViewModel()),
         ],
-        child: const BucalScanAiApp(),
+        child: BucalScanAiApp(apiService: apiService),
       ),
     );
 
