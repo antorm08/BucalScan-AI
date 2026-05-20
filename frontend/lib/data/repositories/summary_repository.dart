@@ -6,7 +6,7 @@ class SummaryRepository {
 
   SummaryRepository(this._apiService);
 
-  Future<DailySummaryModel> getTodaySummary(int userId) async {
-    return _apiService.getTodaySummary(userId);
+  Future<DailySummaryModel> getTodaySummary() async {
+    return _apiService.getTodaySummary();
   }
 }

@@ -7,8 +7,10 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from PIL import Image, UnidentifiedImageError
 from sqlalchemy.orm import Session
 
+from auth.jwt import get_current_user
 import crud
 from database import get_db
+from models import models
 from models.inference import OralLesionClassifier
 from schemas import PredictionResponse
 
@@ -28,9 +30,9 @@ def _build_recommendation(prediction: str) -> str:
 @router.post("/predict", response_model=PredictionResponse)
 async def predict(
     file: UploadFile = File(...),
-    user_id: int = Form(...),
     patient_id: Optional[str] = Form(None),
     patient_name: Optional[str] = Form(None),
+    current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     if file.content_type not in _ACCEPTED_CONTENT_TYPES:
@@ -61,7 +63,7 @@ async def predict(
 
     crud.create_analysis(
         db,
-        user_id=user_id,
+        user_id=current_user.id,
         prediction=result["prediction"],
         confidence=result["confidence"],
         image_path=image_path,

@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
-import 'package:bucalscan_ai/presentation/viewmodels/auth_viewmodel.dart';
 import 'package:bucalscan_ai/presentation/viewmodels/history_viewmodel.dart';
 import 'package:bucalscan_ai/presentation/viewmodels/prediction_viewmodel.dart';
 import 'package:bucalscan_ai/presentation/viewmodels/summary_viewmodel.dart';
@@ -163,9 +162,8 @@ class _ResultViewState extends State<ResultView> {
           return;
         }
 
-        final userId = context.read<AuthViewModel>().currentUser?.id ?? 1;
-        context.read<SummaryViewModel>().fetchTodaySummary(userId);
-        context.read<HistoryViewModel>().fetchHistory(userId);
+        context.read<SummaryViewModel>().fetchTodaySummary();
+        context.read<HistoryViewModel>().fetchHistory();
       });
     }
 
