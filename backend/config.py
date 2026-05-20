@@ -1,6 +1,7 @@
 import os
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Optional
 
 try:
     from dotenv import load_dotenv
@@ -53,6 +54,10 @@ class Settings:
             str(BASE_DIR / "models" / "mobilenetv2_oral.onnx"),
         )
     )
+    cloudinary_cloud_name: Optional[str] = os.getenv("CLOUDINARY_CLOUD_NAME")
+    cloudinary_api_key: Optional[str] = os.getenv("CLOUDINARY_API_KEY")
+    cloudinary_api_secret: Optional[str] = os.getenv("CLOUDINARY_API_SECRET")
+    cloudinary_folder: str = os.getenv("CLOUDINARY_FOLDER", "bucalscan/analyses")
 
 
 settings = Settings()

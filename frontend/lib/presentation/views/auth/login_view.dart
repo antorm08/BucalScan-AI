@@ -18,6 +18,26 @@ class _LoginViewState extends State<LoginView> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
+  String _formatLoginError(String error) {
+    final cleaned = error.replaceFirst('Exception: ', '').trim();
+    final normalized = cleaned.toLowerCase();
+
+    if (normalized.contains('invalid credentials')) {
+      return 'Correo o contraseña incorrectos. Verifique sus datos e intente nuevamente.';
+    }
+
+    if (normalized.contains('no se pudo conectar') ||
+        normalized.contains('no respondio a tiempo')) {
+      return 'No se pudo conectar con el servidor. Intente nuevamente en unos segundos.';
+    }
+
+    if (cleaned.isEmpty) {
+      return 'No se pudo iniciar sesión. Intente nuevamente.';
+    }
+
+    return cleaned;
+  }
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -33,6 +53,24 @@ class _LoginViewState extends State<LoginView> {
         password: _passwordController.text,
       );
       if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle_outline, color: Colors.white),
+                SizedBox(width: 10),
+                Expanded(child: Text('Inicio de sesión exitoso.')),
+              ],
+            ),
+            backgroundColor: AppColors.benignText,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 650));
+        if (!mounted) {
+          return;
+        }
+
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const HomeView()),
@@ -167,13 +205,36 @@ class _LoginViewState extends State<LoginView> {
                                 if (viewModel.error != null)
                                   Padding(
                                     padding: const EdgeInsets.only(bottom: 12),
-                                    child: Text(
-                                      viewModel.error!,
-                                      style: const TextStyle(
-                                        color: AppColors.error,
-                                        fontSize: 14,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.errorContainer,
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(
+                                          color: AppColors.error.withValues(alpha: 0.25),
+                                        ),
                                       ),
-                                      textAlign: TextAlign.center,
+                                      child: Row(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          const Icon(
+                                            Icons.error_outline,
+                                            color: AppColors.error,
+                                            size: 20,
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                            child: Text(
+                                              _formatLoginError(viewModel.error!),
+                                              style: const TextStyle(
+                                                color: AppColors.onErrorContainer,
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ElevatedButton(

@@ -52,6 +52,26 @@ class _RegisterViewState extends State<RegisterView> {
         password: _passwordController.text,
       );
       if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle_outline, color: Colors.white),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text('Cuenta creada correctamente. Ya puede iniciar sesión.'),
+                ),
+              ],
+            ),
+            backgroundColor: AppColors.benignText,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 900));
+        if (!mounted) {
+          return;
+        }
+
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const LoginView()),
