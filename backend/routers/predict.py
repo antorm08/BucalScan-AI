@@ -13,6 +13,7 @@ from database import get_db
 from models import models
 from models.inference import OralLesionClassifier
 from schemas import PredictionResponse
+from services.cloudinary_storage import upload_image
 
 router = APIRouter(prefix="/api/v1", tags=["predict"])
 classifier = OralLesionClassifier()
@@ -56,10 +57,18 @@ async def predict(
     except RuntimeError as exc:
         raise HTTPException(status_code=500, detail=f"Model inference failed: {exc}") from exc
 
-    _UPLOADS_DIR.mkdir(exist_ok=True)
     ext = Path(file.filename or "image.jpg").suffix or ".jpg"
-    image_path = str(_UPLOADS_DIR / f"{uuid.uuid4().hex}{ext}")
-    Path(image_path).write_bytes(contents)
+    stored_filename = f"{uuid.uuid4().hex}{ext}"
+    image_path = upload_image(
+        contents,
+        filename=stored_filename,
+        content_type=file.content_type or "image/jpeg",
+    )
+
+    if image_path is None:
+        _UPLOADS_DIR.mkdir(exist_ok=True)
+        image_path = str(_UPLOADS_DIR / stored_filename)
+        Path(image_path).write_bytes(contents)
 
     crud.create_analysis(
         db,

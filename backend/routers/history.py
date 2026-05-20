@@ -27,8 +27,11 @@ async def get_history(
     for analysis in analyses:
         image_url = None
         if analysis.image_path:
-            filename = Path(analysis.image_path).name
-            image_url = str(request.url_for("uploads", path=filename))
+            if analysis.image_path.startswith(("http://", "https://")):
+                image_url = analysis.image_path
+            else:
+                filename = Path(analysis.image_path).name
+                image_url = str(request.url_for("uploads", path=filename))
 
         serialized.append(
             {
