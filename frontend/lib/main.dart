@@ -12,7 +12,7 @@ import 'package:bucalscan_ai/presentation/viewmodels/history_viewmodel.dart';
 import 'package:bucalscan_ai/presentation/viewmodels/prediction_viewmodel.dart';
 import 'package:bucalscan_ai/presentation/viewmodels/profile_viewmodel.dart';
 import 'package:bucalscan_ai/presentation/viewmodels/summary_viewmodel.dart';
-import 'package:bucalscan_ai/presentation/views/auth/login_view.dart';
+import 'package:bucalscan_ai/presentation/views/startup/startup_view.dart';
 
 void main() {
   final apiService = ApiService();
@@ -30,13 +30,15 @@ void main() {
         ChangeNotifierProvider(create: (_) => SummaryViewModel(summaryRepository)),
         ChangeNotifierProvider(create: (_) => ProfileViewModel()),
       ],
-      child: const BucalScanAiApp(),
+      child: BucalScanAiApp(apiService: apiService),
     ),
   );
 }
 
 class BucalScanAiApp extends StatelessWidget {
-  const BucalScanAiApp({super.key});
+  final ApiService apiService;
+
+  const BucalScanAiApp({super.key, required this.apiService});
 
   @override
   Widget build(BuildContext context) {
@@ -54,7 +56,7 @@ class BucalScanAiApp extends StatelessWidget {
           elevation: 0,
         ),
       ),
-      home: const LoginView(),
+      home: StartupView(apiService: apiService),
     );
   }
 }

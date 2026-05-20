@@ -17,6 +17,33 @@ class ApiService {
         ),
       );
 
+  Future<void> pingHealth() async {
+    try {
+      final options = Options(
+        sendTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 45),
+      );
+
+      await _dio.get('/health', options: options);
+    } on DioException catch (e) {
+      try {
+        final fallbackOptions = Options(
+          sendTimeout: const Duration(seconds: 10),
+          receiveTimeout: const Duration(seconds: 45),
+        );
+        await _dio.get('/', options: fallbackOptions);
+        return;
+      } on DioException {
+        throw Exception(
+          _buildApiErrorMessage(
+            e,
+            fallback: 'No se pudo preparar la conexion con el servidor.',
+          ),
+        );
+      }
+    }
+  }
+
   Future<PredictionResultModel> predictImage(
     File image, {
     int userId = 1,
