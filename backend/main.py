@@ -1,5 +1,8 @@
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from config import settings
 from database import Base, engine, ensure_sqlite_schema
@@ -10,6 +13,9 @@ from routers.summary import router as summary_router
 
 Base.metadata.create_all(bind=engine)
 ensure_sqlite_schema()
+
+uploads_dir = Path(__file__).resolve().parent / "uploads"
+uploads_dir.mkdir(exist_ok=True)
 
 app = FastAPI(
     title="BucalScan AI API",
@@ -32,6 +38,9 @@ async def root():
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
+
+
+app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
 
 app.include_router(auth_router)
 app.include_router(predict_router)
