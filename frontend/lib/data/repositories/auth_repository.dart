@@ -27,4 +27,8 @@ class AuthRepository {
       password: password,
     );
   }
+
+  Future<Map<String, dynamic>> me() async {
+    return _apiService.me();
+  }
 }
