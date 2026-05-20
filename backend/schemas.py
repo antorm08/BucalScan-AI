@@ -40,3 +40,10 @@ class AnalysisHistory(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class DailySummary(BaseModel):
+    total: int
+    benign: int
+    malignant: int
+    latest_analysis_at: Optional[datetime] = None

@@ -4,8 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
-import 'package:bucalscan_ai/presentation/viewmodels/history_viewmodel.dart';
+import 'package:bucalscan_ai/presentation/viewmodels/auth_viewmodel.dart';
 import 'package:bucalscan_ai/presentation/viewmodels/prediction_viewmodel.dart';
+import 'package:bucalscan_ai/presentation/viewmodels/summary_viewmodel.dart';
 import 'package:bucalscan_ai/presentation/views/result/result_view.dart';
 import 'package:bucalscan_ai/presentation/widgets/app_app_bar.dart';
 
@@ -18,6 +19,19 @@ class HomeTabView extends StatefulWidget {
 
 class _HomeTabViewState extends State<HomeTabView> {
   final ImagePicker _picker = ImagePicker();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+
+      final userId = context.read<AuthViewModel>().currentUser?.id ?? 1;
+      context.read<SummaryViewModel>().fetchTodaySummary(userId);
+    });
+  }
 
   Future<void> _startAnalysis(File imageFile) async {
     final viewModel = context.read<PredictionViewModel>();
@@ -329,18 +343,127 @@ class _SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<HistoryViewModel>(
+    return Consumer<SummaryViewModel>(
       builder: (context, viewModel, _) {
-        final now = DateTime.now();
-        final todayAnalyses = viewModel.history.where((a) {
-          return a.timestamp.year == now.year &&
-              a.timestamp.month == now.month &&
-              a.timestamp.day == now.day;
-        }).toList();
+        if (viewModel.isLoading) {
+          return Card(
+            color: AppColors.surfaceContainerLowest,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: const BorderSide(color: AppColors.surfaceContainerHighest),
+            ),
+            child: const Padding(
+              padding: EdgeInsets.all(16),
+              child: SizedBox(
+                height: 180,
+                child: Center(child: CircularProgressIndicator()),
+              ),
+            ),
+          );
+        }
 
-        final total = todayAnalyses.length;
-        final benign = todayAnalyses.where((a) => a.prediction.toLowerCase() == 'benign').length;
-        final malignant = todayAnalyses.where((a) => a.prediction.toLowerCase() == 'malignant').length;
+        if (viewModel.error != null) {
+          return Card(
+            color: AppColors.surfaceContainerLowest,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: const BorderSide(color: AppColors.surfaceContainerHighest),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'RESUMEN DE HOY',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.5,
+                      color: AppColors.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Icon(
+                    Icons.error_outline,
+                    color: AppColors.onSurfaceVariant,
+                    size: 28,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    viewModel.error!.replaceFirst('Exception: ', ''),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      final userId = context.read<AuthViewModel>().currentUser?.id ?? 1;
+                      context.read<SummaryViewModel>().fetchTodaySummary(userId);
+                    },
+                    icon: const Icon(Icons.refresh, size: 18),
+                    label: const Text('Reintentar'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        final summary = viewModel.summary;
+        final total = summary?.total ?? 0;
+        final benign = summary?.benign ?? 0;
+        final malignant = summary?.malignant ?? 0;
+
+        if (summary == null || viewModel.isEmpty) {
+          return Card(
+            color: AppColors.surfaceContainerLowest,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: const BorderSide(color: AppColors.surfaceContainerHighest),
+            ),
+            child: const Padding(
+              padding: EdgeInsets.all(16),
+              child: SizedBox(
+                height: 180,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'RESUMEN DE HOY',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                        color: AppColors.onSurfaceVariant,
+                      ),
+                    ),
+                    Spacer(),
+                    Icon(
+                      Icons.analytics_outlined,
+                      color: AppColors.onSurfaceVariant,
+                      size: 28,
+                    ),
+                    SizedBox(height: 12),
+                    Text(
+                      'Aun no hay analisis registrados hoy.',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppColors.onSurfaceVariant,
+                      ),
+                    ),
+                    Spacer(),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
 
         return Card(
           color: AppColors.surfaceContainerLowest,
