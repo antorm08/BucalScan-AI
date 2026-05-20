@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
-import 'package:bucalscan_ai/presentation/viewmodels/auth_viewmodel.dart';
 import 'package:bucalscan_ai/presentation/viewmodels/prediction_viewmodel.dart';
 import 'package:bucalscan_ai/presentation/viewmodels/summary_viewmodel.dart';
 import 'package:bucalscan_ai/presentation/views/result/result_view.dart';
@@ -28,8 +27,7 @@ class _HomeTabViewState extends State<HomeTabView> {
         return;
       }
 
-      final userId = context.read<AuthViewModel>().currentUser?.id ?? 1;
-      context.read<SummaryViewModel>().fetchTodaySummary(userId);
+      context.read<SummaryViewModel>().fetchTodaySummary();
     });
   }
 
@@ -428,8 +426,7 @@ class _SummaryCard extends StatelessWidget {
                   const SizedBox(height: 12),
                   OutlinedButton.icon(
                     onPressed: () {
-                      final userId = context.read<AuthViewModel>().currentUser?.id ?? 1;
-                      context.read<SummaryViewModel>().fetchTodaySummary(userId);
+                      context.read<SummaryViewModel>().fetchTodaySummary();
                     },
                     icon: const Icon(Icons.refresh, size: 18),
                     label: const Text('Reintentar'),

@@ -50,14 +50,12 @@ class ApiService {
 
   Future<PredictionResultModel> predictImage(
     File image, {
-    int userId = 1,
     String? patientId,
     String? patientName,
   }) async {
     try {
       final formData = FormData.fromMap({
         'file': await MultipartFile.fromFile(image.path),
-        'user_id': userId,
         if (patientId != null && patientId.isNotEmpty) 'patient_id': patientId,
         if (patientName != null && patientName.isNotEmpty) 'patient_name': patientName,
       });
@@ -142,10 +140,10 @@ class ApiService {
     }
   }
 
-  Future<List<AnalysisModel>> getHistory(int userId) async {
+  Future<List<AnalysisModel>> getHistory() async {
     try {
       final response = await _dio.get(
-        '${AppConstants.apiVersion}/history/$userId',
+        '${AppConstants.apiVersion}/history',
       );
       final List<dynamic> data = response.data;
       return data.map((json) => AnalysisModel.fromJson(json)).toList();
@@ -156,10 +154,10 @@ class ApiService {
     }
   }
 
-  Future<DailySummaryModel> getTodaySummary(int userId) async {
+  Future<DailySummaryModel> getTodaySummary() async {
     try {
       final response = await _dio.get(
-        '${AppConstants.apiVersion}/summary/today/$userId',
+        '${AppConstants.apiVersion}/summary/today',
       );
       return DailySummaryModel.fromJson(response.data);
     } on DioException catch (e) {
