@@ -11,6 +11,7 @@ class HistoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final prediction = analysis.prediction.toLowerCase();
+    final hasImage = analysis.imageUrl != null && analysis.imageUrl!.trim().isNotEmpty;
     Color accentColor, badgeBg, badgeText, badgeIconColor;
     IconData badgeIcon;
 
@@ -75,11 +76,24 @@ class HistoryCard extends StatelessWidget {
                       color: AppColors.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Icon(
-                      Icons.image,
-                      color: AppColors.onSurfaceVariant.withValues(alpha: 0.5),
-                      size: 28,
-                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: hasImage
+                        ? Image.network(
+                            analysis.imageUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Icon(
+                                Icons.image,
+                                color: AppColors.onSurfaceVariant.withValues(alpha: 0.5),
+                                size: 28,
+                              );
+                            },
+                          )
+                        : Icon(
+                            Icons.image,
+                            color: AppColors.onSurfaceVariant.withValues(alpha: 0.5),
+                            size: 28,
+                          ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
