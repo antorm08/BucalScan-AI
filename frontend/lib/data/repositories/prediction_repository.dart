@@ -9,13 +9,11 @@ class PredictionRepository {
 
   Future<PredictionResultModel> predictImage(
     File image, {
-    int userId = 1,
     String? patientId,
     String? patientName,
   }) async {
     return _apiService.predictImage(
       image,
-      userId: userId,
       patientId: patientId,
       patientName: patientName,
     );

@@ -24,7 +24,6 @@ class PredictionViewModel extends ChangeNotifier {
 
   Future<void> predictImage(
     File image, {
-    int userId = 1,
     String? patientId,
     String? patientName,
   }) async {
@@ -41,7 +40,6 @@ class PredictionViewModel extends ChangeNotifier {
     try {
       final model = await _repository.predictImage(
         image,
-        userId: userId,
         patientId: patientId,
         patientName: patientName,
       );

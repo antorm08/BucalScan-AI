@@ -6,7 +6,7 @@ class HistoryRepository {
 
   HistoryRepository(this._apiService);
 
-  Future<List<AnalysisModel>> getHistory(int userId) async {
-    return _apiService.getHistory(userId);
+  Future<List<AnalysisModel>> getHistory() async {
+    return _apiService.getHistory();
   }
 }

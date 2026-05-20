@@ -87,8 +87,27 @@ class AuthViewModel extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      await _storage.clear();
-      _error = e.toString();
+      final message = e.toString();
+      final cachedUser = await _storage.getUserJson();
+
+      if (_isAuthenticationFailure(message)) {
+        await _storage.clear();
+        _currentUser = null;
+        _error = message;
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      if (cachedUser != null) {
+        _currentUser = _parseUser(cachedUser);
+        _error = null;
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      }
+
+      _error = message;
       _isLoading = false;
       notifyListeners();
       return false;
@@ -145,5 +164,13 @@ class AuthViewModel extends ChangeNotifier {
       medicalCenter: json['medical_center'] as String?,
       email: json['email'] as String? ?? '',
     );
+  }
+
+  bool _isAuthenticationFailure(String message) {
+    final normalized = message.toLowerCase();
+    return normalized.contains('invalid or expired token') ||
+        normalized.contains('not authenticated') ||
+        normalized.contains('user not found') ||
+        normalized.contains('invalid token payload');
   }
 }

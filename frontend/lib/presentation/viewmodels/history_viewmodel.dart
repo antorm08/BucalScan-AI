@@ -55,13 +55,13 @@ class HistoryViewModel extends ChangeNotifier {
     return filtered;
   }
 
-  Future<void> fetchHistory(int userId) async {
+  Future<void> fetchHistory() async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      final models = await _repository.getHistory(userId);
+      final models = await _repository.getHistory();
       _history.clear();
       _history.addAll(models.map((m) {
         DateTime parsedTimestamp;

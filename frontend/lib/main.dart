@@ -46,29 +46,42 @@ void main() {
 
 
 class BucalScanAiApp extends StatefulWidget {
-  const BucalScanAiApp({super.key});
+  final ApiService apiService;
+  final bool skipStartupWakeup;
+
+  const BucalScanAiApp({
+    super.key,
+    required this.apiService,
+    this.skipStartupWakeup = false,
+  });
 
   @override
   State<BucalScanAiApp> createState() => _BucalScanAiAppState();
 }
 
 class _BucalScanAiAppState extends State<BucalScanAiApp> {
-  bool _isLoading = true;
+  bool _isReadyToEnter = false;
   bool _isAuthenticated = false;
 
   @override
   void initState() {
     super.initState();
-    _checkSession();
+    if (widget.skipStartupWakeup) {
+      _isReadyToEnter = true;
+    }
   }
 
-  Future<void> _checkSession() async {
+  Future<void> _enterApp() async {
+    if (_isReadyToEnter) {
+      return;
+    }
+
     final authViewModel = context.read<AuthViewModel>();
     final isLoggedIn = await authViewModel.tryAutoLogin();
 
     if (mounted) {
       setState(() {
-        _isLoading = false;
+        _isReadyToEnter = true;
         _isAuthenticated = isLoggedIn;
       });
     }
@@ -91,48 +104,11 @@ class _BucalScanAiAppState extends State<BucalScanAiApp> {
         ),
       ),
 
-      home: _isLoading
-          ? const _SplashScreen()
+      home: !_isReadyToEnter
+          ? StartupView(apiService: widget.apiService, onReady: _enterApp)
           : _isAuthenticated
               ? const HomeView()
               : const LoginView(),
-    );
-  }
-}
-
-class _SplashScreen extends StatelessWidget {
-  const _SplashScreen();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                color: AppColors.primaryContainer,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.medical_services,
-                color: AppColors.onPrimaryContainer,
-                size: 32,
-              ),
-            ),
-            const SizedBox(height: 24),
-            const SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
