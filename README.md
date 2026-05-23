@@ -100,24 +100,9 @@ En Linux/macOS:
 cp .env.example .env
 ```
 
-5. Ajustar las variables necesarias:
+5. Ajustar el archivo `.env` con los valores del entorno local.
 
-```env
-APP_NAME=BucalScan AI
-JWT_SECRET=change-me-in-production
-JWT_EXPIRATION_MINUTES=1440
-DATABASE_URL=sqlite:///./bucalscan_ai.db
-MODEL_PATH=models/mobilenetv2_oral.onnx
-```
-
-Variables opcionales para guardar imagenes en Cloudinary:
-
-```env
-CLOUDINARY_CLOUD_NAME=
-CLOUDINARY_API_KEY=
-CLOUDINARY_API_SECRET=
-CLOUDINARY_FOLDER=bucalscan/analyses
-```
+No publiques credenciales, secretos JWT ni claves de servicios externos en el README o en el repositorio.
 
 6. Ejecutar la API:
 
@@ -216,14 +201,7 @@ Configuracion sugerida para el backend:
 | Build Command | `pip install -r requirements.txt` |
 | Start Command | `uvicorn main:app --host 0.0.0.0 --port $PORT` |
 
-Variables minimas en produccion:
-
-```env
-APP_NAME=BucalScan AI
-JWT_SECRET=<secreto-seguro>
-DATABASE_URL=<url-de-base-de-datos>
-MODEL_PATH=models/mobilenetv2_oral.onnx
-```
+Configura las variables de produccion directamente en el panel de Render. No las documentes con valores reales dentro del repositorio.
 
 ## Notas
 

@@ -42,22 +42,9 @@ cp .env.example .env
 
 ## Variables De Entorno
 
-```env
-APP_NAME=BucalScan AI
-JWT_SECRET=change-me-in-production
-JWT_EXPIRATION_MINUTES=1440
-DATABASE_URL=sqlite:///./bucalscan_ai.db
-MODEL_PATH=models/mobilenetv2_oral.onnx
-```
+Usa `.env.example` como referencia para crear tu `.env` local.
 
-Opcionales para almacenamiento remoto de imagenes:
-
-```env
-CLOUDINARY_CLOUD_NAME=
-CLOUDINARY_API_KEY=
-CLOUDINARY_API_SECRET=
-CLOUDINARY_FOLDER=bucalscan/analyses
-```
+No publiques credenciales, secretos JWT ni claves de servicios externos en el README o en el repositorio.
 
 ## Ejecucion Local
 
@@ -115,11 +102,4 @@ pytest tests/test_inference.py -v
 | Build Command | `pip install -r requirements.txt` |
 | Start Command | `uvicorn main:app --host 0.0.0.0 --port $PORT` |
 
-Variables minimas:
-
-```env
-APP_NAME=BucalScan AI
-JWT_SECRET=<secreto-seguro>
-DATABASE_URL=<url-de-base-de-datos>
-MODEL_PATH=models/mobilenetv2_oral.onnx
-```
+Configura las variables de produccion directamente en el panel de Render. No las documentes con valores reales dentro del repositorio.
