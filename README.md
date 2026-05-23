@@ -1,103 +1,233 @@
 # BucalScan AI
 
-AI-powered mobile application for binary oral lesion screening using Deep Learning.
+BucalScan AI es una aplicacion movil para apoyo al tamizaje de lesiones orales. Permite registrar profesionales de salud, iniciar sesion, capturar o cargar imagenes de lesiones, enviarlas a una API y obtener una clasificacion binaria asistida por inteligencia artificial: `benign` o `malignant`.
 
-## Project Structure
+> Esta herramienta es de apoyo y no reemplaza el diagnostico clinico de un profesional de salud.
 
-```
-mobile-app-g6/
-├── backend/                 # FastAPI backend
-│   ├── main.py             # API entry point
-│   ├── models/             # ML model and database models
-│   ├── schemas.py          # Pydantic schemas
-│   ├── crud.py             # Database operations
-│   ├── database.py         # DB configuration
-│   └── requirements.txt    # Python dependencies
-├── frontend/               # Flutter mobile app
+## Estado Del Proyecto
+
+- Frontend movil desarrollado con Flutter.
+- Backend REST desarrollado con FastAPI.
+- Inferencia local en el backend con modelo ONNX `MobileNetV2`.
+- Autenticacion con JWT.
+- Persistencia de usuarios e historial de analisis en base de datos SQL.
+- Almacenamiento de imagenes en Cloudinary si esta configurado; en caso contrario, almacenamiento local en `backend/uploads`.
+- Backend publicado en Render: `https://bucalscan-ai.onrender.com`.
+
+## Tecnologias
+
+| Capa | Tecnologia |
+|------|------------|
+| Aplicacion movil | Flutter, Dart, Provider, Dio |
+| API | FastAPI, Uvicorn, Pydantic |
+| Autenticacion | JWT, bcrypt |
+| Base de datos | SQLite local; compatible con PostgreSQL mediante `DATABASE_URL` |
+| IA | ONNX Runtime, MobileNetV2 |
+| Imagenes | Pillow, Cloudinary opcional |
+| Pruebas | pytest, flutter test |
+
+## Estructura
+
+```text
+DeepOral-Dx/
+├── backend/
+│   ├── auth/                  # JWT y seguridad de contrasenas
+│   ├── docs/                  # Contratos tecnicos de API
+│   ├── models/                # Modelos SQLAlchemy e inferencia ONNX
+│   ├── routers/               # Endpoints FastAPI
+│   ├── services/              # Servicios externos, como Cloudinary
+│   ├── tests/                 # Pruebas automatizadas del backend
+│   ├── main.py                # Entrada de la API
+│   ├── config.py              # Configuracion por variables de entorno
+│   ├── database.py            # Conexion y esquema de base de datos
+│   ├── requirements.txt       # Dependencias de ejecucion
+│   └── requirements-train.txt # Dependencias para entrenamiento
+├── frontend/
 │   ├── lib/
-│   │   ├── main.dart       # App entry point
-│   │   ├── screens/        # UI screens
-│   │   ├── services/       # API services
-│   │   ├── models/         # Data models
-│   │   ├── providers/      # State management
-│   │   ├── widgets/        # Reusable widgets
-│   │   └── utils/          # Constants and helpers
-│   └── pubspec.yaml        # Flutter dependencies
-└── PROJECT_ESPECIFICATIONS.md
+│   │   ├── core/              # Constantes, tema y configuracion base
+│   │   ├── data/              # Servicios, modelos y repositorios
+│   │   ├── domain/            # Entidades de dominio
+│   │   └── presentation/      # Vistas, widgets y viewmodels
+│   ├── test/                  # Pruebas Flutter
+│   └── pubspec.yaml           # Dependencias Flutter
+└── README.md
 ```
 
-## Backend Setup (FastAPI)
+## Requisitos
 
-Production backend deployed at `https://bucalscan-ai.onrender.com`.
+- Python 3.12 o compatible con las dependencias del backend.
+- Flutter SDK con Dart `^3.11.5`.
+- Un emulador, dispositivo fisico o plataforma de escritorio habilitada para Flutter.
+- Git.
 
-1. Navigate to backend directory:
+## Configuracion Del Backend
+
+1. Entrar al directorio del backend:
+
 ```bash
 cd backend
 ```
 
-2. Activate virtual environment:
+2. Crear y activar un entorno virtual:
+
+```bash
+python -m venv venv
+```
+
 ```bash
 # Windows
 venv\Scripts\activate
-# Linux/Mac
+
+# Linux/macOS
 source venv/bin/activate
 ```
 
-3. Install dependencies:
+3. Instalar dependencias:
+
 ```bash
 pip install -r requirements.txt
 ```
 
-4. Run the server:
+4. Crear el archivo `.env` desde el ejemplo:
+
+```bash
+copy .env.example .env
+```
+
+En Linux/macOS:
+
+```bash
+cp .env.example .env
+```
+
+5. Ajustar las variables necesarias:
+
+```env
+APP_NAME=BucalScan AI
+JWT_SECRET=change-me-in-production
+JWT_EXPIRATION_MINUTES=1440
+DATABASE_URL=sqlite:///./bucalscan_ai.db
+MODEL_PATH=models/mobilenetv2_oral.onnx
+```
+
+Variables opcionales para guardar imagenes en Cloudinary:
+
+```env
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
+CLOUDINARY_FOLDER=bucalscan/analyses
+```
+
+6. Ejecutar la API:
+
 ```bash
 uvicorn main:app --reload
 ```
 
-Local API available at `http://localhost:8000` | Local docs at `http://localhost:8000/docs`
-Public API available at `https://bucalscan-ai.onrender.com` | Public docs at `https://bucalscan-ai.onrender.com/docs`
+La API local queda disponible en `http://localhost:8000`.
 
-## Frontend Setup (Flutter)
+Documentacion interactiva:
 
-1. Navigate to frontend directory:
+- Swagger UI: `http://localhost:8000/docs`
+- ReDoc: `http://localhost:8000/redoc`
+
+## Configuracion Del Frontend
+
+1. Entrar al directorio del frontend:
+
 ```bash
 cd frontend
 ```
 
-2. Get dependencies:
+2. Instalar dependencias:
+
 ```bash
 flutter pub get
 ```
 
-3. Run the app:
+3. Ejecutar la aplicacion usando el backend desplegado:
+
 ```bash
 flutter run
 ```
 
-By default, the app uses the deployed backend at `https://bucalscan-ai.onrender.com`.
+Por defecto, la app usa `https://bucalscan-ai.onrender.com`.
 
-4. Optional: override backend URL without editing code:
+Para usar un backend local:
+
 ```bash
 flutter run --dart-define=API_BASE_URL=http://localhost:8000
 ```
 
-For a different deployed backend, replace the value with your public URL, for example:
+Para usar otro backend desplegado:
+
 ```bash
-flutter run --dart-define=API_BASE_URL=https://your-backend.onrender.com
+flutter run --dart-define=API_BASE_URL=https://tu-backend.onrender.com
 ```
 
-## Features
+## Endpoints Principales
 
-- **RF-001**: Real-time camera capture
-- **RF-002**: Gallery image upload
-- **RF-003**: AI classification (benign, malignant)
-- **RF-004**: Results with confidence levels
-- **RF-005**: Analysis history
-- **RF-006**: Medical recommendations
-- **RF-007**: User authentication
+| Metodo | Endpoint | Autenticacion | Descripcion |
+|--------|----------|---------------|-------------|
+| `GET` | `/` | No | Informacion basica de la API |
+| `GET` | `/health` | No | Verificacion de salud del servicio |
+| `POST` | `/api/v1/auth/register` | No | Registro de usuario medico |
+| `POST` | `/api/v1/auth/login` | No | Inicio de sesion y emision de token JWT |
+| `GET` | `/api/v1/auth/me` | Si | Perfil del usuario autenticado |
+| `POST` | `/api/v1/predict` | Si | Clasificacion de imagen oral |
+| `GET` | `/api/v1/history` | Si | Historial de analisis del usuario |
+| `GET` | `/api/v1/summary/today` | Si | Resumen del dia para el usuario |
 
-## Tech Stack
+El contrato tecnico del endpoint de prediccion esta en `backend/docs/predict_contract.md`.
 
-- **Frontend**: Flutter (Dart)
-- **Backend**: FastAPI (Python)
-- **ML**: PyTorch (CNN models: EfficientNet, MobileNet, ResNet)
-- **Database**: SQLite
+## Flujo De Uso
+
+1. El profesional se registra o inicia sesion en la app.
+2. La app guarda el token JWT de sesion.
+3. El usuario captura o selecciona una imagen de lesion oral.
+4. El frontend envia la imagen a `/api/v1/predict` con el token JWT.
+5. El backend valida la imagen, ejecuta la inferencia ONNX y guarda el analisis.
+6. La app muestra la prediccion, confianza, recomendacion e historial.
+
+## Pruebas
+
+Backend:
+
+```bash
+cd backend
+pytest
+```
+
+Frontend:
+
+```bash
+cd frontend
+flutter test
+```
+
+## Despliegue En Render
+
+Configuracion sugerida para el backend:
+
+| Campo | Valor |
+|-------|-------|
+| Root Directory | `backend` |
+| Build Command | `pip install -r requirements.txt` |
+| Start Command | `uvicorn main:app --host 0.0.0.0 --port $PORT` |
+
+Variables minimas en produccion:
+
+```env
+APP_NAME=BucalScan AI
+JWT_SECRET=<secreto-seguro>
+DATABASE_URL=<url-de-base-de-datos>
+MODEL_PATH=models/mobilenetv2_oral.onnx
+```
+
+## Notas
+
+- El modelo esperado por defecto es `backend/models/mobilenetv2_oral.onnx`.
+- Las clases de salida son `benign` y `malignant`.
+- Si `CLOUDINARY_*` no esta configurado, las imagenes se guardan localmente.
+- En Android con emulador, si el backend corre en la maquina local, puede ser necesario usar `http://10.0.2.2:8000` en lugar de `http://localhost:8000`.
