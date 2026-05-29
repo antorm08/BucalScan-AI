@@ -20,6 +20,9 @@ class HistoryViewModel extends ChangeNotifier {
   String get filter => _filter;
   String get searchQuery => _searchQuery;
   bool get dateSortDescending => _dateSortDescending;
+  bool get hasAnyHistory => _history.isNotEmpty;
+  bool get hasActiveSearchOrFilter =>
+      _searchQuery.isNotEmpty || (_filter != 'Todos' && _filter != 'Fecha');
 
   List<Analysis> get _filteredHistory {
     var filtered = List<Analysis>.from(_history);
@@ -63,23 +66,25 @@ class HistoryViewModel extends ChangeNotifier {
     try {
       final models = await _repository.getHistory();
       _history.clear();
-      _history.addAll(models.map((m) {
-        DateTime parsedTimestamp;
-        try {
-          parsedTimestamp = DateTime.parse(m.timestamp);
-        } catch (_) {
-          parsedTimestamp = DateTime.now();
-        }
-        return Analysis(
-          id: m.id,
-          prediction: m.prediction,
-          confidence: m.confidence,
-          timestamp: parsedTimestamp,
-          imageUrl: m.imageUrl,
-          patientId: m.patientId,
-          patientName: m.patientName,
-        );
-      }));
+      _history.addAll(
+        models.map((m) {
+          DateTime parsedTimestamp;
+          try {
+            parsedTimestamp = DateTime.parse(m.timestamp);
+          } catch (_) {
+            parsedTimestamp = DateTime.now();
+          }
+          return Analysis(
+            id: m.id,
+            prediction: m.prediction,
+            confidence: m.confidence,
+            timestamp: parsedTimestamp,
+            imageUrl: m.imageUrl,
+            patientId: m.patientId,
+            patientName: m.patientName,
+          );
+        }),
+      );
     } catch (e) {
       _error = e.toString();
     } finally {

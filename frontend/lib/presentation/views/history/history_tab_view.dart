@@ -47,9 +47,12 @@ class _HistoryTabViewState extends State<HistoryTabView> {
             ? AppColors.errorContainer
             : AppColors.benignBg;
         final displayLabel = isMalignant ? 'Maligno' : 'Benigno';
-        final accentColor = isMalignant ? AppColors.error : AppColors.benignText;
+        final accentColor = isMalignant
+            ? AppColors.error
+            : AppColors.benignText;
         final confidence = analysis.confidence.clamp(0.0, 1.0);
-        final hasImage = analysis.imageUrl != null && analysis.imageUrl!.trim().isNotEmpty;
+        final hasImage =
+            analysis.imageUrl != null && analysis.imageUrl!.trim().isNotEmpty;
 
         return SafeArea(
           child: Padding(
@@ -102,7 +105,10 @@ class _HistoryTabViewState extends State<HistoryTabView> {
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
                           decoration: BoxDecoration(
                             color: badgeBackground,
                             borderRadius: BorderRadius.circular(999),
@@ -144,7 +150,9 @@ class _HistoryTabViewState extends State<HistoryTabView> {
                                   analysis.imageUrl!,
                                   fit: BoxFit.cover,
                                   errorBuilder: (context, error, stackTrace) {
-                                    return _HistoryImageFallback(accentColor: accentColor);
+                                    return _HistoryImageFallback(
+                                      accentColor: accentColor,
+                                    );
                                   },
                                 ),
                               ),
@@ -153,7 +161,9 @@ class _HistoryTabViewState extends State<HistoryTabView> {
                             _HistoryImageFallback(accentColor: accentColor),
                           const SizedBox(height: 12),
                           Text(
-                            hasImage ? 'Imagen registrada' : 'Vista previa no disponible',
+                            hasImage
+                                ? 'Imagen registrada'
+                                : 'Vista previa no disponible',
                             style: const TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w700,
@@ -225,8 +235,11 @@ class _HistoryTabViewState extends State<HistoryTabView> {
                             child: LinearProgressIndicator(
                               value: confidence,
                               minHeight: 10,
-                              backgroundColor: AppColors.surfaceContainerHighest,
-                              valueColor: AlwaysStoppedAnimation<Color>(accentColor),
+                              backgroundColor:
+                                  AppColors.surfaceContainerHighest,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                accentColor,
+                              ),
                             ),
                           ),
                         ],
@@ -241,15 +254,14 @@ class _HistoryTabViewState extends State<HistoryTabView> {
                       label: 'ID paciente',
                       value: analysis.patientId ?? 'No registrado',
                     ),
-                    _DetailRow(
-                      label: 'Predicción',
-                      value: displayLabel,
-                    ),
+                    _DetailRow(label: 'Predicción', value: displayLabel),
                     _DetailRow(
                       label: 'Confianza',
-                      value: '${(analysis.confidence * 100).toStringAsFixed(1)}%',
+                      value:
+                          '${(analysis.confidence * 100).toStringAsFixed(1)}%',
                     ),
-                    if (hasImage) _DetailRow(label: 'Imagen', value: analysis.imageUrl!),
+                    if (hasImage)
+                      _DetailRow(label: 'Imagen', value: analysis.imageUrl!),
                     const SizedBox(height: 16),
                     SizedBox(
                       width: double.infinity,
@@ -292,7 +304,7 @@ class _HistoryTabViewState extends State<HistoryTabView> {
 
   @override
   Widget build(BuildContext context) {
-    final filters = ['Fecha', 'Todos', 'Maligna', 'Benigna'];
+    final filters = ['Todos', 'Fecha', 'Maligna', 'Benigna'];
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -310,24 +322,41 @@ class _HistoryTabViewState extends State<HistoryTabView> {
                     context.read<HistoryViewModel>().setSearchQuery(value);
                   },
                   decoration: InputDecoration(
-                    prefixIcon: const Icon(Icons.search, color: AppColors.outline),
-                    hintText: 'Buscar ID de paciente, nombre o fecha...',
-                    hintStyle: const TextStyle(color: AppColors.onSurfaceVariant, fontSize: 14),
+                    prefixIcon: const Icon(
+                      Icons.search,
+                      color: AppColors.outline,
+                    ),
+                    hintText:
+                        'Buscar por paciente, fecha, ID o clasificación...',
+                    hintStyle: const TextStyle(
+                      color: AppColors.onSurfaceVariant,
+                      fontSize: 14,
+                    ),
                     filled: true,
                     fillColor: AppColors.surfaceContainerLowest,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(999),
-                      borderSide: const BorderSide(color: AppColors.outlineVariant),
+                      borderSide: const BorderSide(
+                        color: AppColors.outlineVariant,
+                      ),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(999),
-                      borderSide: const BorderSide(color: AppColors.outlineVariant),
+                      borderSide: const BorderSide(
+                        color: AppColors.outlineVariant,
+                      ),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(999),
-                      borderSide: const BorderSide(color: AppColors.primaryContainer, width: 1.5),
+                      borderSide: const BorderSide(
+                        color: AppColors.primaryContainer,
+                        width: 1.5,
+                      ),
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -338,7 +367,8 @@ class _HistoryTabViewState extends State<HistoryTabView> {
                       return ListView.separated(
                         scrollDirection: Axis.horizontal,
                         itemCount: filters.length,
-                        separatorBuilder: (context, index) => const SizedBox(width: 8),
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(width: 8),
                         itemBuilder: (context, index) {
                           final filter = filters[index];
                           final isActive = filter == viewModel.filter;
@@ -358,10 +388,15 @@ class _HistoryTabViewState extends State<HistoryTabView> {
                           } else if (isActive) {
                             bgColor = AppColors.surfaceContainerLowest;
                             textColor = AppColors.primary;
-                            border = Border.all(color: AppColors.primary, width: 1.4);
+                            border = Border.all(
+                              color: AppColors.primary,
+                              width: 1.4,
+                            );
                             boxShadow = [
                               BoxShadow(
-                                color: AppColors.primary.withValues(alpha: 0.08),
+                                color: AppColors.primary.withValues(
+                                  alpha: 0.08,
+                                ),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
                               ),
@@ -380,7 +415,10 @@ class _HistoryTabViewState extends State<HistoryTabView> {
                           return GestureDetector(
                             onTap: () => viewModel.setFilter(filter),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 6,
+                              ),
                               decoration: BoxDecoration(
                                 color: bgColor,
                                 borderRadius: BorderRadius.circular(999),
@@ -394,7 +432,9 @@ class _HistoryTabViewState extends State<HistoryTabView> {
                                     Icon(
                                       Icons.calendar_today,
                                       size: 16,
-                                      color: isActive ? textColor : AppColors.onSurfaceVariant,
+                                      color: isActive
+                                          ? textColor
+                                          : AppColors.onSurfaceVariant,
                                     ),
                                     const SizedBox(width: 4),
                                   ],
@@ -402,12 +442,16 @@ class _HistoryTabViewState extends State<HistoryTabView> {
                                     Icon(
                                       Icons.filter_list,
                                       size: 16,
-                                      color: isActive ? textColor : AppColors.onSurfaceVariant,
+                                      color: isActive
+                                          ? textColor
+                                          : AppColors.onSurfaceVariant,
                                     ),
                                     const SizedBox(width: 4),
                                   ],
                                   Text(
-                                    filter,
+                                    filter == 'Fecha'
+                                        ? 'Ordenar fecha'
+                                        : filter,
                                     style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
@@ -417,7 +461,11 @@ class _HistoryTabViewState extends State<HistoryTabView> {
                                   ),
                                   if (trailingIcon != null) ...[
                                     const SizedBox(width: 4),
-                                    Icon(trailingIcon, size: 16, color: textColor),
+                                    Icon(
+                                      trailingIcon,
+                                      size: 16,
+                                      color: textColor,
+                                    ),
                                   ],
                                 ],
                               ),
@@ -447,17 +495,27 @@ class _HistoryTabViewState extends State<HistoryTabView> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(Icons.error_outline, size: 48, color: AppColors.onSurfaceVariant),
+                            const Icon(
+                              Icons.error_outline,
+                              size: 48,
+                              color: AppColors.onSurfaceVariant,
+                            ),
                             const SizedBox(height: 16),
                             const Text(
                               'No se pudo cargar el historial',
-                              style: TextStyle(fontSize: 16, color: AppColors.onSurfaceVariant),
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: AppColors.onSurfaceVariant,
+                              ),
                             ),
                             const SizedBox(height: 8),
                             Text(
                               viewModel.error!,
                               textAlign: TextAlign.center,
-                              style: const TextStyle(fontSize: 13, color: AppColors.onSurfaceVariant),
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: AppColors.onSurfaceVariant,
+                              ),
                             ),
                             const SizedBox(height: 16),
                             ElevatedButton.icon(
@@ -475,20 +533,39 @@ class _HistoryTabViewState extends State<HistoryTabView> {
                     final history = viewModel.history;
 
                     if (history.isEmpty) {
+                      final hasNoMatches =
+                          viewModel.hasAnyHistory &&
+                          viewModel.hasActiveSearchOrFilter;
+
                       return Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.history, size: 64, color: AppColors.surfaceContainerHighest),
+                            Icon(
+                              hasNoMatches ? Icons.search_off : Icons.history,
+                              size: 64,
+                              color: AppColors.surfaceContainerHighest,
+                            ),
                             const SizedBox(height: 16),
-                            const Text(
-                              'No hay análisis registrados',
-                              style: TextStyle(fontSize: 18, color: AppColors.onSurfaceVariant),
+                            Text(
+                              hasNoMatches
+                                  ? 'No se encontraron resultados'
+                                  : 'No hay análisis registrados',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                color: AppColors.onSurfaceVariant,
+                              ),
                             ),
                             const SizedBox(height: 8),
-                            const Text(
-                              'Los análisis realizados aparecerán aquí',
-                              style: TextStyle(fontSize: 14, color: AppColors.onSurfaceVariant),
+                            Text(
+                              hasNoMatches
+                                  ? 'Pruebe con otra búsqueda o cambie los filtros activos.'
+                                  : 'Los análisis realizados aparecerán aquí',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: AppColors.onSurfaceVariant,
+                              ),
                             ),
                           ],
                         ),
@@ -499,7 +576,8 @@ class _HistoryTabViewState extends State<HistoryTabView> {
                       return ListView.separated(
                         padding: const EdgeInsets.all(16),
                         itemCount: history.length,
-                        separatorBuilder: (context, index) => const SizedBox(height: 12),
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(height: 12),
                         itemBuilder: (context, index) {
                           return HistoryCard(
                             analysis: history[index],
@@ -511,12 +589,13 @@ class _HistoryTabViewState extends State<HistoryTabView> {
 
                     return GridView.builder(
                       padding: const EdgeInsets.all(16),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        mainAxisSpacing: 12,
-                        crossAxisSpacing: 12,
-                        childAspectRatio: 1.9,
-                      ),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            mainAxisSpacing: 12,
+                            crossAxisSpacing: 12,
+                            childAspectRatio: 1.9,
+                          ),
                       itemCount: history.length,
                       itemBuilder: (context, index) {
                         return HistoryCard(
@@ -561,10 +640,7 @@ class _DetailRow extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             value,
-            style: const TextStyle(
-              fontSize: 16,
-              color: AppColors.onSurface,
-            ),
+            style: const TextStyle(fontSize: 16, color: AppColors.onSurface),
           ),
         ],
       ),

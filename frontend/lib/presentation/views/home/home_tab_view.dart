@@ -365,6 +365,16 @@ class _SecondaryActionCard extends StatelessWidget {
 class _SummaryCard extends StatelessWidget {
   const _SummaryCard();
 
+  String _formatLatestAnalysis(DateTime? date) {
+    if (date == null) {
+      return 'Sin análisis recientes';
+    }
+
+    final hour = date.hour.toString().padLeft(2, '0');
+    final minute = date.minute.toString().padLeft(2, '0');
+    return 'Último análisis: $hour:$minute';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<SummaryViewModel>(
@@ -441,6 +451,9 @@ class _SummaryCard extends StatelessWidget {
         final total = summary?.total ?? 0;
         final benign = summary?.benign ?? 0;
         final malignant = summary?.malignant ?? 0;
+        final latestAnalysisLabel = _formatLatestAnalysis(
+          summary?.latestAnalysisAt,
+        );
 
         if (summary == null || viewModel.isEmpty) {
           return Card(
@@ -538,6 +551,14 @@ class _SummaryCard extends StatelessWidget {
                           ),
                         ),
                       ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      latestAnalysisLabel,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
