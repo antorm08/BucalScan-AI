@@ -7,14 +7,16 @@ import 'package:bucalscan_ai/presentation/views/profile/profile_tab_view.dart';
 import 'package:bucalscan_ai/presentation/widgets/nav_bar_item.dart';
 
 class HomeView extends StatefulWidget {
-  const HomeView({super.key});
+  final int initialIndex;
+
+  const HomeView({super.key, this.initialIndex = 0});
 
   @override
   State<HomeView> createState() => _HomeViewState();
 }
 
 class _HomeViewState extends State<HomeView> {
-  int _currentIndex = 0;
+  late int _currentIndex;
 
   final List<Widget> _screens = const [
     HomeTabView(),
@@ -22,6 +24,12 @@ class _HomeViewState extends State<HomeView> {
     HistoryTabView(),
     ProfileTabView(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex.clamp(0, _screens.length - 1).toInt();
+  }
 
   @override
   Widget build(BuildContext context) {
