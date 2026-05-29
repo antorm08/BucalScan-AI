@@ -6,6 +6,7 @@ import 'package:bucalscan_ai/core/theme/app_colors.dart';
 import 'package:bucalscan_ai/presentation/viewmodels/history_viewmodel.dart';
 import 'package:bucalscan_ai/presentation/viewmodels/prediction_viewmodel.dart';
 import 'package:bucalscan_ai/presentation/viewmodels/summary_viewmodel.dart';
+import 'package:bucalscan_ai/presentation/views/home/home_view.dart';
 import 'package:bucalscan_ai/presentation/widgets/app_app_bar.dart';
 
 class ResultView extends StatefulWidget {
@@ -20,7 +21,9 @@ class ResultView extends StatefulWidget {
 class _ResultViewState extends State<ResultView> {
   bool _hasSyncedPostAnalysis = false;
 
-  ({String title, String message, IconData icon}) _getErrorPresentation(String error) {
+  ({String title, String message, IconData icon}) _getErrorPresentation(
+    String error,
+  ) {
     final normalized = error.toLowerCase();
 
     if (normalized.contains('invalid file type') ||
@@ -102,6 +105,19 @@ class _ResultViewState extends State<ResultView> {
     }
   }
 
+  String _getClinicalHeadline(String prediction) {
+    switch (_normalizePrediction(prediction)) {
+      case 'benign':
+      case 'benigno':
+        return 'Lesion compatible con patron benigno';
+      case 'malignant':
+      case 'maligno':
+        return 'Hallazgos compatibles con posible lesion maligna';
+      default:
+        return 'Clasificacion estimada por IA';
+    }
+  }
+
   String _getConfidenceLevel(double confidence) {
     if (confidence >= 0.8) {
       return 'Alta';
@@ -143,11 +159,48 @@ class _ResultViewState extends State<ResultView> {
     }
 
     if (normalized.contains('malignant lesion suspected') ||
-        normalized.contains('immediate medical attention required')) {
-      return 'Se sospecha lesion maligna. Se recomienda atencion medica inmediata.';
+        normalized.contains('immediate medical attention required') ||
+        normalized.contains('consult a specialist immediately')) {
+      return 'Se recomienda derivacion o evaluacion por especialista lo antes posible.';
     }
 
     return recommendation.trim();
+  }
+
+  List<MapEntry<String, double?>> _orderedProbabilities(
+    Map<String, double>? probabilities,
+  ) {
+    final normalized = <String, double>{};
+    probabilities?.forEach((key, value) {
+      normalized[_normalizePrediction(key)] = value.clamp(0.0, 1.0).toDouble();
+    });
+
+    return [
+      MapEntry('benign', normalized['benign'] ?? normalized['benigno']),
+      MapEntry('malignant', normalized['malignant'] ?? normalized['maligno']),
+    ];
+  }
+
+  Future<void> _retryAnalysis(PredictionViewModel viewModel) async {
+    await viewModel.predictImage(
+      widget.imageFile,
+      patientId: viewModel.patientId,
+      patientName: viewModel.patientName,
+    );
+  }
+
+  void _goToNewAnalysis(PredictionViewModel viewModel) {
+    viewModel.clearResult();
+    Navigator.pop(context);
+  }
+
+  void _goToHistory(PredictionViewModel viewModel) {
+    viewModel.clearResult();
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const HomeView(initialIndex: 2)),
+      (route) => false,
+    );
   }
 
   @override
@@ -155,7 +208,10 @@ class _ResultViewState extends State<ResultView> {
     final viewModel = context.watch<PredictionViewModel>();
     final result = viewModel.result;
 
-    if (!_hasSyncedPostAnalysis && !viewModel.isLoading && viewModel.error == null && result != null) {
+    if (!_hasSyncedPostAnalysis &&
+        !viewModel.isLoading &&
+        viewModel.error == null &&
+        result != null) {
       _hasSyncedPostAnalysis = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) {
@@ -199,16 +255,15 @@ class _ResultViewState extends State<ResultView> {
               children: [
                 _AnalyzedImageCard(imageFile: widget.imageFile, compact: true),
                 const SizedBox(height: 24),
-                Icon(
-                  errorUi.icon,
-                  size: 64,
-                  color: AppColors.error,
-                ),
+                Icon(errorUi.icon, size: 64, color: AppColors.error),
                 const SizedBox(height: 16),
                 Text(
                   errorUi.title,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Text(
@@ -226,12 +281,24 @@ class _ResultViewState extends State<ResultView> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: () {
-                    viewModel.clearResult();
-                    Navigator.pop(context);
-                  },
-                  child: const Text('Volver a captura'),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _goToNewAnalysis(viewModel),
+                        icon: const Icon(Icons.add_a_photo_outlined),
+                        label: const Text('Otra imagen'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () => _retryAnalysis(viewModel),
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Reintentar'),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -285,6 +352,7 @@ class _ResultViewState extends State<ResultView> {
     final color = _getPredictionColor(result.prediction);
     final icon = _getPredictionIcon(result.prediction);
     final displayLabel = _getDisplayLabel(result.prediction);
+    final clinicalHeadline = _getClinicalHeadline(result.prediction);
     final confidenceLevel = _getConfidenceLevel(result.confidence);
     final confidenceAccent = _getConfidenceAccent(result.confidence);
     final confidenceMessage = _getConfidenceMessage(
@@ -294,12 +362,13 @@ class _ResultViewState extends State<ResultView> {
     final translatedRecommendation = _translateRecommendation(
       result.recommendation,
     );
+    final orderedProbabilities = _orderedProbabilities(result.probabilities);
 
     return Scaffold(
       appBar: const AppAppBar(title: 'Resultado del análisis'),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
-            child: Column(
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _AnalyzedImageCard(imageFile: widget.imageFile),
@@ -317,9 +386,13 @@ class _ResultViewState extends State<ResultView> {
                   children: [
                     Icon(icon, size: 64, color: color),
                     const SizedBox(height: 16),
-                    if (viewModel.patientName != null || viewModel.patientId != null) ...[
+                    if (viewModel.patientName != null ||
+                        viewModel.patientId != null) ...[
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(8),
@@ -327,12 +400,18 @@ class _ResultViewState extends State<ResultView> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.person_outline, size: 14, color: AppColors.onSurfaceVariant),
+                            const Icon(
+                              Icons.person_outline,
+                              size: 14,
+                              color: AppColors.onSurfaceVariant,
+                            ),
                             const SizedBox(width: 6),
                             Text(
                               [
-                                if (viewModel.patientName != null) viewModel.patientName!,
-                                if (viewModel.patientId != null) 'ID: ${viewModel.patientId!}',
+                                if (viewModel.patientName != null)
+                                  viewModel.patientName!,
+                                if (viewModel.patientId != null)
+                                  'ID: ${viewModel.patientId!}',
                               ].join(' · '),
                               style: const TextStyle(
                                 fontSize: 13,
@@ -345,7 +424,7 @@ class _ResultViewState extends State<ResultView> {
                       const SizedBox(height: 12),
                     ],
                     const Text(
-                      'Resultado principal',
+                      'Clasificacion estimada',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -359,6 +438,16 @@ class _ResultViewState extends State<ResultView> {
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
                         color: color,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      clinicalHeadline,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.onSurface,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -430,73 +519,143 @@ class _ResultViewState extends State<ResultView> {
                 ),
               ),
             ),
-            if (result.probabilities != null) ...[
-              const SizedBox(height: 16),
-              Card(
-                color: AppColors.surfaceContainerLowest,
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Probabilidades detalladas',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
+            const SizedBox(height: 16),
+            Card(
+              color: AppColors.surfaceContainerLowest,
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Probabilidades detalladas',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
                       ),
-                      const SizedBox(height: 12),
-                      ...result.probabilities!.entries.map(
-                        (entry) => Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: Row(
-                            children: [
-                              SizedBox(
-                                width: 100,
-                                child: Text(
-                                  _getDisplayLabel(entry.key).toUpperCase(),
-                                  style: const TextStyle(fontSize: 14),
-                                ),
-                              ),
-                              Expanded(
-                                child: LinearProgressIndicator(
-                                  value: entry.value,
-                                  backgroundColor:
-                                      AppColors.surfaceContainerHighest,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    _getPredictionColor(entry.key),
-                                  ),
-                                  borderRadius: BorderRadius.circular(999),
-                                  minHeight: 10,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                '${(entry.value * 100).toStringAsFixed(1)}%',
+                    ),
+                    const SizedBox(height: 12),
+                    ...orderedProbabilities.map(
+                      (entry) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          children: [
+                            SizedBox(
+                              width: 100,
+                              child: Text(
+                                _getDisplayLabel(entry.key).toUpperCase(),
                                 style: const TextStyle(fontSize: 14),
                               ),
-                            ],
-                          ),
+                            ),
+                            Expanded(
+                              child: LinearProgressIndicator(
+                                value: entry.value ?? 0,
+                                backgroundColor:
+                                    AppColors.surfaceContainerHighest,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  _getPredictionColor(entry.key),
+                                ),
+                                borderRadius: BorderRadius.circular(999),
+                                minHeight: 10,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            SizedBox(
+                              width: 56,
+                              child: Text(
+                                entry.value == null
+                                    ? 'N/D'
+                                    : '${(entry.value! * 100).toStringAsFixed(1)}%',
+                                textAlign: TextAlign.right,
+                                style: const TextStyle(fontSize: 14),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
-            ],
+            ),
+            const SizedBox(height: 16),
+            Card(
+              color: AppColors.secondaryFixed.withValues(alpha: 0.45),
+              child: const Padding(
+                padding: EdgeInsets.all(16),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.info_outline, color: AppColors.secondary),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Este resultado es una estimacion asistida por IA y no reemplaza una evaluacion clinica profesional.',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
             const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: () {
-                viewModel.clearResult();
-                Navigator.pop(context);
-              },
-              icon: const Icon(Icons.arrow_back),
-              label: const Text('Volver a captura'),
+            _ResultActions(
+              onNewAnalysis: () => _goToNewAnalysis(viewModel),
+              onRetry: () => _retryAnalysis(viewModel),
+              onHistory: () => _goToHistory(viewModel),
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _ResultActions extends StatelessWidget {
+  final VoidCallback onNewAnalysis;
+  final VoidCallback onHistory;
+  final Future<void> Function() onRetry;
+
+  const _ResultActions({
+    required this.onNewAnalysis,
+    required this.onRetry,
+    required this.onHistory,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ElevatedButton.icon(
+          onPressed: onNewAnalysis,
+          icon: const Icon(Icons.add_a_photo_outlined),
+          label: const Text('Nuevo analisis'),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Reintentar'),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: onHistory,
+                icon: const Icon(Icons.history),
+                label: const Text('Ver historial'),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }

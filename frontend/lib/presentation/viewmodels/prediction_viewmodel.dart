@@ -54,7 +54,7 @@ class PredictionViewModel extends ChangeNotifier {
       _error = e.toString();
     } finally {
       if (_error == null) {
-        const minimumLoadingDuration = Duration(milliseconds: 3500);
+        const minimumLoadingDuration = Duration(milliseconds: 900);
         final remainingTime = minimumLoadingDuration - stopwatch.elapsed;
         if (remainingTime.inMilliseconds > 0) {
           await Future<void>.delayed(remainingTime);
