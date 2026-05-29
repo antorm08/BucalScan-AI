@@ -11,7 +11,8 @@ class HistoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final prediction = analysis.prediction.toLowerCase();
-    final hasImage = analysis.imageUrl != null && analysis.imageUrl!.trim().isNotEmpty;
+    final hasImage =
+        analysis.imageUrl != null && analysis.imageUrl!.trim().isNotEmpty;
     Color accentColor, badgeBg, badgeText, badgeIconColor;
     IconData badgeIcon;
 
@@ -84,14 +85,18 @@ class HistoryCard extends StatelessWidget {
                             errorBuilder: (context, error, stackTrace) {
                               return Icon(
                                 Icons.image,
-                                color: AppColors.onSurfaceVariant.withValues(alpha: 0.5),
+                                color: AppColors.onSurfaceVariant.withValues(
+                                  alpha: 0.5,
+                                ),
                                 size: 28,
                               );
                             },
                           )
                         : Icon(
                             Icons.image,
-                            color: AppColors.onSurfaceVariant.withValues(alpha: 0.5),
+                            color: AppColors.onSurfaceVariant.withValues(
+                              alpha: 0.5,
+                            ),
                             size: 28,
                           ),
                   ),
@@ -201,6 +206,8 @@ class HistoryCard extends StatelessWidget {
       'Nov',
       'Dic',
     ];
-    return '${date.day} ${months[date.month - 1]}, ${date.year}';
+    final hour = date.hour.toString().padLeft(2, '0');
+    final minute = date.minute.toString().padLeft(2, '0');
+    return '${date.day} ${months[date.month - 1]}, ${date.year} · $hour:$minute';
   }
 }
