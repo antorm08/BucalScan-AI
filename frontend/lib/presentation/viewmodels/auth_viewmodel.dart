@@ -1,13 +1,22 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:bucalscan_ai/data/repositories/auth_repository.dart';
 import 'package:bucalscan_ai/data/services/auth_storage_service.dart';
+import 'package:bucalscan_ai/data/services/session_events.dart';
 import 'package:bucalscan_ai/domain/entities/user.dart';
 
 class AuthViewModel extends ChangeNotifier {
   final AuthRepository _repository;
   final AuthStorageService _storage;
+  late final StreamSubscription<void> _sessionSub;
 
-  AuthViewModel(this._repository, this._storage);
+  AuthViewModel(this._repository, this._storage) {
+    _sessionSub = SessionEvents().onSessionExpired.listen((_) {
+      _currentUser = null;
+      _error = null;
+      notifyListeners();
+    });
+  }
 
   User? _currentUser;
   bool _isLoading = false;
@@ -156,6 +165,12 @@ class AuthViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  @override
+  void dispose() {
+    _sessionSub.cancel();
+    super.dispose();
+  }
+
   User _parseUser(Map<String, dynamic> json) {
     return User(
       id: json['id'] as int,
@@ -163,6 +178,9 @@ class AuthViewModel extends ChangeNotifier {
       doctorId: json['doctor_id'] as String? ?? '',
       medicalCenter: json['medical_center'] as String?,
       email: json['email'] as String? ?? '',
+      createdAt: json['created_at'] != null
+          ? DateTime.tryParse(json['created_at'] as String)
+          : null,
     );
   }
 
