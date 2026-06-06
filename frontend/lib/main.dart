@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:bucalscan_ai/core/constants/app_constants.dart';
@@ -9,6 +10,7 @@ import 'package:bucalscan_ai/data/repositories/summary_repository.dart';
 import 'package:bucalscan_ai/data/services/api_service.dart';
 import 'package:bucalscan_ai/data/services/auth_interceptor.dart';
 import 'package:bucalscan_ai/data/services/auth_storage_service.dart';
+import 'package:bucalscan_ai/data/services/session_events.dart';
 import 'package:bucalscan_ai/presentation/viewmodels/auth_viewmodel.dart';
 import 'package:bucalscan_ai/presentation/viewmodels/history_viewmodel.dart';
 import 'package:bucalscan_ai/presentation/viewmodels/prediction_viewmodel.dart';
@@ -17,7 +19,6 @@ import 'package:bucalscan_ai/presentation/viewmodels/summary_viewmodel.dart';
 import 'package:bucalscan_ai/presentation/views/startup/startup_view.dart';
 import 'package:bucalscan_ai/presentation/views/auth/login_view.dart';
 import 'package:bucalscan_ai/presentation/views/home/home_view.dart';
-
 
 void main() {
   final authStorage = AuthStorageService();
@@ -44,7 +45,6 @@ void main() {
   );
 }
 
-
 class BucalScanAiApp extends StatefulWidget {
   final ApiService apiService;
   final bool skipStartupWakeup;
@@ -62,6 +62,8 @@ class BucalScanAiApp extends StatefulWidget {
 class _BucalScanAiAppState extends State<BucalScanAiApp> {
   bool _isReadyToEnter = false;
   bool _isAuthenticated = false;
+  bool _wasAuthenticated = false;
+  StreamSubscription<void>? _sessionSub;
 
   @override
   void initState() {
@@ -69,6 +71,12 @@ class _BucalScanAiAppState extends State<BucalScanAiApp> {
     if (widget.skipStartupWakeup) {
       _isReadyToEnter = true;
     }
+  }
+
+  @override
+  void dispose() {
+    _sessionSub?.cancel();
+    super.dispose();
   }
 
   Future<void> _enterApp() async {
@@ -79,12 +87,34 @@ class _BucalScanAiAppState extends State<BucalScanAiApp> {
     final authViewModel = context.read<AuthViewModel>();
     final isLoggedIn = await authViewModel.tryAutoLogin();
 
-    if (mounted) {
-      setState(() {
-        _isReadyToEnter = true;
-        _isAuthenticated = isLoggedIn;
-      });
+    if (!mounted) {
+      return;
     }
+
+    setState(() {
+      _isReadyToEnter = true;
+      _isAuthenticated = isLoggedIn;
+      _wasAuthenticated = isLoggedIn;
+    });
+
+    if (isLoggedIn) {
+      _subscribeToSessionExpiry();
+    }
+  }
+
+  void _subscribeToSessionExpiry() {
+    _sessionSub?.cancel();
+    _sessionSub = SessionEvents().onSessionExpired.listen((_) {
+      if (!_wasAuthenticated) {
+        return;
+      }
+      _wasAuthenticated = false;
+      if (mounted) {
+        setState(() {
+          _isAuthenticated = false;
+        });
+      }
+    });
   }
 
   @override
