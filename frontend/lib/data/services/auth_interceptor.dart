@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:dio/dio.dart';
 import 'auth_storage_service.dart';
+import 'session_events.dart';
 
 class AuthInterceptor extends Interceptor {
   final AuthStorageService _storage;
@@ -16,5 +18,17 @@ class AuthInterceptor extends Interceptor {
       options.headers['Authorization'] = 'Bearer $token';
     }
     handler.next(options);
+  }
+
+  @override
+  Future<void> onError(
+    DioException err,
+    ErrorInterceptorHandler handler,
+  ) async {
+    if (err.response?.statusCode == 401) {
+      await _storage.clear();
+      SessionEvents().emitSessionExpired();
+    }
+    handler.next(err);
   }
 }

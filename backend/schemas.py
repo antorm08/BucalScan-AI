@@ -29,6 +29,7 @@ class UserProfile(BaseModel):
     doctor_id: str
     medical_center: Optional[str] = None
     email: str
+    created_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
