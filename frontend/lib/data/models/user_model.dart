@@ -4,6 +4,7 @@ class UserModel {
   final String doctorId;
   final String? medicalCenter;
   final String email;
+  final DateTime? createdAt;
 
   UserModel({
     this.id,
@@ -11,6 +12,7 @@ class UserModel {
     required this.doctorId,
     this.medicalCenter,
     required this.email,
+    this.createdAt,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -20,6 +22,9 @@ class UserModel {
       doctorId: json['doctor_id'] as String? ?? '',
       medicalCenter: json['medical_center'] as String?,
       email: json['email'] as String? ?? '',
+      createdAt: json['created_at'] != null
+          ? DateTime.tryParse(json['created_at'] as String)
+          : null,
     );
   }
 
