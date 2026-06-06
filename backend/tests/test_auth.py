@@ -331,6 +331,21 @@ class TestAuthMe:
         assert response.status_code == 401
         assert "User not found" in response.json()["detail"]
 
+    def test_me_response_includes_created_at(self, client, db_session):
+        user = _create_db_user(
+            db_session, email="mecreated@hospital.org", doctor_id="MD-MECREATED-1"
+        )
+        token = create_access_token({"sub": str(user.id), "email": user.email})
+
+        response = client.get(
+            "/api/v1/auth/me",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert response.status_code == 200
+        user_data = response.json()["data"]["user"]
+        assert "created_at" in user_data
+        assert user_data["created_at"] is not None
+
 
 # ---------------------------------------------------------------------------
 # get_current_user dependency (direct unit test)
@@ -358,3 +373,78 @@ class TestGetCurrentUserDependency:
         with pytest.raises(Exception) as exc_info:
             get_current_user(credentials=creds, db=db_session)
         assert exc_info.value.status_code == 401
+
+
+# ---------------------------------------------------------------------------
+# Protected route access
+# ---------------------------------------------------------------------------
+
+class TestProtectedRoutes:
+    def test_history_without_token_returns_401(self, client, db_session):
+        response = client.get("/api/v1/history")
+        assert response.status_code == 401
+
+    def test_history_with_valid_token_returns_200(self, client, db_session):
+        user = _create_db_user(db_session, email="hist@hospital.org", doctor_id="MD-HIST-1")
+        token = create_access_token({"sub": str(user.id), "email": user.email})
+        response = client.get(
+            "/api/v1/history",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert response.status_code == 200
+
+    def test_history_with_invalid_token_returns_401(self, client, db_session):
+        response = client.get(
+            "/api/v1/history",
+            headers={"Authorization": "Bearer invalid.token.here"},
+        )
+        assert response.status_code == 401
+
+    def test_predict_without_token_returns_401(self, client, db_session):
+        # Send an empty multipart request — should fail at auth before file validation
+        response = client.post("/api/v1/predict")
+        assert response.status_code == 401
+
+    def test_predict_with_valid_token_returns_400_not_401(self, client, db_session):
+        # Valid token but no file — should get 422 (missing file), not 401
+        user = _create_db_user(db_session, email="pred@hospital.org", doctor_id="MD-PRED-1")
+        token = create_access_token({"sub": str(user.id), "email": user.email})
+        response = client.post(
+            "/api/v1/predict",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert response.status_code == 422  # Missing required file field
+
+    def test_summary_without_token_returns_401(self, client, db_session):
+        response = client.get("/api/v1/summary/today")
+        assert response.status_code == 401
+
+    def test_summary_with_valid_token_returns_200(self, client, db_session):
+        user = _create_db_user(db_session, email="summ@hospital.org", doctor_id="MD-SUMM-1")
+        token = create_access_token({"sub": str(user.id), "email": user.email})
+        response = client.get(
+            "/api/v1/summary/today",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert response.status_code == 200
+
+    def test_register_is_public_no_token_required(self, client, db_session):
+        response = client.post(
+            "/api/v1/auth/register",
+            json={
+                "full_name": "Dr. Public",
+                "doctor_id": "MD-PUBLIC-1",
+                "email": "public@hospital.org",
+                "password": "secret123",
+            },
+        )
+        assert response.status_code == 200
+
+    def test_login_is_public_no_token_required(self, client, db_session):
+        _create_db_user(db_session, email="loginpub@hospital.org", doctor_id="MD-LPUB-1")
+        response = client.post(
+            "/api/v1/auth/login",
+            json={"email": "loginpub@hospital.org", "password": "testpass123"},
+        )
+        assert response.status_code == 200
+        assert "token" in response.json()["data"]

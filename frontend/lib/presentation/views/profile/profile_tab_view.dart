@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
 import 'package:bucalscan_ai/presentation/viewmodels/auth_viewmodel.dart';
@@ -7,6 +8,11 @@ import 'package:bucalscan_ai/presentation/widgets/app_app_bar.dart';
 
 class ProfileTabView extends StatelessWidget {
   const ProfileTabView({super.key});
+
+  String _formatMemberSince(DateTime? date) {
+    if (date == null) return '—';
+    return DateFormat('MMMM yyyy', 'es_ES').format(date).capitalizeFirst();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +41,7 @@ class ProfileTabView extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    user?.fullName ?? 'Dra. Jenkins',
+                    user?.fullName ?? '—',
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.w600,
@@ -44,7 +50,7 @@ class ProfileTabView extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    user?.email ?? 'dr.jenkins@hospital.org',
+                    user?.email ?? '—',
                     style: const TextStyle(
                       fontSize: 14,
                       color: AppColors.onSurfaceVariant,
@@ -70,10 +76,10 @@ class ProfileTabView extends StatelessWidget {
                     subtitle: user?.medicalCenter ?? '—',
                   ),
                   const Divider(height: 1, color: AppColors.surfaceVariant),
-                  const _ProfileTile(
+                  _ProfileTile(
                     icon: Icons.calendar_today,
                     title: 'Miembro desde',
-                    subtitle: 'Octubre 2024',
+                    subtitle: _formatMemberSince(user?.createdAt),
                   ),
                 ],
               ),
@@ -140,5 +146,12 @@ class _ProfileTile extends StatelessWidget {
       title: Text(title, style: const TextStyle(color: AppColors.onSurface)),
       subtitle: Text(subtitle),
     );
+  }
+}
+
+extension StringExtension on String {
+  String capitalizeFirst() {
+    if (isEmpty) return this;
+    return '${this[0].toUpperCase()}${substring(1)}';
   }
 }
