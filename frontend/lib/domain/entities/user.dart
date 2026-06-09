@@ -5,6 +5,7 @@ class User {
   final String? medicalCenter;
   final String email;
   final DateTime? createdAt;
+  final String role;
 
   User({
     required this.id,
@@ -13,5 +14,8 @@ class User {
     this.medicalCenter,
     required this.email,
     this.createdAt,
+    this.role = 'doctor',
   });
+
+  bool get isAdmin => role.toLowerCase() == 'admin';
 }

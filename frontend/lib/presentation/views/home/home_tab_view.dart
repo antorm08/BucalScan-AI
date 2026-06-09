@@ -1,24 +1,20 @@
-import 'dart:async';
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
-import 'package:bucalscan_ai/presentation/viewmodels/prediction_viewmodel.dart';
+import 'package:bucalscan_ai/presentation/viewmodels/auth_viewmodel.dart';
 import 'package:bucalscan_ai/presentation/viewmodels/summary_viewmodel.dart';
-import 'package:bucalscan_ai/presentation/views/result/result_view.dart';
 import 'package:bucalscan_ai/presentation/widgets/app_app_bar.dart';
 
 class HomeTabView extends StatefulWidget {
-  const HomeTabView({super.key});
+  final VoidCallback onStartCapture;
+
+  const HomeTabView({super.key, required this.onStartCapture});
 
   @override
   State<HomeTabView> createState() => _HomeTabViewState();
 }
 
 class _HomeTabViewState extends State<HomeTabView> {
-  final ImagePicker _picker = ImagePicker();
-
   @override
   void initState() {
     super.initState();
@@ -31,72 +27,10 @@ class _HomeTabViewState extends State<HomeTabView> {
     });
   }
 
-  Future<void> _startAnalysis(File imageFile) async {
-    final viewModel = context.read<PredictionViewModel>();
-    unawaited(viewModel.predictImage(imageFile));
-
-    if (!mounted) {
-      return;
-    }
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => ResultView(imageFile: imageFile)),
-    );
-  }
-
-  Future<void> _pickImage(ImageSource source) async {
-    try {
-      final XFile? image = await _picker.pickImage(
-        source: source,
-        maxWidth: 1024,
-        maxHeight: 1024,
-        imageQuality: 85,
-      );
-      if (image != null) {
-        if (mounted) {
-          await _startAnalysis(File(image.path));
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al seleccionar imagen: $e')),
-        );
-      }
-    }
-  }
-
-  void _showImageSourceDialog() {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => SafeArea(
-        child: Wrap(
-          children: [
-            ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: const Text('Tomar foto'),
-              onTap: () {
-                Navigator.pop(context);
-                _pickImage(ImageSource.camera);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: const Text('Elegir de galería'),
-              onTap: () {
-                Navigator.pop(context);
-                _pickImage(ImageSource.gallery);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
+    final currentUser = context.watch<AuthViewModel>().currentUser;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: const AppAppBar(),
@@ -115,7 +49,7 @@ class _HomeTabViewState extends State<HomeTabView> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Flujo de análisis clínico',
+                        'Panel de análisis clínico',
                         style: TextStyle(
                           fontSize: isCompact ? 28 : 32,
                           fontWeight: FontWeight.w600,
@@ -125,7 +59,7 @@ class _HomeTabViewState extends State<HomeTabView> {
                       ),
                       const SizedBox(height: 8),
                       const Text(
-                        'Inicie una nueva captura o revise el estado general del análisis de hoy.',
+                        'Revise el resumen del día e inicie una captura guiada antes de enviar la imagen al modelo.',
                         style: TextStyle(
                           fontSize: 16,
                           color: AppColors.onSurfaceVariant,
@@ -137,21 +71,25 @@ class _HomeTabViewState extends State<HomeTabView> {
                 if (isCompact) ...[
                   _PrimaryActionCard(
                     icon: Icons.add_a_photo,
-                    title: 'Nueva captura',
+                    title: 'Iniciar análisis guiado',
                     subtitle:
-                        'Abra la cámara o seleccione una imagen clínica para iniciar el análisis',
-                    onTap: _showImageSourceDialog,
+                        'Seleccione cámara o galería, revise la vista previa y confirme antes de analizar',
+                    onTap: widget.onStartCapture,
                   ),
                   const SizedBox(height: 12),
                   _SecondaryActionCard(
-                    icon: Icons.upload_file,
-                    title: 'Cargar desde galería',
+                    icon: Icons.fact_check_outlined,
+                    title: 'Preparar caso clínico',
                     subtitle:
-                        'Use una imagen existente para revisar el resultado del análisis',
-                    onTap: () => _pickImage(ImageSource.gallery),
+                        'Agregue metadata opcional del paciente y evite enviar imágenes borrosas o incompletas',
+                    onTap: widget.onStartCapture,
                   ),
                   const SizedBox(height: 12),
                   const _SummaryCard(),
+                  if (currentUser?.isAdmin ?? false) ...[
+                    const SizedBox(height: 12),
+                    const _AdminEntryCard(),
+                  ],
                 ] else ...[
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -162,19 +100,23 @@ class _HomeTabViewState extends State<HomeTabView> {
                           children: [
                             _PrimaryActionCard(
                               icon: Icons.add_a_photo,
-                              title: 'Nueva captura',
+                              title: 'Iniciar análisis guiado',
                               subtitle:
-                                  'Abra la cámara o seleccione una imagen clínica para iniciar el análisis',
-                              onTap: _showImageSourceDialog,
+                                  'Seleccione cámara o galería, revise la vista previa y confirme antes de analizar',
+                              onTap: widget.onStartCapture,
                             ),
                             const SizedBox(height: 12),
                             _SecondaryActionCard(
-                              icon: Icons.upload_file,
-                              title: 'Cargar desde galería',
+                              icon: Icons.fact_check_outlined,
+                              title: 'Preparar caso clínico',
                               subtitle:
-                                  'Use una imagen existente para revisar el resultado del análisis',
-                              onTap: () => _pickImage(ImageSource.gallery),
+                                  'Agregue metadata opcional del paciente y evite enviar imágenes borrosas o incompletas',
+                              onTap: widget.onStartCapture,
                             ),
+                            if (currentUser?.isAdmin ?? false) ...[
+                              const SizedBox(height: 12),
+                              const _AdminEntryCard(),
+                            ],
                           ],
                         ),
                       ),
@@ -367,12 +309,22 @@ class _SummaryCard extends StatelessWidget {
 
   String _formatLatestAnalysis(DateTime? date) {
     if (date == null) {
-      return 'Sin análisis recientes';
+      return 'Sin análisis registrados hoy';
     }
 
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
     final hour = date.hour.toString().padLeft(2, '0');
     final minute = date.minute.toString().padLeft(2, '0');
-    return 'Último análisis: $hour:$minute';
+    return 'Último análisis: $day/$month $hour:$minute';
+  }
+
+  double _ratio(int value, int total) {
+    if (total <= 0) {
+      return 0;
+    }
+
+    return (value / total).clamp(0.0, 1.0).toDouble();
   }
 
   @override
@@ -390,8 +342,19 @@ class _SummaryCard extends StatelessWidget {
             child: const Padding(
               padding: EdgeInsets.all(16),
               child: SizedBox(
-                height: 180,
-                child: Center(child: CircularProgressIndicator()),
+                height: 220,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text(
+                      'Cargando resumen real del día...',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: AppColors.onSurfaceVariant),
+                    ),
+                  ],
+                ),
               ),
             ),
           );
@@ -410,15 +373,7 @@ class _SummaryCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'RESUMEN DE HOY',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.5,
-                      color: AppColors.onSurfaceVariant,
-                    ),
-                  ),
+                  const _SummaryHeader(),
                   const SizedBox(height: 16),
                   const Icon(
                     Icons.error_outline,
@@ -451,6 +406,8 @@ class _SummaryCard extends StatelessWidget {
         final total = summary?.total ?? 0;
         final benign = summary?.benign ?? 0;
         final malignant = summary?.malignant ?? 0;
+        final benignRatio = _ratio(benign, total);
+        final malignantRatio = _ratio(malignant, total);
         final latestAnalysisLabel = _formatLatestAnalysis(
           summary?.latestAnalysisAt,
         );
@@ -466,19 +423,11 @@ class _SummaryCard extends StatelessWidget {
             child: const Padding(
               padding: EdgeInsets.all(16),
               child: SizedBox(
-                height: 180,
+                height: 220,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'RESUMEN DE HOY',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.5,
-                        color: AppColors.onSurfaceVariant,
-                      ),
-                    ),
+                    _SummaryHeader(),
                     Spacer(),
                     Icon(
                       Icons.analytics_outlined,
@@ -487,7 +436,7 @@ class _SummaryCard extends StatelessWidget {
                     ),
                     SizedBox(height: 12),
                     Text(
-                      'Aun no hay analisis registrados hoy.',
+                      'Aún no hay análisis registrados hoy.',
                       style: TextStyle(
                         fontSize: 14,
                         color: AppColors.onSurfaceVariant,
@@ -512,69 +461,63 @@ class _SummaryCard extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'RESUMEN DE HOY',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.5,
-                        color: AppColors.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.baseline,
-                      textBaseline: TextBaseline.alphabetic,
-                      children: [
-                        Text(
-                          '$total',
-                          style: const TextStyle(
-                            fontSize: 40,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.onSurface,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Flexible(
-                          child: Text(
-                            'Análisis procesados',
-                            maxLines: 2,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: AppColors.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      latestAnalysisLabel,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
+                _SummaryHeader(
+                  onRefresh: () {
+                    context.read<SummaryViewModel>().fetchTodaySummary();
+                  },
                 ),
-                Column(
+                const SizedBox(height: 16),
+                Text(
+                  '$total',
+                  style: const TextStyle(
+                    fontSize: 44,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.onSurface,
+                  ),
+                ),
+                const Text(
+                  'análisis procesados hoy',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  latestAnalysisLabel,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                _SummaryDistributionBar(
+                  benignRatio: benignRatio,
+                  malignantRatio: malignantRatio,
+                ),
+                const SizedBox(height: 14),
+                Row(
                   children: [
-                    _StatRow(
-                      color: AppColors.secondaryFixedDim,
-                      label: 'Benigno',
-                      value: '$benign',
+                    Expanded(
+                      child: _SummaryMetricCard(
+                        label: 'Benignos',
+                        value: benign,
+                        ratio: benignRatio,
+                        color: AppColors.benignText,
+                        backgroundColor: AppColors.benignBg,
+                      ),
                     ),
-                    const SizedBox(height: 8),
-                    _StatRow(
-                      color: AppColors.error,
-                      label: 'Maligno',
-                      value: '$malignant',
-                      valueColor: AppColors.error,
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _SummaryMetricCard(
+                        label: 'Malignos',
+                        value: malignant,
+                        ratio: malignantRatio,
+                        color: AppColors.error,
+                        backgroundColor: AppColors.errorContainer,
+                      ),
                     ),
                   ],
                 ),
@@ -587,57 +530,198 @@ class _SummaryCard extends StatelessWidget {
   }
 }
 
-class _StatRow extends StatelessWidget {
-  final Color color;
-  final String label;
-  final String value;
-  final Color? valueColor;
+class _SummaryHeader extends StatelessWidget {
+  final VoidCallback? onRefresh;
 
-  const _StatRow({
-    required this.color,
-    required this.label,
-    required this.value,
-    this.valueColor,
-  });
+  const _SummaryHeader({this.onRefresh});
 
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Flexible(
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
+        const Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+              Text(
+                'RESUMEN DE HOY',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.6,
+                  color: AppColors.onSurfaceVariant,
+                ),
               ),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: AppColors.onSurface,
-                  ),
+              SizedBox(height: 2),
+              Text(
+                'Datos desde /summary/today',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: AppColors.onSurfaceVariant,
                 ),
               ),
             ],
           ),
         ),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: valueColor ?? AppColors.onSurface,
+        if (onRefresh != null)
+          IconButton.filledTonal(
+            onPressed: onRefresh,
+            icon: const Icon(Icons.refresh, size: 18),
+            tooltip: 'Actualizar resumen',
+            visualDensity: VisualDensity.compact,
           ),
-        ),
       ],
+    );
+  }
+}
+
+class _SummaryDistributionBar extends StatelessWidget {
+  final double benignRatio;
+  final double malignantRatio;
+
+  const _SummaryDistributionBar({
+    required this.benignRatio,
+    required this.malignantRatio,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(999),
+      child: SizedBox(
+        height: 10,
+        child: Row(
+          children: [
+            if (benignRatio > 0)
+              Expanded(
+                flex: (benignRatio * 1000).round().clamp(1, 1000),
+                child: Container(color: AppColors.benignText),
+              ),
+            if (malignantRatio > 0)
+              Expanded(
+                flex: (malignantRatio * 1000).round().clamp(1, 1000),
+                child: Container(color: AppColors.error),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SummaryMetricCard extends StatelessWidget {
+  final String label;
+  final int value;
+  final double ratio;
+  final Color color;
+  final Color backgroundColor;
+
+  const _SummaryMetricCard({
+    required this.label,
+    required this.value,
+    required this.ratio,
+    required this.color,
+    required this.backgroundColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: backgroundColor.withValues(alpha: 0.62),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppColors.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '$value',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            '${(ratio * 100).toStringAsFixed(0)}% del día',
+            style: const TextStyle(
+              fontSize: 11,
+              color: AppColors.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AdminEntryCard extends StatelessWidget {
+  const _AdminEntryCard();
+
+  void _showPendingMessage(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Módulo administrativo preparado para conectarse cuando existan endpoints admin.',
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => _showPendingMessage(context),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceContainerLowest,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.primary.withValues(alpha: 0.28)),
+        ),
+        child: const Row(
+          children: [
+            Icon(Icons.admin_panel_settings_outlined, color: AppColors.primary),
+            SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Gestión administrativa',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.onSurface,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'Acceso reservado para usuarios admin. Listo para enlazar el módulo futuro.',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppColors.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right, color: AppColors.outline),
+          ],
+        ),
+      ),
     );
   }
 }
