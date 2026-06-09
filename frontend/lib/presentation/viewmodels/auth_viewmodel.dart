@@ -181,6 +181,7 @@ class AuthViewModel extends ChangeNotifier {
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'] as String)
           : null,
+      role: json['role'] as String? ?? 'doctor',
     );
   }
 

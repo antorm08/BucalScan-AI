@@ -75,11 +75,13 @@ class _CaptureTabViewState extends State<CaptureTabView> {
     final patientId = _patientIdController.text.trim();
     final patientName = _patientNameController.text.trim();
 
-    unawaited(viewModel.predictImage(
-      imageFile,
-      patientId: patientId.isEmpty ? null : patientId,
-      patientName: patientName.isEmpty ? null : patientName,
-    ));
+    unawaited(
+      viewModel.predictImage(
+        imageFile,
+        patientId: patientId.isEmpty ? null : patientId,
+        patientName: patientName.isEmpty ? null : patientName,
+      ),
+    );
 
     if (!mounted) {
       return;
@@ -94,6 +96,7 @@ class _CaptureTabViewState extends State<CaptureTabView> {
   @override
   Widget build(BuildContext context) {
     final viewModel = context.watch<PredictionViewModel>();
+    final hasImage = _selectedImage != null;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -103,38 +106,9 @@ class _CaptureTabViewState extends State<CaptureTabView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Card(
-              color: AppColors.surfaceContainerLowest,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: const BorderSide(color: AppColors.outlineVariant),
-              ),
-              child: const Padding(
-                padding: EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Captura clinica',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.onSurface,
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Seleccione una foto nitida de la cavidad oral y revise la vista previa antes del analisis.',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: AppColors.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            _CaptureHeroCard(hasImage: hasImage),
+            const SizedBox(height: 12),
+            _CaptureTipsCard(hasImage: hasImage),
             const SizedBox(height: 12),
             _CapturePreviewCard(selectedImage: _selectedImage),
             const SizedBox(height: 12),
@@ -147,7 +121,7 @@ class _CaptureTabViewState extends State<CaptureTabView> {
                         : () => _pickImage(ImageSource.camera),
                     icon: const Icon(Icons.camera_alt_outlined, size: 18),
                     label: Text(
-                      _selectedImage == null ? 'Camara' : 'Nueva foto',
+                      _selectedImage == null ? 'Tomar foto' : 'Nueva foto',
                     ),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -162,7 +136,9 @@ class _CaptureTabViewState extends State<CaptureTabView> {
                         : () => _pickImage(ImageSource.gallery),
                     icon: const Icon(Icons.photo_library_outlined, size: 18),
                     label: Text(
-                      _selectedImage == null ? 'Galeria' : 'Cambiar imagen',
+                      _selectedImage == null
+                          ? 'Elegir archivo'
+                          : 'Cambiar imagen',
                     ),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -171,7 +147,7 @@ class _CaptureTabViewState extends State<CaptureTabView> {
                 ),
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
@@ -193,8 +169,8 @@ class _CaptureTabViewState extends State<CaptureTabView> {
                   Expanded(
                     child: Text(
                       _selectedImage == null
-                          ? 'Elija una imagen desde camara o galeria para habilitar el analisis.'
-                          : 'Imagen lista. Revise el encuadre y luego continue con el analisis.',
+                          ? 'Elija una foto clara de la cavidad oral para habilitar el análisis.'
+                          : 'Imagen lista. Confirme que la lesión sea visible antes de continuar.',
                       style: const TextStyle(
                         fontSize: 14,
                         color: AppColors.onSurfaceVariant,
@@ -226,6 +202,14 @@ class _CaptureTabViewState extends State<CaptureTabView> {
                       ),
                     ),
                     const SizedBox(height: 10),
+                    const Text(
+                      'Estos datos ayudan a identificar el resultado en el historial. Puede dejarlos vacíos si el caso no requiere registro nominal.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
                     TextField(
                       controller: _patientIdController,
                       decoration: InputDecoration(
@@ -236,13 +220,20 @@ class _CaptureTabViewState extends State<CaptureTabView> {
                         fillColor: AppColors.surfaceContainerLow,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: AppColors.outlineVariant),
+                          borderSide: const BorderSide(
+                            color: AppColors.outlineVariant,
+                          ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: AppColors.outlineVariant),
+                          borderSide: const BorderSide(
+                            color: AppColors.outlineVariant,
+                          ),
                         ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -256,13 +247,20 @@ class _CaptureTabViewState extends State<CaptureTabView> {
                         fillColor: AppColors.surfaceContainerLow,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: AppColors.outlineVariant),
+                          borderSide: const BorderSide(
+                            color: AppColors.outlineVariant,
+                          ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: AppColors.outlineVariant),
+                          borderSide: const BorderSide(
+                            color: AppColors.outlineVariant,
+                          ),
                         ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
                       ),
                     ),
                   ],
@@ -283,8 +281,10 @@ class _CaptureTabViewState extends State<CaptureTabView> {
                   : const Icon(Icons.analytics_outlined, size: 18),
               label: Text(
                 viewModel.isLoading
-                    ? 'Iniciando analisis...'
-                    : 'Analizar imagen seleccionada',
+                    ? 'Preparando análisis...'
+                    : hasImage
+                    ? 'Confirmar y analizar imagen'
+                    : 'Seleccione una imagen para continuar',
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
@@ -316,17 +316,17 @@ class _CaptureTabViewState extends State<CaptureTabView> {
                     _StepItem(
                       number: 1,
                       text:
-                          'Tome o cargue una imagen bien iluminada de la cavidad oral',
+                          'Use buena iluminación y enfoque sobre la zona de lesión',
                     ),
                     _StepItem(
                       number: 2,
                       text:
-                          'Revise la imagen antes de enviarla para evitar errores de analisis',
+                          'Evite imágenes borrosas, oscuras, recortadas o con objetos externos',
                     ),
                     _StepItem(
                       number: 3,
                       text:
-                          'Consulte el resultado y la confianza estimada al finalizar',
+                          'Revise la clasificación, confianza y recomendación como apoyo clínico',
                     ),
                   ],
                 ),
@@ -335,6 +335,162 @@ class _CaptureTabViewState extends State<CaptureTabView> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _CaptureHeroCard extends StatelessWidget {
+  final bool hasImage;
+
+  const _CaptureHeroCard({required this.hasImage});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.primaryContainer,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.16),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(
+              hasImage ? Icons.check_circle_outline : Icons.center_focus_strong,
+              color: Colors.white,
+              size: 26,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  hasImage ? 'Revise antes de enviar' : 'Captura guiada',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  hasImage
+                      ? 'La imagen está cargada. Verifique nitidez, encuadre y datos opcionales antes del análisis.'
+                      : 'Primero seleccione una imagen clínica. Luego podrá confirmar la vista previa y registrar metadata opcional.',
+                  style: const TextStyle(
+                    color: AppColors.primaryFixed,
+                    fontSize: 14,
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CaptureTipsCard extends StatelessWidget {
+  final bool hasImage;
+
+  const _CaptureTipsCard({required this.hasImage});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: AppColors.surfaceContainerLowest,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: const BorderSide(color: AppColors.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  hasImage
+                      ? Icons.fact_check_outlined
+                      : Icons.tips_and_updates_outlined,
+                  color: AppColors.primary,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  hasImage ? 'Control previo' : 'Indicaciones de captura',
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.onSurface,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            _TipRow(
+              icon: Icons.light_mode_outlined,
+              text: hasImage
+                  ? 'La zona debe verse iluminada y sin sombras fuertes.'
+                  : 'Busque luz uniforme sobre la cavidad oral.',
+            ),
+            const SizedBox(height: 8),
+            _TipRow(
+              icon: Icons.crop_free_outlined,
+              text: hasImage
+                  ? 'La lesión debe quedar centrada y completa en la imagen.'
+                  : 'Centre la lesión y evite recortes innecesarios.',
+            ),
+            const SizedBox(height: 8),
+            _TipRow(
+              icon: Icons.privacy_tip_outlined,
+              text:
+                  'El resultado es apoyo clínico y no reemplaza evaluación profesional.',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TipRow extends StatelessWidget {
+  final IconData icon;
+  final String text;
+
+  const _TipRow({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 18, color: AppColors.onSurfaceVariant),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(
+              fontSize: 13,
+              height: 1.3,
+              color: AppColors.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

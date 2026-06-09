@@ -18,17 +18,22 @@ class HomeView extends StatefulWidget {
 class _HomeViewState extends State<HomeView> {
   late int _currentIndex;
 
-  final List<Widget> _screens = const [
-    HomeTabView(),
-    CaptureTabView(),
-    HistoryTabView(),
-    ProfileTabView(),
-  ];
+  late final List<Widget> _screens;
 
   @override
   void initState() {
     super.initState();
+    _screens = [
+      HomeTabView(onStartCapture: () => _selectTab(1)),
+      const CaptureTabView(),
+      const HistoryTabView(),
+      const ProfileTabView(),
+    ];
     _currentIndex = widget.initialIndex.clamp(0, _screens.length - 1).toInt();
+  }
+
+  void _selectTab(int index) {
+    setState(() => _currentIndex = index);
   }
 
   @override
@@ -59,25 +64,25 @@ class _HomeViewState extends State<HomeView> {
                   icon: Icons.home,
                   label: 'Inicio',
                   isActive: _currentIndex == 0,
-                  onTap: () => setState(() => _currentIndex = 0),
+                  onTap: () => _selectTab(0),
                 ),
                 NavBarItem(
                   icon: Icons.add_a_photo,
                   label: 'Nueva Captura',
                   isActive: _currentIndex == 1,
-                  onTap: () => setState(() => _currentIndex = 1),
+                  onTap: () => _selectTab(1),
                 ),
                 NavBarItem(
                   icon: Icons.history,
                   label: 'Historial',
                   isActive: _currentIndex == 2,
-                  onTap: () => setState(() => _currentIndex = 2),
+                  onTap: () => _selectTab(2),
                 ),
                 NavBarItem(
                   icon: Icons.person,
                   label: 'Perfil',
                   isActive: _currentIndex == 3,
-                  onTap: () => setState(() => _currentIndex = 3),
+                  onTap: () => _selectTab(3),
                 ),
               ],
             ),
