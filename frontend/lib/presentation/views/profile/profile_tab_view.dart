@@ -81,6 +81,14 @@ class ProfileTabView extends StatelessWidget {
                     title: 'Miembro desde',
                     subtitle: _formatMemberSince(user?.createdAt),
                   ),
+                  const Divider(height: 1, color: AppColors.surfaceVariant),
+                  _ProfileTile(
+                    icon: Icons.admin_panel_settings_outlined,
+                    title: 'Rol de acceso',
+                    subtitle: user?.isAdmin == true
+                        ? 'Administrador'
+                        : 'Doctor',
+                  ),
                 ],
               ),
             ),
@@ -90,14 +98,20 @@ class ProfileTabView extends StatelessWidget {
               child: Column(
                 children: [
                   ListTile(
-                    leading: const Icon(Icons.settings, color: AppColors.onSurfaceVariant),
+                    leading: const Icon(
+                      Icons.settings,
+                      color: AppColors.onSurfaceVariant,
+                    ),
                     title: const Text('Configuración'),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () {},
                   ),
                   const Divider(height: 1, color: AppColors.surfaceVariant),
                   ListTile(
-                    leading: const Icon(Icons.help_outline, color: AppColors.onSurfaceVariant),
+                    leading: const Icon(
+                      Icons.help_outline,
+                      color: AppColors.onSurfaceVariant,
+                    ),
                     title: const Text('Ayuda y soporte'),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () {},
