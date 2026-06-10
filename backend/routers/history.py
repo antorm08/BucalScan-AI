@@ -42,6 +42,8 @@ async def get_history(
                 "image_url": image_url,
                 "patient_id": analysis.patient_id,
                 "patient_name": analysis.patient_name,
+                "model_version": analysis.model_version,
+                "processing_time_ms": analysis.processing_time_ms,
             }
         )
 

@@ -1,4 +1,6 @@
 import io
+import logging
+import time
 import uuid
 from pathlib import Path
 from typing import Optional
@@ -9,17 +11,22 @@ from sqlalchemy.orm import Session
 
 from auth.jwt import get_current_user
 import crud
+from config import settings
 from database import get_db
 from models import models
 from models.inference import OralLesionClassifier
 from schemas import PredictionResponse
 from services.cloudinary_storage import upload_image
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/api/v1", tags=["predict"])
 classifier = OralLesionClassifier()
 
 _ACCEPTED_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp"}
 _UPLOADS_DIR = Path(__file__).resolve().parent.parent / "uploads"
+_MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
+_MODEL_VERSION = Path(settings.model_path).stem
 
 
 def _build_recommendation(prediction: str) -> str:
@@ -47,15 +54,31 @@ async def predict(
 
     contents = await file.read()
 
-    try:
-        image = Image.open(io.BytesIO(contents)).convert("RGB")
-    except UnidentifiedImageError as exc:
-        raise HTTPException(status_code=400, detail="Cannot decode image file.") from exc
+    if len(contents) > _MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=413,
+            detail="File too large. Maximum allowed size is 10 MB.",
+        )
 
     try:
+        image = Image.open(io.BytesIO(contents)).convert("RGB")
+        image.load()
+    except Image.DecompressionBombError:
+        raise HTTPException(status_code=400, detail="Image rejected: potential decompression bomb.")
+    except (UnidentifiedImageError, OSError):
+        raise HTTPException(status_code=400, detail="Cannot decode image file.")
+    except Exception:
+        raise HTTPException(status_code=400, detail="Cannot decode image file.")
+
+    try:
+        _t0 = time.perf_counter()
         result = classifier.predict(image)
-    except RuntimeError as exc:
-        raise HTTPException(status_code=500, detail=f"Model inference failed: {exc}") from exc
+        processing_time_ms = round((time.perf_counter() - _t0) * 1000, 1)
+    except Exception as exc:
+        logger.exception("Inference error for user_id=%s", current_user.id)
+        raise HTTPException(
+            status_code=500, detail="Model inference failed. Please try again later."
+        ) from exc
 
     ext = Path(file.filename or "image.jpg").suffix or ".jpg"
     stored_filename = f"{uuid.uuid4().hex}{ext}"
@@ -78,6 +101,8 @@ async def predict(
         image_path=image_path,
         patient_id=patient_id or None,
         patient_name=patient_name or None,
+        model_version=_MODEL_VERSION,
+        processing_time_ms=processing_time_ms,
     )
 
     return PredictionResponse(

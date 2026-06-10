@@ -42,6 +42,8 @@ class AnalysisHistory(BaseModel):
     image_url: Optional[str] = None
     patient_id: Optional[str] = None
     patient_name: Optional[str] = None
+    model_version: Optional[str] = None
+    processing_time_ms: Optional[float] = None
 
     class Config:
         from_attributes = True

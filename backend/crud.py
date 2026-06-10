@@ -55,7 +55,7 @@ def get_today_summary(db: Session, user_id: int):
         "latest_analysis_at": row.latest_analysis_at,
     }
 
-def create_analysis(db: Session, user_id: int, prediction: str, confidence: float, image_path: str = None, patient_id: str = None, patient_name: str = None):
+def create_analysis(db: Session, user_id: int, prediction: str, confidence: float, image_path: str = None, patient_id: str = None, patient_name: str = None, model_version: str = None, processing_time_ms: float = None):
     db_analysis = models.Analysis(
         user_id=user_id,
         prediction=prediction,
@@ -63,6 +63,8 @@ def create_analysis(db: Session, user_id: int, prediction: str, confidence: floa
         image_path=image_path,
         patient_id=patient_id,
         patient_name=patient_name,
+        model_version=model_version,
+        processing_time_ms=processing_time_ms,
     )
     db.add(db_analysis)
     db.commit()
