@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Literal, Optional
 from datetime import datetime
 
 class PredictionResponse(BaseModel):
@@ -54,3 +54,20 @@ class DailySummary(BaseModel):
     benign: int
     malignant: int
     latest_analysis_at: Optional[datetime] = None
+
+
+class UserAdminResponse(BaseModel):
+    id: int
+    full_name: str
+    doctor_id: str
+    email: str
+    medical_center: Optional[str] = None
+    created_at: Optional[datetime] = None
+    status: str
+
+    class Config:
+        from_attributes = True
+
+
+class UserStatusUpdate(BaseModel):
+    status: Literal["active", "suspended"]

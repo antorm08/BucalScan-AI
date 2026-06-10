@@ -44,6 +44,21 @@ def ensure_sqlite_schema():
         if "processing_time_ms" not in existing_columns:
             connection.execute(text("ALTER TABLE analyses ADD COLUMN processing_time_ms FLOAT"))
 
+        # --- Migración de la tabla users ---
+        users_exists = connection.execute(
+            text("SELECT name FROM sqlite_master WHERE type='table' AND name='users'")
+        ).scalar()
+
+        if users_exists:
+            users_info = connection.execute(text("PRAGMA table_info(users)"))
+            users_columns = {row[1] for row in users_info}
+
+            if "status" not in users_columns:
+                connection.execute(text("ALTER TABLE users ADD COLUMN status VARCHAR"))
+                connection.execute(
+                    text("UPDATE users SET status='active' WHERE status IS NULL")
+                )
+
 def get_db():
     db = SessionLocal()
     try:
