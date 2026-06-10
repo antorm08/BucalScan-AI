@@ -27,5 +27,7 @@ class Analysis(Base):
     patient_id = Column(String, nullable=True)
     patient_name = Column(String, nullable=True)
     timestamp = Column(DateTime, default=datetime.utcnow)
+    model_version = Column(String, nullable=True)
+    processing_time_ms = Column(Float, nullable=True)
     
     owner = relationship("User", back_populates="analyses")
