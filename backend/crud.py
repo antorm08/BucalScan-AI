@@ -64,6 +64,20 @@ def get_daily_summary(
         "latest_analysis_at": row.latest_analysis_at,
     }
 
+def get_all_users(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(models.User).offset(skip).limit(limit).all()
+
+
+def update_user_status(db: Session, user_id: int, status: str):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if user is None:
+        return None
+    user.status = status
+    db.commit()
+    db.refresh(user)
+    return user
+
+
 def create_analysis(db: Session, user_id: int, prediction: str, confidence: float, image_path: str = None, patient_id: str = None, patient_name: str = None, model_version: str = None, processing_time_ms: float = None):
     db_analysis = models.Analysis(
         user_id=user_id,
