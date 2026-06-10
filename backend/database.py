@@ -38,6 +38,12 @@ def ensure_sqlite_schema():
         if "patient_name" not in existing_columns:
             connection.execute(text("ALTER TABLE analyses ADD COLUMN patient_name VARCHAR"))
 
+        if "model_version" not in existing_columns:
+            connection.execute(text("ALTER TABLE analyses ADD COLUMN model_version VARCHAR"))
+
+        if "processing_time_ms" not in existing_columns:
+            connection.execute(text("ALTER TABLE analyses ADD COLUMN processing_time_ms FLOAT"))
+
 def get_db():
     db = SessionLocal()
     try:
