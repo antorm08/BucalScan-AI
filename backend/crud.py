@@ -1,4 +1,5 @@
-from datetime import datetime, timedelta
+from datetime import date as date_type, datetime, timedelta
+from typing import Optional
 
 from sqlalchemy import case, func
 from sqlalchemy.orm import Session
@@ -32,21 +33,29 @@ def get_user_analyses(db: Session, user_id: int, skip: int = 0, limit: int = 100
     ).order_by(models.Analysis.timestamp.desc()).offset(skip).limit(limit).all()
 
 
-def get_today_summary(db: Session, user_id: int):
-    now = datetime.utcnow()
-    start_of_day = datetime(now.year, now.month, now.day)
+def get_daily_summary(
+    db: Session,
+    user_id: Optional[int] = None,
+    date_target: Optional[date_type] = None,
+) -> dict:
+    today = date_target if date_target is not None else datetime.utcnow().date()
+    start_of_day = datetime(today.year, today.month, today.day)
     end_of_day = start_of_day + timedelta(days=1)
 
-    row = db.query(
+    query = db.query(
         func.count(models.Analysis.id).label("total"),
         func.sum(case((models.Analysis.prediction == "benign", 1), else_=0)).label("benign"),
         func.sum(case((models.Analysis.prediction == "malignant", 1), else_=0)).label("malignant"),
         func.max(models.Analysis.timestamp).label("latest_analysis_at"),
     ).filter(
-        models.Analysis.user_id == user_id,
         models.Analysis.timestamp >= start_of_day,
         models.Analysis.timestamp < end_of_day,
-    ).one()
+    )
+
+    if user_id is not None:
+        query = query.filter(models.Analysis.user_id == user_id)
+
+    row = query.one()
 
     return {
         "total": int(row.total or 0),
