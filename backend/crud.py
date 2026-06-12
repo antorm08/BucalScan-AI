@@ -34,6 +34,12 @@ def get_user_analyses(db: Session, user_id: int, skip: int = 0, limit: int = 100
     ).order_by(models.Analysis.timestamp.desc()).offset(skip).limit(limit).all()
 
 
+def get_all_analyses(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(models.Analysis).order_by(
+        models.Analysis.timestamp.desc()
+    ).offset(skip).limit(limit).all()
+
+
 def get_daily_summary(
     db: Session,
     user_id: Optional[int] = None,

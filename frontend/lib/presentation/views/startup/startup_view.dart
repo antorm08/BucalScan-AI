@@ -127,10 +127,10 @@ class _StartupViewState extends State<StartupView> {
                           color: AppColors.primaryContainer,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(
-                          Icons.medical_services,
-                          color: Colors.white,
-                          size: 36,
+                        clipBehavior: Clip.antiAlias,
+                        child: Image.asset(
+                          'assets/images/app_icon.png',
+                          fit: BoxFit.cover,
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -166,6 +166,15 @@ class _StartupViewState extends State<StartupView> {
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
                             color: AppColors.onSurface,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Puede tomar unos minutos si el servidor estaba en reposo.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: AppColors.onSurfaceVariant,
                           ),
                         ),
                         if (_currentAttempt > 1) ...[

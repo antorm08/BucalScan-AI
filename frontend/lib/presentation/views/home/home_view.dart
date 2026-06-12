@@ -120,6 +120,28 @@ class _MainDrawer extends StatelessWidget {
   }
 
   Future<void> _logout(BuildContext context) async {
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Cerrar sesión'),
+        content: const Text('¿Desea cerrar sesión?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Cerrar sesión'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldLogout != true || !context.mounted) {
+      return;
+    }
+
     await context.read<AuthViewModel>().logout();
     if (!context.mounted) {
       return;
@@ -147,7 +169,7 @@ class _MainDrawer extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Icon(
-                    Icons.medical_services,
+                    Icons.health_and_safety_outlined,
                     color: AppColors.onPrimary,
                     size: 36,
                   ),

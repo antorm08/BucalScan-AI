@@ -82,12 +82,14 @@ class _LoginViewState extends ConsumerState<LoginView> {
             ),
             backgroundColor: AppColors.benignText,
             behavior: SnackBarBehavior.floating,
+            duration: Duration(milliseconds: 650),
           ),
         );
         await Future<void>.delayed(const Duration(milliseconds: 650));
         if (!mounted) {
           return;
         }
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
         Navigator.pushReplacement(
           context,

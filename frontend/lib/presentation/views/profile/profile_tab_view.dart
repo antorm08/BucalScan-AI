@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
 import 'package:bucalscan_ai/presentation/viewmodels/auth_viewmodel.dart';
@@ -10,9 +9,54 @@ import 'package:bucalscan_ai/presentation/widgets/app_app_bar.dart';
 class ProfileTabView extends StatelessWidget {
   const ProfileTabView({super.key});
 
+  Future<void> _confirmLogout(BuildContext context) async {
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Cerrar sesión'),
+        content: const Text('¿Desea cerrar sesión?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Cerrar sesión'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldLogout != true || !context.mounted) {
+      return;
+    }
+
+    context.read<AuthViewModel>().logout();
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginView()),
+      (route) => false,
+    );
+  }
+
   String _formatMemberSince(DateTime? date) {
     if (date == null) return '—';
-    return DateFormat('MMMM yyyy', 'es_ES').format(date).capitalizeFirst();
+    const months = [
+      'Enero',
+      'Febrero',
+      'Marzo',
+      'Abril',
+      'Mayo',
+      'Junio',
+      'Julio',
+      'Agosto',
+      'Septiembre',
+      'Octubre',
+      'Noviembre',
+      'Diciembre',
+    ];
+    return '${months[date.month - 1]} ${date.year}';
   }
 
   @override
@@ -131,14 +175,7 @@ class ProfileTabView extends StatelessWidget {
                       'Cerrar sesión',
                       style: TextStyle(color: AppColors.error),
                     ),
-                    onTap: () {
-                      context.read<AuthViewModel>().logout();
-                      Navigator.pushAndRemoveUntil(
-                        context,
-                        MaterialPageRoute(builder: (_) => const LoginView()),
-                        (route) => false,
-                      );
-                    },
+                    onTap: () => _confirmLogout(context),
                   ),
                 ],
               ),
@@ -168,12 +205,5 @@ class _ProfileTile extends StatelessWidget {
       title: Text(title, style: const TextStyle(color: AppColors.onSurface)),
       subtitle: Text(subtitle),
     );
-  }
-}
-
-extension StringExtension on String {
-  String capitalizeFirst() {
-    if (isEmpty) return this;
-    return '${this[0].toUpperCase()}${substring(1)}';
   }
 }
