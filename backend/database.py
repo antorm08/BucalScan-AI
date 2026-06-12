@@ -59,6 +59,12 @@ def ensure_sqlite_schema():
                     text("UPDATE users SET status='active' WHERE status IS NULL")
                 )
 
+            if "role" not in users_columns:
+                connection.execute(text("ALTER TABLE users ADD COLUMN role VARCHAR"))
+                connection.execute(
+                    text("UPDATE users SET role='doctor' WHERE role IS NULL")
+                )
+
 def get_db():
     db = SessionLocal()
     try:

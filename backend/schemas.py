@@ -22,6 +22,7 @@ class UserLogin(BaseModel):
 class TokenData(BaseModel):
     sub: str
     email: str
+    role: Literal["admin", "doctor"]
 
 class UserProfile(BaseModel):
     id: int
@@ -29,6 +30,7 @@ class UserProfile(BaseModel):
     doctor_id: str
     medical_center: Optional[str] = None
     email: str
+    role: Literal["admin", "doctor"]
     created_at: Optional[datetime] = None
 
     class Config:
@@ -64,6 +66,7 @@ class UserAdminResponse(BaseModel):
     medical_center: Optional[str] = None
     created_at: Optional[datetime] = None
     status: str
+    role: Literal["admin", "doctor"]
 
     class Config:
         from_attributes = True
@@ -71,3 +74,21 @@ class UserAdminResponse(BaseModel):
 
 class UserStatusUpdate(BaseModel):
     status: Literal["active", "suspended"]
+
+
+class UserUpdate(BaseModel):
+    full_name: Optional[str] = None
+    medical_center: Optional[str] = None
+    email: Optional[str] = None
+
+    @property
+    def has_any_update(self) -> bool:
+        return any(v is not None for v in [self.full_name, self.medical_center, self.email])
+
+    @property
+    def is_valid(self) -> bool:
+        if self.full_name is not None and self.full_name.strip() == '':
+            return False
+        if self.email is not None and self.email.strip() == '':
+            return False
+        return True

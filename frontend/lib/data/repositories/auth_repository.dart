@@ -31,4 +31,16 @@ class AuthRepository {
   Future<Map<String, dynamic>> me() async {
     return _apiService.me();
   }
+
+  Future<Map<String, dynamic>> updateProfile({
+    String? fullName,
+    String? medicalCenter,
+    String? email,
+  }) async {
+    return _apiService.updateProfile(
+      fullName: fullName,
+      medicalCenter: medicalCenter,
+      email: email,
+    );
+  }
 }

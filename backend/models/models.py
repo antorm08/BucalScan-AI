@@ -14,6 +14,7 @@ class User(Base):
     hashed_password = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     status = Column(String, default="active", nullable=False)
+    role = Column(String, default="doctor", nullable=False)
 
     analyses = relationship("Analysis", back_populates="owner")
 
