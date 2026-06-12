@@ -3,25 +3,25 @@ from sqlalchemy.orm import Session
 
 from auth.jwt import create_access_token, get_current_user
 from auth.security import verify_password
-from crud import create_user, get_user_by_email
+import crud
 from database import get_db
 from models import models
-from schemas import UserCreate, UserLogin, UserProfile
+from schemas import UserCreate, UserLogin, UserProfile, UserUpdate
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
 
 @router.post("/register")
 async def register(user: UserCreate, db: Session = Depends(get_db)):
-    db_user = get_user_by_email(db, email=user.email)
+    db_user = crud.get_user_by_email(db, email=user.email)
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
-    
+
     existing_doctor = db.query(models.User).filter(models.User.doctor_id == user.doctor_id).first()
     if existing_doctor:
         raise HTTPException(status_code=400, detail="Doctor ID already registered")
 
-    created_user = create_user(db=db, user=user)
+    created_user = crud.create_user(db=db, user=user)
     return {
         "success": True,
         "message": "User registered successfully",
@@ -33,11 +33,17 @@ async def register(user: UserCreate, db: Session = Depends(get_db)):
 
 @router.post("/login")
 async def login(user: UserLogin, db: Session = Depends(get_db)):
-    db_user = get_user_by_email(db, email=user.email)
+    db_user = crud.get_user_by_email(db, email=user.email)
     if not db_user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials",
+        )
+
+    if db_user.status == "suspended":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account suspended",
         )
 
     if not verify_password(user.password, db_user.hashed_password):
@@ -47,7 +53,7 @@ async def login(user: UserLogin, db: Session = Depends(get_db)):
         )
 
     token = create_access_token(
-        data={"sub": str(db_user.id), "email": db_user.email}
+        data={"sub": str(db_user.id), "email": db_user.email, "role": db_user.role}
     )
 
     return {
@@ -66,5 +72,35 @@ async def me(current_user: models.User = Depends(get_current_user)):
         "success": True,
         "data": {
             "user": UserProfile.model_validate(current_user).model_dump()
+        }
+    }
+
+
+@router.put("/me")
+async def update_me(
+    user_update: UserUpdate,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if not user_update.has_any_update:
+        raise HTTPException(status_code=400, detail="No fields to update")
+
+    if not user_update.is_valid:
+        raise HTTPException(status_code=400, detail="Invalid field value")
+
+    if user_update.email:
+        existing = db.query(models.User).filter(
+            models.User.email == user_update.email,
+            models.User.id != current_user.id,
+        ).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="Email already in use")
+
+    updated_user = crud.update_user(db, user_id=current_user.id, user_update=user_update)
+    return {
+        "success": True,
+        "message": "Profile updated successfully",
+        "data": {
+            "user": UserProfile.model_validate(updated_user).model_dump()
         }
     }
