@@ -28,7 +28,10 @@ class _HomeViewState extends State<HomeView> {
   void initState() {
     super.initState();
     _screens = [
-      HomeTabView(onStartCapture: () => _selectTab(1)),
+      HomeTabView(
+        onStartCapture: () => _selectTab(1),
+        onOpenHistory: () => _selectTab(2),
+      ),
       const CaptureTabView(),
       const HistoryTabView(),
       const ProfileTabView(),
