@@ -27,6 +27,13 @@ class AuthViewModel extends ChangeNotifier {
   String? get error => _error;
   bool get isAuthenticated => _currentUser != null;
 
+  void syncAuthenticatedUser(User user) {
+    _currentUser = user;
+    _error = null;
+    _isLoading = false;
+    notifyListeners();
+  }
+
   Future<bool> login({required String email, required String password}) async {
     _isLoading = true;
     _error = null;

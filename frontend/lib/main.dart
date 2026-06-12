@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
 import 'package:provider/provider.dart';
 import 'package:bucalscan_ai/core/constants/app_constants.dart';
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
@@ -120,26 +121,28 @@ class _BucalScanAiAppState extends State<BucalScanAiApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: AppConstants.appName,
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: AppColors.primary,
-          brightness: Brightness.light,
+    return riverpod.ProviderScope(
+      child: MaterialApp(
+        title: AppConstants.appName,
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: AppColors.primary,
+            brightness: Brightness.light,
+          ),
+          useMaterial3: true,
+          appBarTheme: const AppBarTheme(
+            centerTitle: true,
+            elevation: 0,
+          ),
         ),
-        useMaterial3: true,
-        appBarTheme: const AppBarTheme(
-          centerTitle: true,
-          elevation: 0,
-        ),
-      ),
 
-      home: !_isReadyToEnter
-          ? StartupView(apiService: widget.apiService, onReady: _enterApp)
-          : _isAuthenticated
-              ? const HomeView()
-              : const LoginView(),
+        home: !_isReadyToEnter
+            ? StartupView(apiService: widget.apiService, onReady: _enterApp)
+            : _isAuthenticated
+                ? const HomeView()
+                : const LoginView(),
+      ),
     );
   }
 }

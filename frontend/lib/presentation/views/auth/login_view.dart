@@ -1,19 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:provider/provider.dart' as provider;
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
+import 'package:bucalscan_ai/domain/entities/user.dart';
+import 'package:bucalscan_ai/features/auth/presentation/providers/auth_providers.dart';
 import 'package:bucalscan_ai/presentation/viewmodels/auth_viewmodel.dart';
 import 'package:bucalscan_ai/presentation/views/home/home_view.dart';
 import 'package:bucalscan_ai/presentation/views/auth/register_view.dart';
 import 'package:bucalscan_ai/presentation/widgets/app_text_field.dart';
 
-class LoginView extends StatefulWidget {
+class LoginView extends ConsumerStatefulWidget {
   const LoginView({super.key});
 
   @override
-  State<LoginView> createState() => _LoginViewState();
+  ConsumerState<LoginView> createState() => _LoginViewState();
 }
 
-class _LoginViewState extends State<LoginView> {
+class _LoginViewState extends ConsumerState<LoginView> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -47,12 +50,27 @@ class _LoginViewState extends State<LoginView> {
 
   Future<void> _handleLogin() async {
     if (_formKey.currentState!.validate()) {
-      final viewModel = context.read<AuthViewModel>();
-      final success = await viewModel.login(
+      final session = await ref.read(authControllerProvider.notifier).login(
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
-      if (success && mounted) {
+
+      if (session != null && mounted) {
+        provider.Provider.of<AuthViewModel>(
+          context,
+          listen: false,
+        ).syncAuthenticatedUser(
+          User(
+            id: session.user.id,
+            fullName: session.user.fullName,
+            doctorId: session.user.doctorId,
+            medicalCenter: session.user.medicalCenter,
+            email: session.user.email,
+            createdAt: session.user.createdAt,
+            role: session.user.role,
+          ),
+        );
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Row(
@@ -81,6 +99,8 @@ class _LoginViewState extends State<LoginView> {
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authControllerProvider);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -164,126 +184,119 @@ class _LoginViewState extends State<LoginView> {
                     ),
                     Padding(
                       padding: const EdgeInsets.all(24),
-                      child: Consumer<AuthViewModel>(
-                        builder: (context, viewModel, _) {
-                          return Form(
-                            key: _formKey,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                AppTextField(
-                                  controller: _emailController,
-                                  label: 'Correo electrónico',
-                                  hint: 'dr.smith@hospital.org',
-                                  icon: Icons.mail_outline,
-                                  keyboardType: TextInputType.emailAddress,
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Ingrese su correo electrónico';
-                                    }
-                                    if (!value.contains('@')) {
-                                      return 'Ingrese un correo válido';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                                const SizedBox(height: 16),
-                                AppTextField(
-                                  controller: _passwordController,
-                                  label: 'Contraseña',
-                                  hint: '••••••••',
-                                  icon: Icons.lock_outline,
-                                  obscureText: true,
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Ingrese su contraseña';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                                const SizedBox(height: 16),
-                                if (viewModel.error != null)
-                                  Padding(
-                                    padding: const EdgeInsets.only(bottom: 12),
-                                    child: Container(
-                                      padding: const EdgeInsets.all(12),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.errorContainer,
-                                        borderRadius: BorderRadius.circular(10),
-                                        border: Border.all(
-                                          color: AppColors.error.withValues(alpha: 0.25),
-                                        ),
-                                      ),
-                                      child: Row(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          const Icon(
-                                            Icons.error_outline,
-                                            color: AppColors.error,
-                                            size: 20,
-                                          ),
-                                          const SizedBox(width: 10),
-                                          Expanded(
-                                            child: Text(
-                                              _formatLoginError(viewModel.error!),
-                                              style: const TextStyle(
-                                                color: AppColors.onErrorContainer,
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ElevatedButton(
-                                  onPressed: viewModel.isLoading
-                                      ? null
-                                      : _handleLogin,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.primary,
-                                    foregroundColor: AppColors.onPrimary,
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 12,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    elevation: 0,
-                                  ),
-                                  child: viewModel.isLoading
-                                      ? const SizedBox(
-                                          height: 20,
-                                          width: 20,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            valueColor:
-                                                AlwaysStoppedAnimation<Color>(
-                                                  Colors.white,
-                                                ),
-                                          ),
-                                        )
-                                      : const Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Icon(Icons.login, size: 18),
-                                            SizedBox(width: 8),
-                                            Text(
-                                              'Iniciar Sesión',
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w600,
-                                                letterSpacing: 0.5,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                ),
-                              ],
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            AppTextField(
+                              controller: _emailController,
+                              label: 'Correo electrónico',
+                              hint: 'dr.smith@hospital.org',
+                              icon: Icons.mail_outline,
+                              keyboardType: TextInputType.emailAddress,
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Ingrese su correo electrónico';
+                                }
+                                if (!value.contains('@')) {
+                                  return 'Ingrese un correo válido';
+                                }
+                                return null;
+                              },
                             ),
-                          );
-                        },
+                            const SizedBox(height: 16),
+                            AppTextField(
+                              controller: _passwordController,
+                              label: 'Contraseña',
+                              hint: '••••••••',
+                              icon: Icons.lock_outline,
+                              obscureText: true,
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Ingrese su contraseña';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 16),
+                            if (authState.error != null)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.errorContainer,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: AppColors.error.withValues(alpha: 0.25),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Icon(
+                                        Icons.error_outline,
+                                        color: AppColors.error,
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text(
+                                          _formatLoginError(authState.error!),
+                                          style: const TextStyle(
+                                            color: AppColors.onErrorContainer,
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ElevatedButton(
+                              onPressed: authState.isLoading ? null : _handleLogin,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: AppColors.onPrimary,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                elevation: 0,
+                              ),
+                              child: authState.isLoading
+                                  ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor: AlwaysStoppedAnimation<Color>(
+                                          Colors.white,
+                                        ),
+                                      ),
+                                    )
+                                  : const Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.login, size: 18),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          'Iniciar Sesión',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                            letterSpacing: 0.5,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                     Container(
