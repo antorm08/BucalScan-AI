@@ -491,6 +491,59 @@ class TestProtectedRoutes:
         )
         assert response.status_code == 200
 
+    def test_summary_doctor_only_counts_own_analyses(self, client, db_session):
+        doctor = _create_db_user(
+            db_session, email="doctorsummary@hospital.org", doctor_id="MD-SUMMARY-DOCTOR"
+        )
+        other = _create_db_user(
+            db_session, email="othersummary@hospital.org", doctor_id="MD-SUMMARY-OTHER"
+        )
+        db_session.add_all([
+            models.Analysis(user_id=doctor.id, prediction="benign", confidence=0.91),
+            models.Analysis(user_id=other.id, prediction="malignant", confidence=0.88),
+        ])
+        db_session.commit()
+
+        token = create_access_token({"sub": str(doctor.id), "email": doctor.email})
+        response = client.get(
+            "/api/v1/summary/today",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total"] == 1
+        assert data["benign"] == 1
+        assert data["malignant"] == 0
+
+    def test_summary_admin_counts_all_analyses(self, client, db_session):
+        admin = _create_db_user(
+            db_session,
+            email="adminsummary@hospital.org",
+            doctor_id="MD-SUMMARY-ADMIN",
+            role="admin",
+        )
+        doctor = _create_db_user(
+            db_session, email="doctorglobalsummary@hospital.org", doctor_id="MD-SUMMARY-ALL"
+        )
+        db_session.add_all([
+            models.Analysis(user_id=admin.id, prediction="benign", confidence=0.93),
+            models.Analysis(user_id=doctor.id, prediction="malignant", confidence=0.87),
+        ])
+        db_session.commit()
+
+        token = create_access_token({"sub": str(admin.id), "email": admin.email})
+        response = client.get(
+            "/api/v1/summary/today",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total"] == 2
+        assert data["benign"] == 1
+        assert data["malignant"] == 1
+
     def test_register_is_public_no_token_required(self, client, db_session):
         response = client.post(
             "/api/v1/auth/register",

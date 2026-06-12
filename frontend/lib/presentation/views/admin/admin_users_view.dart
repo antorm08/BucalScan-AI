@@ -354,7 +354,7 @@ class _AdminUserCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-      color: AppColors.surfaceContainerLowest,
+        color: AppColors.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
         boxShadow: [
@@ -399,6 +399,8 @@ class _AdminUserCard extends StatelessWidget {
                     children: [
                       Text(
                         user.fullName,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w800,
@@ -409,34 +411,40 @@ class _AdminUserCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         user.email,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontSize: 15,
                           color: AppColors.onSurfaceVariant,
                         ),
                       ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: statusBg,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.circle, color: statusColor, size: 10),
-                      const SizedBox(width: 8),
-                      Text(
-                        user.isActive ? 'Activo' : 'Suspendido',
-                        style: TextStyle(
-                          color: statusColor,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
+                      const SizedBox(height: 10),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: statusBg,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.circle, color: statusColor, size: 10),
+                              const SizedBox(width: 8),
+                              Text(
+                                user.isActive ? 'Activo' : 'Suspendido',
+                                style: TextStyle(
+                                  color: statusColor,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],

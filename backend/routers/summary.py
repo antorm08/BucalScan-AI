@@ -15,4 +15,5 @@ async def get_today_dashboard_summary(
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return get_daily_summary(db, user_id=current_user.id)
+    user_id = None if current_user.role == "admin" else current_user.id
+    return get_daily_summary(db, user_id=user_id)

@@ -65,7 +65,7 @@ class ProfileTabView extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: const AppAppBar(title: 'Perfil'),
+      appBar: const AppAppBar(),
       body: SingleChildScrollView(
         child: Column(
           children: [

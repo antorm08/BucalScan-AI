@@ -8,8 +8,13 @@ import 'package:bucalscan_ai/presentation/widgets/app_app_bar.dart';
 
 class HomeTabView extends StatefulWidget {
   final VoidCallback onStartCapture;
+  final VoidCallback onOpenHistory;
 
-  const HomeTabView({super.key, required this.onStartCapture});
+  const HomeTabView({
+    super.key,
+    required this.onStartCapture,
+    required this.onOpenHistory,
+  });
 
   @override
   State<HomeTabView> createState() => _HomeTabViewState();
@@ -79,11 +84,11 @@ class _HomeTabViewState extends State<HomeTabView> {
                   ),
                   const SizedBox(height: 12),
                   _SecondaryActionCard(
-                    icon: Icons.fact_check_outlined,
-                    title: 'Preparar caso clínico',
+                    icon: Icons.history_edu_outlined,
+                    title: 'Revisar historial clínico',
                     subtitle:
-                        'Agregue metadata opcional del paciente y evite enviar imágenes borrosas o incompletas',
-                    onTap: widget.onStartCapture,
+                        'Consulte análisis previos, pacientes registrados y resultados recientes',
+                    onTap: widget.onOpenHistory,
                   ),
                   const SizedBox(height: 12),
                   const _SummaryCard(),
@@ -108,11 +113,11 @@ class _HomeTabViewState extends State<HomeTabView> {
                             ),
                             const SizedBox(height: 12),
                             _SecondaryActionCard(
-                              icon: Icons.fact_check_outlined,
-                              title: 'Preparar caso clínico',
+                              icon: Icons.history_edu_outlined,
+                              title: 'Revisar historial clínico',
                               subtitle:
-                                  'Agregue metadata opcional del paciente y evite enviar imágenes borrosas o incompletas',
-                              onTap: widget.onStartCapture,
+                                  'Consulte análisis previos, pacientes registrados y resultados recientes',
+                              onTap: widget.onOpenHistory,
                             ),
                             if (currentUser?.isAdmin ?? false) ...[
                               const SizedBox(height: 12),
