@@ -39,7 +39,12 @@ def _resolve_database_url(database_url: str) -> str:
 @dataclass(frozen=True)
 class Settings:
     app_name: str = os.getenv("APP_NAME", "BucalScan AI")
-    jwt_secret: str = os.environ["JWT_SECRET"]
+    jwt_secret: str = os.environ.get("JWT_SECRET") or os.getenv("JWT_SECRET", "")
+    if not jwt_secret:
+        raise EnvironmentError(
+            "JWT_SECRET environment variable is not set. "
+            "Add JWT_SECRET=<your-secret-key> to the .env file."
+        )
     jwt_algorithm: str = os.getenv("JWT_ALGORITHM", "HS256")
     jwt_expiration_minutes: int = int(os.getenv("JWT_EXPIRATION_MINUTES", "1440"))
     database_url: str = _resolve_database_url(
