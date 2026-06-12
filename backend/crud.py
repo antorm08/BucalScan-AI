@@ -4,7 +4,7 @@ from typing import Optional
 from sqlalchemy import case, func
 from sqlalchemy.orm import Session
 from models import models
-from schemas import UserCreate
+from schemas import UserCreate, UserUpdate
 from auth.security import get_password_hash
 
 def get_user(db: Session, user_id: int):
@@ -20,7 +20,8 @@ def create_user(db: Session, user: UserCreate):
         doctor_id=user.doctor_id,
         medical_center=user.medical_center,
         email=user.email,
-        hashed_password=hashed_password
+        hashed_password=hashed_password,
+        role="doctor",
     )
     db.add(db_user)
     db.commit()
@@ -66,6 +67,21 @@ def get_daily_summary(
 
 def get_all_users(db: Session, skip: int = 0, limit: int = 100):
     return db.query(models.User).offset(skip).limit(limit).all()
+
+
+def update_user(db: Session, user_id: int, user_update: "UserUpdate"):  # type: ignore[name-defined]
+    db_user = db.query(models.User).filter(models.User.id == user_id).first()
+    if db_user is None:
+        return None
+
+    update_data = user_update.model_dump(exclude_unset=True)
+
+    for field, value in update_data.items():
+        setattr(db_user, field, value)
+
+    db.commit()
+    db.refresh(db_user)
+    return db_user
 
 
 def update_user_status(db: Session, user_id: int, status: str):

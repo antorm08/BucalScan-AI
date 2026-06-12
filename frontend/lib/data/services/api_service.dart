@@ -140,6 +140,29 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> updateProfile({
+    String? fullName,
+    String? medicalCenter,
+    String? email,
+  }) async {
+    try {
+      final data = <String, dynamic>{};
+      if (fullName != null && fullName.isNotEmpty) data['full_name'] = fullName;
+      if (medicalCenter != null) data['medical_center'] = medicalCenter;
+      if (email != null && email.isNotEmpty) data['email'] = email;
+
+      final response = await _dio.put(
+        '${AppConstants.apiVersion}/auth/me',
+        data: data,
+      );
+      return response.data;
+    } on DioException catch (e) {
+      throw Exception(
+        _buildApiErrorMessage(e, fallback: 'No se pudo actualizar el perfil.'),
+      );
+    }
+  }
+
   Future<List<AnalysisModel>> getHistory() async {
     try {
       final response = await _dio.get(

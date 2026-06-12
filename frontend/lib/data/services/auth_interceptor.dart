@@ -25,7 +25,8 @@ class AuthInterceptor extends Interceptor {
     DioException err,
     ErrorInterceptorHandler handler,
   ) async {
-    if (err.response?.statusCode == 401) {
+    final statusCode = err.response?.statusCode;
+    if (statusCode == 401 || statusCode == 403) {
       await _storage.clear();
       SessionEvents().emitSessionExpired();
     }
