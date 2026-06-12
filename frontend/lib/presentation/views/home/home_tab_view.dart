@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
 import 'package:bucalscan_ai/presentation/viewmodels/auth_viewmodel.dart';
 import 'package:bucalscan_ai/presentation/viewmodels/summary_viewmodel.dart';
+import 'package:bucalscan_ai/presentation/views/admin/admin_users_view.dart';
 import 'package:bucalscan_ai/presentation/widgets/app_app_bar.dart';
 
 class HomeTabView extends StatefulWidget {
@@ -669,20 +670,17 @@ class _SummaryMetricCard extends StatelessWidget {
 class _AdminEntryCard extends StatelessWidget {
   const _AdminEntryCard();
 
-  void _showPendingMessage(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Módulo administrativo preparado para conectarse cuando existan endpoints admin.',
-        ),
-      ),
+  void _openAdminUsers(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const AdminUsersView()),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => _showPendingMessage(context),
+      onTap: () => _openAdminUsers(context),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(16),
@@ -709,7 +707,7 @@ class _AdminEntryCard extends StatelessWidget {
                   ),
                   SizedBox(height: 4),
                   Text(
-                    'Acceso reservado para usuarios admin. Listo para enlazar el módulo futuro.',
+                    'Revise usuarios registrados y suspenda o reactive accesos.',
                     style: TextStyle(
                       fontSize: 13,
                       color: AppColors.onSurfaceVariant,

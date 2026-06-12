@@ -32,6 +32,7 @@ void main() {
   runApp(
     MultiProvider(
       providers: [
+        Provider<ApiService>.value(value: apiService),
         ChangeNotifierProvider(
           create: (_) => AuthViewModel(authRepository, authStorage),
         ),

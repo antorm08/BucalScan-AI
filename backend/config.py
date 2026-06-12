@@ -36,6 +36,11 @@ def _resolve_database_url(database_url: str) -> str:
     return f"{sqlite_prefix}{(BASE_DIR / path).resolve().as_posix()}"
 
 
+def _parse_cors_origins(value: str) -> list[str]:
+    origins = [origin.strip() for origin in value.split(",") if origin.strip()]
+    return origins or ["*"]
+
+
 @dataclass(frozen=True)
 class Settings:
     app_name: str = os.getenv("APP_NAME", "BucalScan AI")
@@ -63,6 +68,14 @@ class Settings:
     cloudinary_api_key: Optional[str] = os.getenv("CLOUDINARY_API_KEY")
     cloudinary_api_secret: Optional[str] = os.getenv("CLOUDINARY_API_SECRET")
     cloudinary_folder: str = os.getenv("CLOUDINARY_FOLDER", "bucalscan/analyses")
+    cors_origins: list[str] = None
+
+    def __post_init__(self):
+        object.__setattr__(
+            self,
+            "cors_origins",
+            _parse_cors_origins(os.getenv("CORS_ORIGINS", "*")),
+        )
 
 
 settings = Settings()

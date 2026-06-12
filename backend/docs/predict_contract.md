@@ -3,6 +3,7 @@
 ## Descripción
 
 Recibe una imagen de una lesión oral y devuelve la clasificación del modelo MobileNetV2.
+El endpoint requiere autenticación JWT y persiste el análisis para historial y dashboard.
 
 ---
 
@@ -10,16 +11,19 @@ Recibe una imagen de una lesión oral y devuelve la clasificación del modelo Mo
 
 ```
 POST /api/v1/predict
+Authorization: Bearer <jwt>
 Content-Type: multipart/form-data
 ```
 
 | Campo | Tipo | Requerido | Descripción |
 |-------|------|-----------|-------------|
 | `file` | imagen (JPEG, PNG, WEBP) | Sí | Imagen de la lesión oral |
+| `patient_id` | string | No | Identificador opcional del paciente |
+| `patient_name` | string | No | Nombre opcional del paciente |
 
 **Tipos MIME aceptados:** `image/jpeg`, `image/png`, `image/webp`
 
-**Tamaño máximo recomendado:** 10 MB
+**Tamaño máximo permitido:** 10 MB
 
 ---
 
@@ -58,13 +62,41 @@ Content-Type: multipart/form-data
 }
 ```
 
+## Response 400 — Imagen inválida o corrupta
+
+```json
+{
+  "detail": "Cannot decode image file."
+}
+```
+
+---
+
+## Response 401 — JWT faltante o inválido
+
+```json
+{
+  "detail": "Not authenticated"
+}
+```
+
+---
+
+## Response 413 — Archivo demasiado grande
+
+```json
+{
+  "detail": "File too large. Maximum allowed size is 10 MB."
+}
+```
+
 ---
 
 ## Response 500 — Error interno del modelo
 
 ```json
 {
-  "detail": "Model inference failed: <mensaje de error>"
+  "detail": "Model inference failed. Please try again later."
 }
 ```
 
@@ -97,19 +129,25 @@ La imagen recibida pasa por el siguiente pipeline antes de la inferencia:
 | Input shape | `[1, 3, 224, 224]` |
 | Output shape | `[1, 1]` (sigmoid binario) ó `[1, 2]` (softmax 2 clases) |
 | Clases | `["benign", "malignant"]` |
-| Runtime | ONNX Runtime 1.20.1, CPUExecutionProvider |
+| Runtime | ONNX Runtime, CPUExecutionProvider |
 
 ---
 
-## Deuda técnica documentada
+## Persistencia
 
-| # | Brecha | Impacto | Prioridad |
-|---|--------|---------|-----------|
-| 1 | Sin autenticación JWT | Endpoint público, inconsistente con modelo de datos | Alta |
-| 2 | Sin límite de tamaño de archivo | Vector de abuso (imágenes de varios GB) | Alta |
-| 3 | Sin persistencia en DB | `crud.create_analysis()` existe pero no se llama — historial nunca se guarda | Alta |
-| 4 | Error handling demasiado amplio | Errores de imagen inválida → 500 en vez de 400 | Media |
+Al completar la inferencia, el backend guarda un registro en `analyses` con:
+
+| Campo | Descripción |
+|-------|-------------|
+| `user_id` | Usuario autenticado extraído del JWT |
+| `prediction` | Clase predicha |
+| `confidence` | Confianza de la clase predicha |
+| `image_path` | URL de Cloudinary si está configurado, o ruta local en `uploads/` |
+| `patient_id` | Metadata opcional enviada por el frontend |
+| `patient_name` | Metadata opcional enviada por el frontend |
+| `model_version` | Nombre del archivo ONNX configurado |
+| `processing_time_ms` | Tiempo de inferencia medido por el backend |
 
 ---
 
-*Última actualización: 2026-05-09*
+*Última actualización: 2026-06-11*

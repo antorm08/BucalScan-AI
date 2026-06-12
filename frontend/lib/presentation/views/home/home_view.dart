@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
+import 'package:bucalscan_ai/presentation/viewmodels/auth_viewmodel.dart';
+import 'package:bucalscan_ai/presentation/views/admin/admin_users_view.dart';
+import 'package:bucalscan_ai/presentation/views/auth/login_view.dart';
 import 'package:bucalscan_ai/presentation/views/capture/capture_tab_view.dart';
 import 'package:bucalscan_ai/presentation/views/history/history_tab_view.dart';
 import 'package:bucalscan_ai/presentation/views/home/home_tab_view.dart';
@@ -39,7 +43,19 @@ class _HomeViewState extends State<HomeView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: _MainDrawer(onSelectTab: _selectTab),
       body: _screens[_currentIndex],
+      floatingActionButton: Builder(
+        builder: (context) {
+          return FloatingActionButton.small(
+            onPressed: () => Scaffold.of(context).openDrawer(),
+            backgroundColor: AppColors.primary,
+            foregroundColor: AppColors.onPrimary,
+            tooltip: 'Abrir menú',
+            child: const Icon(Icons.menu),
+          );
+        },
+      ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: AppColors.surfaceContainerLowest,
@@ -87,6 +103,114 @@ class _HomeViewState extends State<HomeView> {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MainDrawer extends StatelessWidget {
+  final ValueChanged<int> onSelectTab;
+
+  const _MainDrawer({required this.onSelectTab});
+
+  void _goToTab(BuildContext context, int index) {
+    Navigator.pop(context);
+    onSelectTab(index);
+  }
+
+  Future<void> _logout(BuildContext context) async {
+    await context.read<AuthViewModel>().logout();
+    if (!context.mounted) {
+      return;
+    }
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginView()),
+      (route) => false,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final user = context.watch<AuthViewModel>().currentUser;
+
+    return Drawer(
+      child: SafeArea(
+        child: Column(
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              color: AppColors.primary,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(
+                    Icons.medical_services,
+                    color: AppColors.onPrimary,
+                    size: 36,
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'BucalScan AI',
+                    style: TextStyle(
+                      color: AppColors.onPrimary,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    user?.fullName ?? 'Usuario autenticado',
+                    style: const TextStyle(color: AppColors.primaryFixed),
+                  ),
+                ],
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.dashboard_outlined),
+              title: const Text('Inicio / Dashboard'),
+              onTap: () => _goToTab(context, 0),
+            ),
+            ListTile(
+              leading: const Icon(Icons.add_a_photo_outlined),
+              title: const Text('Captura o análisis'),
+              onTap: () => _goToTab(context, 1),
+            ),
+            ListTile(
+              leading: const Icon(Icons.history_outlined),
+              title: const Text('Historial'),
+              onTap: () => _goToTab(context, 2),
+            ),
+            ListTile(
+              leading: const Icon(Icons.person_outline),
+              title: const Text('Perfil'),
+              onTap: () => _goToTab(context, 3),
+            ),
+            if (user?.isAdmin ?? false)
+              ListTile(
+                leading: const Icon(Icons.admin_panel_settings_outlined),
+                title: const Text('Administración'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const AdminUsersView()),
+                  );
+                },
+              ),
+            const Spacer(),
+            const Divider(height: 1),
+            ListTile(
+              leading: const Icon(Icons.logout, color: AppColors.error),
+              title: const Text(
+                'Cerrar sesión',
+                style: TextStyle(color: AppColors.error),
+              ),
+              onTap: () => _logout(context),
+            ),
+          ],
         ),
       ),
     );
