@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:bucalscan_ai/core/constants/app_constants.dart';
+import 'package:bucalscan_ai/data/models/admin_user_model.dart';
 import 'package:bucalscan_ai/data/models/analysis_model.dart';
 import 'package:bucalscan_ai/data/models/daily_summary_model.dart';
 import 'package:bucalscan_ai/data/models/prediction_result_model.dart';
@@ -57,7 +58,8 @@ class ApiService {
       final formData = FormData.fromMap({
         'file': await MultipartFile.fromFile(image.path),
         if (patientId != null && patientId.isNotEmpty) 'patient_id': patientId,
-        if (patientName != null && patientName.isNotEmpty) 'patient_name': patientName,
+        if (patientName != null && patientName.isNotEmpty)
+          'patient_name': patientName,
       });
 
       final response = await _dio.post(
@@ -126,16 +128,11 @@ class ApiService {
 
   Future<Map<String, dynamic>> me() async {
     try {
-      final response = await _dio.get(
-        '${AppConstants.apiVersion}/auth/me',
-      );
+      final response = await _dio.get('${AppConstants.apiVersion}/auth/me');
       return response.data;
     } on DioException catch (e) {
       throw Exception(
-        _buildApiErrorMessage(
-          e,
-          fallback: 'No se pudo validar la sesion.',
-        ),
+        _buildApiErrorMessage(e, fallback: 'No se pudo validar la sesion.'),
       );
     }
   }
@@ -165,9 +162,7 @@ class ApiService {
 
   Future<List<AnalysisModel>> getHistory() async {
     try {
-      final response = await _dio.get(
-        '${AppConstants.apiVersion}/history',
-      );
+      final response = await _dio.get('${AppConstants.apiVersion}/history');
       final List<dynamic> data = response.data;
       return data.map((json) => AnalysisModel.fromJson(json)).toList();
     } on DioException catch (e) {
@@ -185,7 +180,42 @@ class ApiService {
       return DailySummaryModel.fromJson(response.data);
     } on DioException catch (e) {
       throw Exception(
-        _buildApiErrorMessage(e, fallback: 'No se pudo cargar el resumen de hoy.'),
+        _buildApiErrorMessage(
+          e,
+          fallback: 'No se pudo cargar el resumen de hoy.',
+        ),
+      );
+    }
+  }
+
+  Future<List<AdminUserModel>> getAdminUsers() async {
+    try {
+      final response = await _dio.get('${AppConstants.apiVersion}/admin/users');
+      final List<dynamic> data = response.data;
+      return data.map((json) => AdminUserModel.fromJson(json)).toList();
+    } on DioException catch (e) {
+      throw Exception(
+        _buildApiErrorMessage(
+          e,
+          fallback: 'No se pudo cargar la gestión de usuarios.',
+        ),
+      );
+    }
+  }
+
+  Future<AdminUserModel> updateAdminUserStatus({
+    required int userId,
+    required String status,
+  }) async {
+    try {
+      final response = await _dio.patch(
+        '${AppConstants.apiVersion}/admin/users/$userId/status',
+        data: {'status': status},
+      );
+      return AdminUserModel.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception(
+        _buildApiErrorMessage(e, fallback: 'No se pudo actualizar el usuario.'),
       );
     }
   }

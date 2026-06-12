@@ -23,7 +23,7 @@ class _LoginViewState extends State<LoginView> {
     final normalized = cleaned.toLowerCase();
 
     if (normalized.contains('invalid credentials')) {
-      return 'Correo o contraseña incorrectos. Verifique sus datos e intente nuevamente.';
+      return 'Usuario y clave incorrectos';
     }
 
     if (normalized.contains('no se pudo conectar') ||
