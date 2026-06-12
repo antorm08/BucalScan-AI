@@ -393,6 +393,69 @@ class TestProtectedRoutes:
         )
         assert response.status_code == 200
 
+    def test_history_doctor_only_sees_own_analyses(self, client, db_session):
+        doctor = _create_db_user(
+            db_session, email="doctorhist@hospital.org", doctor_id="MD-HIST-DOCTOR"
+        )
+        other = _create_db_user(
+            db_session, email="otherhist@hospital.org", doctor_id="MD-HIST-OTHER"
+        )
+        own_analysis = models.Analysis(
+            user_id=doctor.id,
+            prediction="benign",
+            confidence=0.91,
+        )
+        other_analysis = models.Analysis(
+            user_id=other.id,
+            prediction="malignant",
+            confidence=0.88,
+        )
+        db_session.add_all([own_analysis, other_analysis])
+        db_session.commit()
+
+        token = create_access_token({"sub": str(doctor.id), "email": doctor.email})
+        response = client.get(
+            "/api/v1/history",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        assert response.status_code == 200
+        ids = {item["id"] for item in response.json()}
+        assert ids == {own_analysis.id}
+
+    def test_history_admin_sees_all_analyses(self, client, db_session):
+        admin = _create_db_user(
+            db_session,
+            email="adminhist@hospital.org",
+            doctor_id="MD-HIST-ADMIN",
+            role="admin",
+        )
+        doctor = _create_db_user(
+            db_session, email="doctorallhist@hospital.org", doctor_id="MD-HIST-ALL"
+        )
+        admin_analysis = models.Analysis(
+            user_id=admin.id,
+            prediction="benign",
+            confidence=0.93,
+        )
+        doctor_analysis = models.Analysis(
+            user_id=doctor.id,
+            prediction="malignant",
+            confidence=0.87,
+        )
+        db_session.add_all([admin_analysis, doctor_analysis])
+        db_session.commit()
+
+        token = create_access_token({"sub": str(admin.id), "email": admin.email})
+        response = client.get(
+            "/api/v1/history",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        assert response.status_code == 200
+        ids = {item["id"] for item in response.json()}
+        assert {admin_analysis.id, doctor_analysis.id}.issubset(ids)
+
     def test_history_with_invalid_token_returns_401(self, client, db_session):
         response = client.get(
             "/api/v1/history",

@@ -55,16 +55,22 @@ class _HistoryTabViewState extends State<HistoryTabView> {
             analysis.imageUrl != null && analysis.imageUrl!.trim().isNotEmpty;
 
         return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-            child: Container(
-              decoration: BoxDecoration(
-                color: AppColors.surfaceContainerLowest,
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: constraints.maxHeight * 0.92,
+                  ),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceContainerLowest,
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -204,30 +210,52 @@ class _HistoryTabViewState extends State<HistoryTabView> {
                             ),
                           ),
                           const SizedBox(height: 10),
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
+                          LayoutBuilder(
+                            builder: (context, constraints) {
+                              final useStackedLayout = constraints.maxWidth < 320;
+                              final percentage = Text(
                                 '${(confidence * 100).toStringAsFixed(1)}%',
+                                maxLines: 1,
+                                overflow: TextOverflow.fade,
+                                softWrap: false,
                                 style: const TextStyle(
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.w700,
+                                  fontSize: 30,
+                                  fontWeight: FontWeight.w800,
                                   color: AppColors.onSurface,
+                                  letterSpacing: -1,
                                 ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  isMalignant
-                                      ? 'Resultado con indicios de riesgo alto segun la clasificacion actual.'
-                                      : 'Resultado con indicios compatibles con una lesion benigna.',
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    color: AppColors.onSurfaceVariant,
-                                  ),
+                              );
+                              final description = Text(
+                                isMalignant
+                                    ? 'Resultado con indicios de riesgo alto segun la clasificacion actual.'
+                                    : 'Resultado con indicios compatibles con una lesion benigna.',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  height: 1.35,
+                                  color: AppColors.onSurfaceVariant,
                                 ),
-                              ),
-                            ],
+                              );
+
+                              if (useStackedLayout) {
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    percentage,
+                                    const SizedBox(height: 8),
+                                    description,
+                                  ],
+                                );
+                              }
+
+                              return Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  SizedBox(width: 120, child: percentage),
+                                  const SizedBox(width: 14),
+                                  Expanded(child: description),
+                                ],
+                              );
+                            },
                           ),
                           const SizedBox(height: 12),
                           ClipRRect(
@@ -255,13 +283,6 @@ class _HistoryTabViewState extends State<HistoryTabView> {
                       value: analysis.patientId ?? 'No registrado',
                     ),
                     _DetailRow(label: 'Predicción', value: displayLabel),
-                    _DetailRow(
-                      label: 'Confianza',
-                      value:
-                          '${(analysis.confidence * 100).toStringAsFixed(1)}%',
-                    ),
-                    if (hasImage)
-                      _DetailRow(label: 'Imagen', value: analysis.imageUrl!),
                     const SizedBox(height: 16),
                     SizedBox(
                       width: double.infinity,
@@ -271,10 +292,13 @@ class _HistoryTabViewState extends State<HistoryTabView> {
                         label: const Text('Cerrar'),
                       ),
                     ),
-                  ],
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-            ),
+              );
+            },
           ),
         );
       },

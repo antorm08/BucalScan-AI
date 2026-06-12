@@ -100,7 +100,7 @@ class _CaptureTabViewState extends State<CaptureTabView> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: const AppAppBar(title: 'Captura para análisis'),
+      appBar: const AppAppBar(title: 'BucalScan AI'),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -293,45 +293,6 @@ class _CaptureTabViewState extends State<CaptureTabView> {
               ),
             ),
             const SizedBox(height: 24),
-            Card(
-              color: AppColors.surfaceContainerLowest,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: const BorderSide(color: AppColors.outlineVariant),
-              ),
-              child: const Padding(
-                padding: EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Guía rápida',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.onSurface,
-                      ),
-                    ),
-                    SizedBox(height: 12),
-                    _StepItem(
-                      number: 1,
-                      text:
-                          'Use buena iluminación y enfoque sobre la zona de lesión',
-                    ),
-                    _StepItem(
-                      number: 2,
-                      text:
-                          'Evite imágenes borrosas, oscuras, recortadas o con objetos externos',
-                    ),
-                    _StepItem(
-                      number: 3,
-                      text:
-                          'Revise la clasificación, confianza y recomendación como apoyo clínico',
-                    ),
-                  ],
-                ),
-              ),
-            ),
           ],
         ),
       ),
@@ -581,35 +542,3 @@ class _CapturePreviewCard extends StatelessWidget {
   }
 }
 
-class _StepItem extends StatelessWidget {
-  final int number;
-  final String text;
-
-  const _StepItem({required this.number, required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 14,
-            backgroundColor: AppColors.primary,
-            child: Text(
-              '$number',
-              style: const TextStyle(color: Colors.white, fontSize: 12),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(fontSize: 14, color: AppColors.onSurface),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}

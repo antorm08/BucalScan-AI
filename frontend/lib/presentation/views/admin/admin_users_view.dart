@@ -4,7 +4,6 @@ import 'package:bucalscan_ai/core/theme/app_colors.dart';
 import 'package:bucalscan_ai/data/models/admin_user_model.dart';
 import 'package:bucalscan_ai/data/services/api_service.dart';
 import 'package:bucalscan_ai/presentation/viewmodels/auth_viewmodel.dart';
-import 'package:bucalscan_ai/presentation/widgets/app_app_bar.dart';
 
 class AdminUsersView extends StatefulWidget {
   const AdminUsersView({super.key});
@@ -115,38 +114,12 @@ class _AdminUsersViewState extends State<AdminUsersView> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppAppBar(
-        title: 'Gestión de usuarios',
-        actions: [
-          IconButton(
-            onPressed: _isLoading ? null : _fetchUsers,
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Actualizar',
-          ),
-        ],
-      ),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: TextField(
-              controller: _searchController,
-              onChanged: (_) => setState(() {}),
-              decoration: InputDecoration(
-                prefixIcon: const Icon(Icons.search),
-                hintText: 'Buscar por nombre, correo, ID, rol o estado...',
-                filled: true,
-                fillColor: AppColors.surfaceContainerLowest,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(999),
-                  borderSide: const BorderSide(color: AppColors.outlineVariant),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(999),
-                  borderSide: const BorderSide(color: AppColors.outlineVariant),
-                ),
-              ),
-            ),
+          _AdminHeader(onRefresh: _isLoading ? null : _fetchUsers),
+          _SearchBar(
+            controller: _searchController,
+            onChanged: (_) => setState(() {}),
           ),
           Expanded(child: _buildBody(users, currentUserId)),
         ],
@@ -215,6 +188,147 @@ class _AdminUsersViewState extends State<AdminUsersView> {
   }
 }
 
+class _AdminHeader extends StatelessWidget {
+  final VoidCallback? onRefresh;
+
+  const _AdminHeader({required this.onRefresh});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.fromLTRB(
+        16,
+        MediaQuery.paddingOf(context).top + 14,
+        16,
+        18,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerLowest,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          _HeaderButton(
+            icon: Icons.arrow_back,
+            tooltip: 'Volver',
+            onPressed: () => Navigator.pop(context),
+          ),
+          const SizedBox(width: 14),
+          const Icon(Icons.group_add, color: AppColors.primary, size: 30),
+          const SizedBox(width: 10),
+          const Expanded(
+            child: Text(
+              'Gestión de usuarios',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: AppColors.primary,
+                fontSize: 24,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.8,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          _HeaderButton(
+            icon: Icons.refresh,
+            tooltip: 'Actualizar',
+            onPressed: onRefresh,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeaderButton extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback? onPressed;
+
+  const _HeaderButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 52,
+      height: 52,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: AppColors.surfaceContainerLowest,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.outlineVariant),
+        ),
+        child: IconButton(
+          onPressed: onPressed,
+          icon: Icon(icon, color: AppColors.primary),
+          tooltip: tooltip,
+        ),
+      ),
+    );
+  }
+}
+
+class _SearchBar extends StatelessWidget {
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
+
+  const _SearchBar({required this.controller, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
+      child: Material(
+        color: AppColors.surfaceContainerLowest,
+        elevation: 6,
+        shadowColor: Colors.black.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(28),
+        child: TextField(
+          controller: controller,
+          onChanged: onChanged,
+          decoration: InputDecoration(
+            prefixIcon: const Icon(Icons.search, color: AppColors.primary),
+            suffixIcon: controller.text.isEmpty
+                ? const Icon(Icons.tune, color: AppColors.onSurfaceVariant)
+                : IconButton(
+                    onPressed: () {
+                      controller.clear();
+                      onChanged('');
+                    },
+                    icon: const Icon(Icons.close),
+                    tooltip: 'Limpiar búsqueda',
+                  ),
+            hintText: 'Buscar por nombre, correo, ID médico o centro...',
+            hintStyle: const TextStyle(color: AppColors.onSurfaceVariant),
+            filled: true,
+            fillColor: Colors.transparent,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(28),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 18,
+              vertical: 18,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _AdminUserCard extends StatelessWidget {
   final AdminUserModel user;
   final bool isUpdating;
@@ -236,31 +350,49 @@ class _AdminUserCard extends StatelessWidget {
     final statusBg = user.isActive
         ? AppColors.benignBg
         : AppColors.errorContainer;
+    final actionColor = user.isActive ? AppColors.primary : AppColors.benignText;
 
-    return Card(
-      elevation: 0,
+    return Container(
+      decoration: BoxDecoration(
       color: AppColors.surfaceContainerLowest,
-      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: AppColors.outlineVariant),
+        border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                CircleAvatar(
-                  backgroundColor: user.isAdmin
-                      ? AppColors.primaryFixed
-                      : AppColors.surfaceContainerHigh,
+                Container(
+                  width: 66,
+                  height: 66,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [AppColors.primaryFixed, Color(0xFFEAF2FF)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
                   child: Icon(
-                    user.isAdmin ? Icons.shield_outlined : Icons.person_outline,
+                    user.isAdmin
+                        ? Icons.shield_outlined
+                        : Icons.medical_information_outlined,
                     color: AppColors.primary,
+                    size: 34,
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -268,14 +400,17 @@ class _AdminUserCard extends StatelessWidget {
                       Text(
                         user.fullName,
                         style: const TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w700,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
                           color: AppColors.onSurface,
+                          letterSpacing: -0.4,
                         ),
                       ),
+                      const SizedBox(height: 4),
                       Text(
                         user.email,
                         style: const TextStyle(
+                          fontSize: 15,
                           color: AppColors.onSurfaceVariant,
                         ),
                       ),
@@ -284,67 +419,115 @@ class _AdminUserCard extends StatelessWidget {
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
+                    horizontal: 12,
+                    vertical: 8,
                   ),
                   decoration: BoxDecoration(
                     color: statusBg,
                     borderRadius: BorderRadius.circular(999),
                   ),
-                  child: Text(
-                    user.isActive ? 'Activo' : 'Suspendido',
-                    style: TextStyle(
-                      color: statusColor,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.circle, color: statusColor, size: 10),
+                      const SizedBox(width: 8),
+                      Text(
+                        user.isActive ? 'Activo' : 'Suspendido',
+                        style: TextStyle(
+                          color: statusColor,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 14),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _InfoChip(
-                  label: 'Rol',
-                  value: user.isAdmin ? 'Admin' : 'Doctor',
-                ),
-                _InfoChip(label: 'ID médico', value: user.doctorId),
-                _InfoChip(
-                  label: 'Centro',
-                  value: user.medicalCenter?.isNotEmpty == true
-                      ? user.medicalCenter!
-                      : 'No registrado',
-                ),
-                _InfoChip(label: 'Alta', value: formatDate(user.createdAt)),
-              ],
+            const SizedBox(height: 18),
+            const Divider(height: 1, color: AppColors.surfaceVariant),
+            const SizedBox(height: 18),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final itemWidth = constraints.maxWidth >= 520
+                    ? (constraints.maxWidth - 12) / 2
+                    : constraints.maxWidth;
+
+                return Wrap(
+                  spacing: 12,
+                  runSpacing: 10,
+                  children: [
+                    _InfoChip(
+                      icon: Icons.person_outline,
+                      label: 'Rol',
+                      value: user.isAdmin ? 'Admin' : 'Doctor',
+                      width: itemWidth,
+                    ),
+                    _InfoChip(
+                      icon: Icons.badge_outlined,
+                      label: 'ID médico',
+                      value: user.doctorId,
+                      width: itemWidth,
+                    ),
+                    _InfoChip(
+                      icon: Icons.apartment_outlined,
+                      label: 'Centro',
+                      value: user.medicalCenter?.isNotEmpty == true
+                          ? user.medicalCenter!
+                          : 'No registrado',
+                      width: itemWidth,
+                    ),
+                    _InfoChip(
+                      icon: Icons.calendar_today_outlined,
+                      label: 'Alta',
+                      value: formatDate(user.createdAt),
+                      width: itemWidth,
+                    ),
+                  ],
+                );
+              },
             ),
-            const SizedBox(height: 14),
-            Align(
-              alignment: Alignment.centerRight,
-              child: OutlinedButton.icon(
-                onPressed: isUpdating || isCurrentUser ? null : onToggleStatus,
-                icon: isUpdating
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Icon(
-                        user.isActive
-                            ? Icons.block
-                            : Icons.check_circle_outline,
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                SizedBox(
+                  width: 180,
+                  child: OutlinedButton.icon(
+                    onPressed: isUpdating || isCurrentUser ? null : onToggleStatus,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: actionColor,
+                      side: BorderSide(color: actionColor),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                label: Text(
-                  isCurrentUser
-                      ? 'Tu cuenta'
-                      : user.isActive
-                      ? 'Suspender'
-                      : 'Reactivar',
+                    ),
+                    icon: isUpdating
+                        ? SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: actionColor,
+                            ),
+                          )
+                        : Icon(
+                            user.isActive
+                                ? Icons.block
+                                : Icons.check_circle_outline,
+                          ),
+                    label: Text(
+                      isCurrentUser
+                          ? 'Tu cuenta'
+                          : user.isActive
+                          ? 'Suspender'
+                          : 'Reactivar',
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
           ],
         ),
@@ -354,22 +537,61 @@ class _AdminUserCard extends StatelessWidget {
 }
 
 class _InfoChip extends StatelessWidget {
+  final IconData icon;
   final String label;
   final String value;
+  final double width;
 
-  const _InfoChip({required this.label, required this.value});
+  const _InfoChip({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.width,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Text(
-        '$label: $value',
-        style: const TextStyle(fontSize: 12, color: AppColors.onSurfaceVariant),
+    return SizedBox(
+      width: width,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceContainerLowest,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.025),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: AppColors.primary, size: 20),
+            const SizedBox(width: 10),
+            Text(
+              '$label: ',
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppColors.primary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            Expanded(
+              child: Text(
+                value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

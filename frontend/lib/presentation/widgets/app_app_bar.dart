@@ -21,7 +21,7 @@ class AppAppBar extends StatelessWidget implements PreferredSizeWidget {
       title: Row(
         children: [
           if (showLogo) ...[
-            const Icon(Icons.medical_services, color: AppColors.primary),
+            const Icon(Icons.document_scanner_outlined, color: AppColors.primary),
             const SizedBox(width: 4),
           ],
           Text(
