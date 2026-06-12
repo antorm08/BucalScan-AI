@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
 import 'package:bucalscan_ai/presentation/viewmodels/auth_viewmodel.dart';
 import 'package:bucalscan_ai/presentation/views/auth/login_view.dart';
+import 'package:bucalscan_ai/presentation/views/profile/edit_profile_view.dart';
 import 'package:bucalscan_ai/presentation/widgets/app_app_bar.dart';
 
 class ProfileTabView extends StatelessWidget {
@@ -104,7 +105,14 @@ class ProfileTabView extends StatelessWidget {
                     ),
                     title: const Text('Configuración'),
                     trailing: const Icon(Icons.chevron_right),
-                    onTap: () {},
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const EditProfileView(),
+                        ),
+                      );
+                    },
                   ),
                   const Divider(height: 1, color: AppColors.surfaceVariant),
                   ListTile(

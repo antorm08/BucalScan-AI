@@ -160,6 +160,47 @@ class AuthViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<bool> updateProfile({
+    String? fullName,
+    String? medicalCenter,
+    String? email,
+  }) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final response = await _repository.updateProfile(
+        fullName: fullName,
+        medicalCenter: medicalCenter,
+        email: email,
+      );
+
+      final data = response['data'] as Map<String, dynamic>?;
+      if (data == null) {
+        throw Exception('Respuesta inesperada del servidor');
+      }
+
+      final userData = data['user'] as Map<String, dynamic>?;
+      if (userData == null) {
+        throw Exception('Respuesta inesperada del servidor');
+      }
+
+      final user = _parseUser(userData);
+      _currentUser = user;
+      await _storage.saveUserJson(userData);
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
   void clearError() {
     _error = null;
     notifyListeners();
@@ -190,6 +231,7 @@ class AuthViewModel extends ChangeNotifier {
     return normalized.contains('invalid or expired token') ||
         normalized.contains('not authenticated') ||
         normalized.contains('user not found') ||
-        normalized.contains('invalid token payload');
+        normalized.contains('invalid token payload') ||
+        normalized.contains('account suspended');
   }
 }
