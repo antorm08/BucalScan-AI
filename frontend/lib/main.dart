@@ -7,11 +7,13 @@ import 'package:bucalscan_ai/core/theme/app_colors.dart';
 import 'package:bucalscan_ai/data/repositories/auth_repository.dart';
 import 'package:bucalscan_ai/data/repositories/history_repository.dart';
 import 'package:bucalscan_ai/data/repositories/prediction_repository.dart';
-import 'package:bucalscan_ai/data/repositories/summary_repository.dart';
 import 'package:bucalscan_ai/data/services/api_service.dart';
 import 'package:bucalscan_ai/data/services/auth_interceptor.dart';
 import 'package:bucalscan_ai/data/services/auth_storage_service.dart';
 import 'package:bucalscan_ai/data/services/session_events.dart';
+import 'package:bucalscan_ai/features/dashboard/data/datasources/dashboard_remote_datasource.dart';
+import 'package:bucalscan_ai/features/dashboard/data/repositories/dashboard_repository_impl.dart';
+import 'package:bucalscan_ai/features/dashboard/domain/usecases/get_today_summary_usecase.dart';
 import 'package:bucalscan_ai/presentation/viewmodels/auth_viewmodel.dart';
 import 'package:bucalscan_ai/presentation/viewmodels/history_viewmodel.dart';
 import 'package:bucalscan_ai/presentation/viewmodels/prediction_viewmodel.dart';
@@ -28,7 +30,9 @@ void main() {
   final authRepository = AuthRepository(apiService);
   final predictionRepository = PredictionRepository(apiService);
   final historyRepository = HistoryRepository(apiService);
-  final summaryRepository = SummaryRepository(apiService);
+  final dashboardRemoteDataSource = DashboardRemoteDataSource(apiService);
+  final dashboardRepository = DashboardRepositoryImpl(dashboardRemoteDataSource);
+  final getTodaySummaryUseCase = GetTodaySummaryUseCase(dashboardRepository);
 
   runApp(
     MultiProvider(
@@ -39,7 +43,7 @@ void main() {
         ),
         ChangeNotifierProvider(create: (_) => PredictionViewModel(predictionRepository)),
         ChangeNotifierProvider(create: (_) => HistoryViewModel(historyRepository)),
-        ChangeNotifierProvider(create: (_) => SummaryViewModel(summaryRepository)),
+        ChangeNotifierProvider(create: (_) => SummaryViewModel(getTodaySummaryUseCase)),
         ChangeNotifierProvider(create: (_) => ProfileViewModel()),
       ],
       child: BucalScanAiApp(apiService: apiService),

@@ -1,11 +1,11 @@
 import 'package:flutter/foundation.dart';
-import 'package:bucalscan_ai/data/repositories/summary_repository.dart';
-import 'package:bucalscan_ai/domain/entities/daily_summary.dart';
+import 'package:bucalscan_ai/features/dashboard/domain/entities/daily_summary.dart';
+import 'package:bucalscan_ai/features/dashboard/domain/usecases/get_today_summary_usecase.dart';
 
 class SummaryViewModel extends ChangeNotifier {
-  final SummaryRepository _repository;
+  final GetTodaySummaryUseCase _getTodaySummaryUseCase;
 
-  SummaryViewModel(this._repository);
+  SummaryViewModel(this._getTodaySummaryUseCase);
 
   DailySummary? _summary;
   bool _isLoading = false;
@@ -22,22 +22,7 @@ class SummaryViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final model = await _repository.getTodaySummary();
-      DateTime? latestAnalysisAt;
-      if (model.latestAnalysisAt != null && model.latestAnalysisAt!.isNotEmpty) {
-        try {
-          latestAnalysisAt = DateTime.parse(model.latestAnalysisAt!);
-        } catch (_) {
-          latestAnalysisAt = null;
-        }
-      }
-
-      _summary = DailySummary(
-        total: model.total,
-        benign: model.benign,
-        malignant: model.malignant,
-        latestAnalysisAt: latestAnalysisAt,
-      );
+      _summary = await _getTodaySummaryUseCase();
     } catch (e) {
       _error = e.toString();
     } finally {
