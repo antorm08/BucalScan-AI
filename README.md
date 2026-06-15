@@ -45,9 +45,9 @@ DeepOral-Dx/
 ├── frontend/
 │   ├── lib/
 │   │   ├── core/              # Constantes, tema y configuracion base
-│   │   ├── data/              # Servicios, modelos y repositorios
-│   │   ├── domain/            # Entidades de dominio
-│   │   └── presentation/      # Vistas, widgets y viewmodels
+│   │   ├── data/              # Servicios compartidos, como cliente API y auth
+│   │   ├── features/          # Modulos por feature con data, domain y presentation
+│   │   └── main.dart          # Entrada de la app Flutter
 │   ├── test/                  # Pruebas Flutter
 │   └── pubspec.yaml           # Dependencias Flutter
 └── README.md

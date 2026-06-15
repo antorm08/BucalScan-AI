@@ -10,7 +10,9 @@ import 'package:bucalscan_ai/features/home/presentation/views/home_view.dart';
 import 'package:bucalscan_ai/features/auth/presentation/viewmodels/auth_viewmodel.dart';
 
 class LoginView extends ConsumerStatefulWidget {
-  const LoginView({super.key});
+  final VoidCallback? onAuthenticated;
+
+  const LoginView({super.key, this.onAuthenticated});
 
   @override
   ConsumerState<LoginView> createState() => _LoginViewState();
@@ -91,10 +93,14 @@ class _LoginViewState extends ConsumerState<LoginView> {
         }
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const HomeView()),
-        );
+        if (widget.onAuthenticated != null) {
+          widget.onAuthenticated!();
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const HomeView()),
+          );
+        }
       }
     }
   }

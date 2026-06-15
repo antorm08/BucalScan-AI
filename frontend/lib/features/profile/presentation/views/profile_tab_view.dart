@@ -33,7 +33,11 @@ class ProfileTabView extends StatelessWidget {
       return;
     }
 
-    context.read<AuthViewModel>().logout();
+    await context.read<AuthViewModel>().logout();
+    if (!context.mounted) {
+      return;
+    }
+
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (_) => const LoginView()),

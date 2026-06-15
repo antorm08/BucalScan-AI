@@ -92,6 +92,7 @@ class BucalScanAiApp extends StatefulWidget {
 }
 
 class _BucalScanAiAppState extends State<BucalScanAiApp> {
+  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
   bool _isReadyToEnter = false;
   bool _isAuthenticated = false;
   bool _wasAuthenticated = false;
@@ -145,14 +146,34 @@ class _BucalScanAiAppState extends State<BucalScanAiApp> {
         setState(() {
           _isAuthenticated = false;
         });
+        _navigatorKey.currentState?.pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (_) => LoginView(onAuthenticated: _markAuthenticated),
+          ),
+          (route) => false,
+        );
       }
     });
+  }
+
+  void _markAuthenticated() {
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isReadyToEnter = true;
+      _isAuthenticated = true;
+      _wasAuthenticated = true;
+    });
+    _subscribeToSessionExpiry();
   }
 
   @override
   Widget build(BuildContext context) {
     return riverpod.ProviderScope(
       child: MaterialApp(
+        navigatorKey: _navigatorKey,
         title: AppConstants.appName,
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
@@ -171,7 +192,7 @@ class _BucalScanAiAppState extends State<BucalScanAiApp> {
             ? StartupView(apiService: widget.apiService, onReady: _enterApp)
             : _isAuthenticated
                 ? const HomeView()
-                : const LoginView(),
+                : LoginView(onAuthenticated: _markAuthenticated),
       ),
     );
   }

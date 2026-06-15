@@ -70,28 +70,26 @@ La version de API usada por la app es `/api/v1`.
 lib/
 ├── core/
 │   ├── constants/       # Constantes globales
-│   ├── router/          # Configuracion de rutas si aplica
 │   └── theme/           # Colores y tema visual
 ├── data/
-│   ├── models/          # Modelos DTO
-│   ├── repositories/    # Repositorios usados por viewmodels
-│   └── services/        # Dio, interceptores y almacenamiento de auth
-├── domain/
-│   └── entities/        # Entidades de dominio
-└── presentation/
-    ├── viewmodels/      # Estado de UI con Provider
-    ├── views/           # Pantallas
-    └── widgets/         # Componentes reutilizables
+│   └── services/        # Servicios compartidos, Dio e interceptores
+├── features/
+│   └── <feature>/
+│       ├── data/         # Datasources, modelos DTO y repositorios concretos
+│       ├── domain/       # Entidades, contratos de repositorio y casos de uso
+│       ├── presentation/ # Vistas, widgets y viewmodels
+│       └── di/           # Providers e inyeccion de dependencias
+└── main.dart
 ```
 
 ## Dependencias Destacadas
 
 - `provider`: gestion de estado.
+- `flutter_riverpod`: providers de dependencias por feature.
 - `dio`: cliente HTTP e interceptores.
 - `image_picker`: seleccion/captura de imagenes.
 - `shared_preferences`: persistencia local del token.
-- `permission_handler`: permisos de dispositivo.
-- `cached_network_image`: carga de imagenes remotas.
+- `flutter_secure_storage`: almacenamiento seguro del token.
 
 ## Pruebas
 
