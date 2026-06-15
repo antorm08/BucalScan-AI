@@ -23,7 +23,9 @@ class _EditProfileViewState extends State<EditProfileView> {
     super.initState();
     final user = context.read<AuthViewModel>().currentUser;
     _fullNameController = TextEditingController(text: user?.fullName ?? '');
-    _medicalCenterController = TextEditingController(text: user?.medicalCenter ?? '');
+    _medicalCenterController = TextEditingController(
+      text: user?.medicalCenter ?? '',
+    );
     _emailController = TextEditingController(text: user?.email ?? '');
   }
 
@@ -103,7 +105,9 @@ class _EditProfileViewState extends State<EditProfileView> {
                   if (value == null || value.trim().isEmpty) {
                     return 'El correo es obligatorio';
                   }
-                  if (!RegExp(r'^[\w\-\.]+@([\w\-]+\.)+[\w\-]{2,}$').hasMatch(value.trim())) {
+                  if (!RegExp(
+                    r'^[\w\-\.]+@([\w\-]+\.)+[\w\-]{2,}$',
+                  ).hasMatch(value.trim())) {
                     return 'Correo electrónico no válido';
                   }
                   return null;
@@ -139,7 +143,10 @@ class _EditProfileViewState extends State<EditProfileView> {
                         )
                       : const Text(
                           'Guardar cambios',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                 ),
               ),

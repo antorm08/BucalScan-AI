@@ -14,6 +14,7 @@ class PredictionRemoteDataSource {
       File(input.imagePath),
       patientId: input.patientId,
       patientName: input.patientName,
+      consentToStore: input.consentToStore,
     );
     return PredictionResultModel.fromJson(json);
   }

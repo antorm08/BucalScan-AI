@@ -27,6 +27,7 @@ class PredictionViewModel extends ChangeNotifier {
     File image, {
     String? patientId,
     String? patientName,
+    required bool consentToStore,
   }) async {
     final stopwatch = Stopwatch()..start();
 
@@ -42,6 +43,7 @@ class PredictionViewModel extends ChangeNotifier {
       final result = await _predictImageUseCase(
         PredictionImageInput(
           imagePath: image.path,
+          consentToStore: consentToStore,
           patientId: patientId,
           patientName: patientName,
         ),

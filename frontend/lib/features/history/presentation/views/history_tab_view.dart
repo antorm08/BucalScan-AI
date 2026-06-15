@@ -71,227 +71,245 @@ class _HistoryTabViewState extends State<HistoryTabView> {
                     child: SingleChildScrollView(
                       padding: const EdgeInsets.all(20),
                       child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(
-                      child: Container(
-                        width: 42,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: AppColors.outlineVariant,
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Center(
+                            child: Container(
+                              width: 42,
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: AppColors.outlineVariant,
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          Row(
                             children: [
-                              const Text(
-                                'Detalle del análisis',
-                                style: TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.onSurface,
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Detalle del análisis',
+                                      style: TextStyle(
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.onSurface,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      _formatDetailDate(analysis.timestamp),
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        color: AppColors.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                              const SizedBox(height: 6),
-                              Text(
-                                _formatDetailDate(analysis.timestamp),
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  color: AppColors.onSurfaceVariant,
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: badgeBackground,
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                                child: Text(
+                                  displayLabel,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    color: badgeColor,
+                                  ),
                                 ),
                               ),
                             ],
                           ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: badgeBackground,
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Text(
-                            displayLabel,
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: badgeColor,
+                          const SizedBox(height: 20),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: hasImage
+                                  ? AppColors.surfaceContainerLow
+                                  : accentColor.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(18),
+                              border: Border.all(
+                                color: hasImage
+                                    ? AppColors.outlineVariant
+                                    : accentColor.withValues(alpha: 0.18),
+                              ),
+                            ),
+                            child: Column(
+                              children: [
+                                if (hasImage)
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(16),
+                                    child: AspectRatio(
+                                      aspectRatio: 16 / 9,
+                                      child: Image.network(
+                                        analysis.imageUrl!,
+                                        fit: BoxFit.cover,
+                                        errorBuilder:
+                                            (context, error, stackTrace) {
+                                              return _HistoryImageFallback(
+                                                accentColor: accentColor,
+                                              );
+                                            },
+                                      ),
+                                    ),
+                                  )
+                                else
+                                  _HistoryImageFallback(
+                                    accentColor: accentColor,
+                                  ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  hasImage
+                                      ? 'Imagen registrada'
+                                      : 'Vista previa no disponible',
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.onSurface,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  hasImage
+                                      ? 'La captura asociada se recupero correctamente desde el historial.'
+                                      : 'Este analisis no tiene una imagen publica disponible para mostrar en la app.',
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: AppColors.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: hasImage
-                            ? AppColors.surfaceContainerLow
-                            : accentColor.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(
-                          color: hasImage
-                              ? AppColors.outlineVariant
-                              : accentColor.withValues(alpha: 0.18),
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          if (hasImage)
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(16),
-                              child: AspectRatio(
-                                aspectRatio: 16 / 9,
-                                child: Image.network(
-                                  analysis.imageUrl!,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return _HistoryImageFallback(
-                                      accentColor: accentColor,
+                          const SizedBox(height: 20),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: AppColors.surfaceContainerLow,
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Confianza del modelo',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.onSurfaceVariant,
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    final useStackedLayout =
+                                        constraints.maxWidth < 320;
+                                    final percentage = Text(
+                                      '${(confidence * 100).toStringAsFixed(1)}%',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.fade,
+                                      softWrap: false,
+                                      style: const TextStyle(
+                                        fontSize: 30,
+                                        fontWeight: FontWeight.w800,
+                                        color: AppColors.onSurface,
+                                        letterSpacing: -1,
+                                      ),
+                                    );
+                                    final description = Text(
+                                      isMalignant
+                                          ? 'Resultado con indicios de riesgo alto segun la clasificacion actual.'
+                                          : 'Resultado con indicios compatibles con una lesion benigna.',
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        height: 1.35,
+                                        color: AppColors.onSurfaceVariant,
+                                      ),
+                                    );
+
+                                    if (useStackedLayout) {
+                                      return Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          percentage,
+                                          const SizedBox(height: 8),
+                                          description,
+                                        ],
+                                      );
+                                    }
+
+                                    return Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
+                                      children: [
+                                        SizedBox(width: 120, child: percentage),
+                                        const SizedBox(width: 14),
+                                        Expanded(child: description),
+                                      ],
                                     );
                                   },
                                 ),
-                              ),
-                            )
-                          else
-                            _HistoryImageFallback(accentColor: accentColor),
-                          const SizedBox(height: 12),
-                          Text(
-                            hasImage
-                                ? 'Imagen registrada'
-                                : 'Vista previa no disponible',
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.onSurface,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            hasImage
-                                ? 'La captura asociada se recupero correctamente desde el historial.'
-                                : 'Este analisis no tiene una imagen publica disponible para mostrar en la app.',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: AppColors.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppColors.surfaceContainerLow,
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Confianza del modelo',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.onSurfaceVariant,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          LayoutBuilder(
-                            builder: (context, constraints) {
-                              final useStackedLayout = constraints.maxWidth < 320;
-                              final percentage = Text(
-                                '${(confidence * 100).toStringAsFixed(1)}%',
-                                maxLines: 1,
-                                overflow: TextOverflow.fade,
-                                softWrap: false,
-                                style: const TextStyle(
-                                  fontSize: 30,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.onSurface,
-                                  letterSpacing: -1,
+                                const SizedBox(height: 12),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(999),
+                                  child: LinearProgressIndicator(
+                                    value: confidence,
+                                    minHeight: 10,
+                                    backgroundColor:
+                                        AppColors.surfaceContainerHighest,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      accentColor,
+                                    ),
+                                  ),
                                 ),
-                              );
-                              final description = Text(
-                                isMalignant
-                                    ? 'Resultado con indicios de riesgo alto segun la clasificacion actual.'
-                                    : 'Resultado con indicios compatibles con una lesion benigna.',
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  height: 1.35,
-                                  color: AppColors.onSurfaceVariant,
-                                ),
-                              );
-
-                              if (useStackedLayout) {
-                                return Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    percentage,
-                                    const SizedBox(height: 8),
-                                    description,
-                                  ],
-                                );
-                              }
-
-                              return Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  SizedBox(width: 120, child: percentage),
-                                  const SizedBox(width: 14),
-                                  Expanded(child: description),
-                                ],
-                              );
-                            },
-                          ),
-                          const SizedBox(height: 12),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(999),
-                            child: LinearProgressIndicator(
-                              value: confidence,
-                              minHeight: 10,
-                              backgroundColor:
-                                  AppColors.surfaceContainerHighest,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                accentColor,
-                              ),
+                              ],
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    _DetailRow(
-                      label: 'Paciente',
-                      value: analysis.patientName ?? 'No registrado',
-                    ),
-                    _DetailRow(
-                      label: 'ID paciente',
-                      value: analysis.patientId ?? 'No registrado',
-                    ),
-                    _DetailRow(label: 'Predicción', value: displayLabel),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.check),
-                        label: const Text('Cerrar'),
-                      ),
-                    ),
+                          const SizedBox(height: 20),
+                          _DetailRow(
+                            label: 'Paciente',
+                            value: analysis.patientName ?? 'No registrado',
+                          ),
+                          _DetailRow(
+                            label: 'ID paciente',
+                            value: analysis.patientId ?? 'No registrado',
+                          ),
+                          _DetailRow(label: 'Predicción', value: displayLabel),
+                          _DetailRow(
+                            label: 'Tiempo de inferencia',
+                            value: analysis.processingTimeMs == null
+                                ? 'No registrado'
+                                : _formatProcessingTime(
+                                    analysis.processingTimeMs!,
+                                  ),
+                          ),
+                          _DetailRow(
+                            label: 'Versión del modelo',
+                            value: analysis.modelVersion ?? 'No registrada',
+                          ),
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: () => Navigator.pop(context),
+                              icon: const Icon(Icons.check),
+                              label: const Text('Cerrar'),
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -324,6 +342,13 @@ class _HistoryTabViewState extends State<HistoryTabView> {
     final hour = date.hour.toString().padLeft(2, '0');
     final minute = date.minute.toString().padLeft(2, '0');
     return '${date.day} ${months[date.month - 1]} ${date.year} · $hour:$minute';
+  }
+
+  String _formatProcessingTime(double milliseconds) {
+    if (milliseconds >= 1000) {
+      return '${(milliseconds / 1000).toStringAsFixed(2)} s';
+    }
+    return '${milliseconds.toStringAsFixed(1)} ms';
   }
 
   @override

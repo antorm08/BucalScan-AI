@@ -179,6 +179,18 @@ class HistoryCard extends StatelessWidget {
                             color: AppColors.secondary,
                           ),
                         ),
+                        if (analysis.processingTimeMs != null) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            'Inferencia: ${_formatProcessingTime(analysis.processingTimeMs!)}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppColors.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -209,5 +221,12 @@ class HistoryCard extends StatelessWidget {
     final hour = date.hour.toString().padLeft(2, '0');
     final minute = date.minute.toString().padLeft(2, '0');
     return '${date.day} ${months[date.month - 1]}, ${date.year} · $hour:$minute';
+  }
+
+  String _formatProcessingTime(double milliseconds) {
+    if (milliseconds >= 1000) {
+      return '${(milliseconds / 1000).toStringAsFixed(2)} s';
+    }
+    return '${milliseconds.toStringAsFixed(1)} ms';
   }
 }

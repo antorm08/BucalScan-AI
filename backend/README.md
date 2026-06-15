@@ -45,6 +45,8 @@ cp .env.example .env
 Usa `.env.example` como referencia para crear tu `.env` local.
 
 No publiques credenciales, secretos JWT ni claves de servicios externos en el README o en el repositorio.
+El archivo `.env` esta ignorado por Git y debe mantenerse solo en el entorno local o en las variables privadas de Render.
+Genera un `JWT_SECRET` largo y aleatorio para produccion; no uses valores de ejemplo.
 
 ## Ejecucion Local
 
@@ -72,6 +74,7 @@ uvicorn main:app --reload
 | `GET` | `/api/v1/summary/today` | Si | Resumen diario |
 
 El contrato del endpoint de prediccion esta documentado en `docs/predict_contract.md`.
+La politica simple de privacidad y retencion esta documentada en `docs/privacy_retention.md`.
 
 ## Inferencia
 
@@ -83,16 +86,44 @@ El contrato del endpoint de prediccion esta documentado en `docs/predict_contrac
 
 ## Pruebas
 
+Instala primero las dependencias del backend:
+
 ```bash
-pytest
+pip install -r requirements.txt
+```
+
+Verifica que el modelo ONNX cargue correctamente:
+
+```bash
+python scripts/verify_model.py
+```
+
+```bash
+python -m pytest
 ```
 
 Pruebas especificas:
 
 ```bash
-pytest tests/test_auth.py -v
-pytest tests/test_inference.py -v
+python -m pytest tests/test_auth.py -v
+python -m pytest tests/test_inference.py -v
 ```
+
+Antes de una demo en Render, abre `/health` para despertar el servicio y confirmar disponibilidad:
+
+```text
+https://bucalscan-ai.onrender.com/health
+```
+
+## Validacion Del Modelo
+
+El modelo MobileNetV2 clasifica solo entre lesion benigna y lesion maligna. Sus metricas de validacion estan documentadas en `docs/model_validation.md`.
+
+| Modelo | Accuracy | Precision | Recall | F1-Score | AUC-ROC |
+|--------|---------:|----------:|-------:|---------:|--------:|
+| MobileNetV2 | 0.8776 | 0.8462 | 0.9167 | 0.8800 | 0.8983 |
+
+El F1-Score de `0.8800` supera el minimo requerido de `0.80`.
 
 ## Despliegue En Render
 

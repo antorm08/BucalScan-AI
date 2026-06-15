@@ -1,4 +1,4 @@
-from datetime import date as date_type, datetime, timedelta
+from datetime import UTC, date as date_type, datetime, timedelta
 from typing import Optional
 
 from sqlalchemy import case, func
@@ -45,7 +45,7 @@ def get_daily_summary(
     user_id: Optional[int] = None,
     date_target: Optional[date_type] = None,
 ) -> dict:
-    today = date_target if date_target is not None else datetime.utcnow().date()
+    today = date_target if date_target is not None else datetime.now(UTC).date()
     start_of_day = datetime(today.year, today.month, today.day)
     end_of_day = start_of_day + timedelta(days=1)
 

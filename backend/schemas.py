@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Literal, Optional
 from datetime import datetime
 
@@ -7,6 +7,7 @@ class PredictionResponse(BaseModel):
     confidence: float
     recommendation: str
     probabilities: Optional[dict[str, float]] = None
+    processing_time_ms: Optional[float] = None
 
 class UserCreate(BaseModel):
     full_name: str
@@ -25,6 +26,8 @@ class TokenData(BaseModel):
     role: Literal["admin", "doctor"]
 
 class UserProfile(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     full_name: str
     doctor_id: str
@@ -33,10 +36,9 @@ class UserProfile(BaseModel):
     role: Literal["admin", "doctor"]
     created_at: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
-
 class AnalysisHistory(BaseModel):
+    model_config = ConfigDict(from_attributes=True, protected_namespaces=())
+
     id: int
     prediction: str
     confidence: float
@@ -47,9 +49,6 @@ class AnalysisHistory(BaseModel):
     model_version: Optional[str] = None
     processing_time_ms: Optional[float] = None
 
-    class Config:
-        from_attributes = True
-
 
 class DailySummary(BaseModel):
     total: int
@@ -59,6 +58,8 @@ class DailySummary(BaseModel):
 
 
 class UserAdminResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     full_name: str
     doctor_id: str
@@ -67,9 +68,6 @@ class UserAdminResponse(BaseModel):
     created_at: Optional[datetime] = None
     status: str
     role: Literal["admin", "doctor"]
-
-    class Config:
-        from_attributes = True
 
 
 class UserStatusUpdate(BaseModel):

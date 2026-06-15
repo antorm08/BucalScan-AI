@@ -5,23 +5,27 @@ class PredictionResultModel {
   final double confidence;
   final String recommendation;
   final Map<String, double>? probabilities;
+  final double? processingTimeMs;
 
   const PredictionResultModel({
     required this.prediction,
     required this.confidence,
     required this.recommendation,
     this.probabilities,
+    this.processingTimeMs,
   });
 
   factory PredictionResultModel.fromJson(Map<String, dynamic> json) {
     final rawPrediction = json['prediction'] ?? json['class'] ?? json['label'];
-    final rawConfidence = json['confidence'] ?? json['score'] ?? json['probability'];
+    final rawConfidence =
+        json['confidence'] ?? json['score'] ?? json['probability'];
 
     if (rawPrediction == null || rawConfidence is! num) {
       throw const FormatException('incomplete_prediction_response');
     }
 
     final rawProbabilities = json['probabilities'];
+    final rawProcessingTime = json['processing_time_ms'];
 
     return PredictionResultModel(
       prediction: rawPrediction.toString().trim(),
@@ -34,9 +38,13 @@ class PredictionResultModel {
       probabilities: rawProbabilities is Map
           ? Map<String, double>.from(
               rawProbabilities.map(
-                (key, value) => MapEntry(key.toString(), (value as num).toDouble()),
+                (key, value) =>
+                    MapEntry(key.toString(), (value as num).toDouble()),
               ),
             )
+          : null,
+      processingTimeMs: rawProcessingTime is num
+          ? rawProcessingTime.toDouble()
           : null,
     );
   }
@@ -47,6 +55,7 @@ class PredictionResultModel {
       confidence: confidence,
       recommendation: recommendation,
       probabilities: probabilities,
+      processingTimeMs: processingTimeMs,
     );
   }
 }

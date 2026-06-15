@@ -84,6 +84,7 @@ class _CaptureTabViewState extends State<CaptureTabView> {
         imageFile,
         patientId: patientId.isEmpty ? null : patientId,
         patientName: patientName.isEmpty ? null : patientName,
+        consentToStore: _hasStorageConsent,
       ),
     );
 
@@ -282,7 +283,9 @@ class _CaptureTabViewState extends State<CaptureTabView> {
             const SizedBox(height: 12),
             ElevatedButton.icon(
               onPressed:
-                  _selectedImage == null || viewModel.isLoading || !_hasStorageConsent
+                  _selectedImage == null ||
+                      viewModel.isLoading ||
+                      !_hasStorageConsent
                   ? null
                   : _analyzeImage,
               icon: viewModel.isLoading
@@ -618,4 +621,3 @@ class _CapturePreviewCard extends StatelessWidget {
     );
   }
 }
-

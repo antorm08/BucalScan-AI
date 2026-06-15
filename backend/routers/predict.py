@@ -38,11 +38,18 @@ def _build_recommendation(prediction: str) -> str:
 @router.post("/predict", response_model=PredictionResponse)
 async def predict(
     file: UploadFile = File(...),
+    consent_to_store: bool = Form(False),
     patient_id: Optional[str] = Form(None),
     patient_name: Optional[str] = Form(None),
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    if not consent_to_store:
+        raise HTTPException(
+            status_code=400,
+            detail="Consent is required to store the clinical image and analysis result.",
+        )
+
     if file.content_type not in _ACCEPTED_CONTENT_TYPES:
         raise HTTPException(
             status_code=400,
@@ -110,4 +117,5 @@ async def predict(
         confidence=result["confidence"],
         recommendation=_build_recommendation(result["prediction"]),
         probabilities=result.get("probabilities"),
+        processing_time_ms=processing_time_ms,
     )

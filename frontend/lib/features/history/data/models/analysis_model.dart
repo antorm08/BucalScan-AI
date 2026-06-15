@@ -8,6 +8,8 @@ class AnalysisModel {
   final String? imageUrl;
   final String? patientId;
   final String? patientName;
+  final String? modelVersion;
+  final double? processingTimeMs;
 
   const AnalysisModel({
     required this.id,
@@ -17,6 +19,8 @@ class AnalysisModel {
     this.imageUrl,
     this.patientId,
     this.patientName,
+    this.modelVersion,
+    this.processingTimeMs,
   });
 
   factory AnalysisModel.fromJson(Map<String, dynamic> json) {
@@ -28,6 +32,10 @@ class AnalysisModel {
       imageUrl: json['image_url'] as String?,
       patientId: json['patient_id'] as String?,
       patientName: json['patient_name'] as String?,
+      modelVersion: json['model_version'] as String?,
+      processingTimeMs: json['processing_time_ms'] is num
+          ? (json['processing_time_ms'] as num).toDouble()
+          : null,
     );
   }
 
@@ -41,6 +49,8 @@ class AnalysisModel {
       imageUrl: imageUrl,
       patientId: patientId,
       patientName: patientName,
+      modelVersion: modelVersion,
+      processingTimeMs: processingTimeMs,
     );
   }
 }

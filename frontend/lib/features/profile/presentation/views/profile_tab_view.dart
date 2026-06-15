@@ -4,6 +4,7 @@ import 'package:bucalscan_ai/core/theme/app_colors.dart';
 import 'package:bucalscan_ai/core/widgets/app_app_bar.dart';
 import 'package:bucalscan_ai/features/auth/presentation/views/login_view.dart';
 import 'package:bucalscan_ai/features/profile/presentation/views/edit_profile_view.dart';
+import 'package:bucalscan_ai/features/profile/presentation/views/model_info_view.dart';
 import 'package:bucalscan_ai/features/auth/presentation/viewmodels/auth_viewmodel.dart';
 
 class ProfileTabView extends StatelessWidget {
@@ -154,6 +155,24 @@ class ProfileTabView extends StatelessWidget {
                         context,
                         MaterialPageRoute(
                           builder: (_) => const EditProfileView(),
+                        ),
+                      );
+                    },
+                  ),
+                  const Divider(height: 1, color: AppColors.surfaceVariant),
+                  ListTile(
+                    leading: const Icon(
+                      Icons.psychology_alt_outlined,
+                      color: AppColors.onSurfaceVariant,
+                    ),
+                    title: const Text('Acerca del modelo'),
+                    subtitle: const Text('MobileNetV2, métricas y clases'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ModelInfoView(),
                         ),
                       );
                     },

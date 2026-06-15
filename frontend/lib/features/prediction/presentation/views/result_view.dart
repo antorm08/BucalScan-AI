@@ -150,6 +150,13 @@ class _ResultViewState extends State<ResultView> {
     return 'La prediccion se inclina a $label, pero el margen es reducido y requiere mayor cautela.';
   }
 
+  String _formatProcessingTime(double milliseconds) {
+    if (milliseconds >= 1000) {
+      return '${(milliseconds / 1000).toStringAsFixed(2)} s';
+    }
+    return '${milliseconds.toStringAsFixed(1)} ms';
+  }
+
   String _translateRecommendation(String recommendation) {
     final normalized = recommendation.trim().toLowerCase();
 
@@ -186,6 +193,7 @@ class _ResultViewState extends State<ResultView> {
       widget.imageFile,
       patientId: viewModel.patientId,
       patientName: viewModel.patientName,
+      consentToStore: true,
     );
   }
 
@@ -455,6 +463,16 @@ class _ResultViewState extends State<ResultView> {
                       'Confianza: ${(result.confidence * 100).toStringAsFixed(1)}%',
                       style: const TextStyle(fontSize: 18),
                     ),
+                    if (result.processingTimeMs != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        'Tiempo de inferencia: ${_formatProcessingTime(result.processingTimeMs!)}',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: AppColors.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 12),
                     Container(
                       padding: const EdgeInsets.symmetric(

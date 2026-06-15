@@ -1,7 +1,13 @@
+from datetime import UTC, datetime
+
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
+
 from database import Base
-from datetime import datetime
+
+
+def _utcnow_naive():
+    return datetime.now(UTC).replace(tzinfo=None)
 
 class User(Base):
     __tablename__ = "users"
@@ -12,7 +18,7 @@ class User(Base):
     medical_center = Column(String, nullable=True)
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=_utcnow_naive)
     status = Column(String, default="active", nullable=False)
     role = Column(String, default="doctor", nullable=False)
 
@@ -28,7 +34,7 @@ class Analysis(Base):
     image_path = Column(String, nullable=True)
     patient_id = Column(String, nullable=True)
     patient_name = Column(String, nullable=True)
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTime, default=_utcnow_naive)
     model_version = Column(String, nullable=True)
     processing_time_ms = Column(Float, nullable=True)
     

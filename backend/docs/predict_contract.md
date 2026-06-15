@@ -18,6 +18,7 @@ Content-Type: multipart/form-data
 | Campo | Tipo | Requerido | Descripción |
 |-------|------|-----------|-------------|
 | `file` | imagen (JPEG, PNG, WEBP) | Sí | Imagen de la lesión oral |
+| `consent_to_store` | boolean | Sí | Consentimiento explícito para guardar imagen y resultado |
 | `patient_id` | string | No | Identificador opcional del paciente |
 | `patient_name` | string | No | Nombre opcional del paciente |
 
@@ -34,6 +35,7 @@ Content-Type: multipart/form-data
   "prediction": "benign",
   "confidence": 0.9312,
   "recommendation": "No immediate concern. Regular check-ups recommended.",
+  "processing_time_ms": 124.5,
   "probabilities": {
     "benign": 0.9312,
     "malignant": 0.0688
@@ -46,6 +48,7 @@ Content-Type: multipart/form-data
 | `prediction` | `"benign"` \| `"malignant"` | — | Clase predicha por el modelo |
 | `confidence` | `float` | [0.0, 1.0] | Probabilidad de la clase predicha |
 | `recommendation` | `string` | — | Texto de recomendación clínica |
+| `processing_time_ms` | `float` | — | Tiempo de inferencia medido por el backend |
 | `probabilities` | `object` | — | Probabilidades por clase |
 | `probabilities.benign` | `float` | [0.0, 1.0] | Probabilidad de lesión benigna |
 | `probabilities.malignant` | `float` | [0.0, 1.0] | Probabilidad de lesión maligna |
@@ -67,6 +70,14 @@ Content-Type: multipart/form-data
 ```json
 {
   "detail": "Cannot decode image file."
+}
+```
+
+## Response 400 — Consentimiento faltante
+
+```json
+{
+  "detail": "Consent is required to store the clinical image and analysis result."
 }
 ```
 
@@ -131,11 +142,17 @@ La imagen recibida pasa por el siguiente pipeline antes de la inferencia:
 | Clases | `["benign", "malignant"]` |
 | Runtime | ONNX Runtime, CPUExecutionProvider |
 
+Las clases mostradas al usuario en la app son **Benigna** y **Maligna**. No se consideran clases adicionales para esta version del proyecto.
+
+Las metricas de validacion del modelo se documentan en `docs/model_validation.md`.
+
 ---
 
 ## Persistencia
 
 Al completar la inferencia, el backend guarda un registro en `analyses` con:
+
+El guardado solo se realiza si `consent_to_store=true` fue enviado en el formulario.
 
 | Campo | Descripción |
 |-------|-------------|

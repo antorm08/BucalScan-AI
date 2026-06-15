@@ -6,6 +6,8 @@ class Analysis {
   final String? imageUrl;
   final String? patientId;
   final String? patientName;
+  final String? modelVersion;
+  final double? processingTimeMs;
 
   const Analysis({
     required this.id,
@@ -15,5 +17,7 @@ class Analysis {
     this.imageUrl,
     this.patientId,
     this.patientName,
+    this.modelVersion,
+    this.processingTimeMs,
   });
 }

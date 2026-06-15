@@ -49,10 +49,12 @@ class ApiService {
     File image, {
     String? patientId,
     String? patientName,
+    required bool consentToStore,
   }) async {
     try {
       final formData = FormData.fromMap({
         'file': await MultipartFile.fromFile(image.path),
+        'consent_to_store': consentToStore.toString(),
         if (patientId != null && patientId.isNotEmpty) 'patient_id': patientId,
         if (patientName != null && patientName.isNotEmpty)
           'patient_name': patientName,
@@ -160,7 +162,9 @@ class ApiService {
     try {
       final response = await _dio.get('${AppConstants.apiVersion}/history');
       final List<dynamic> data = response.data;
-      return data.map((json) => Map<String, dynamic>.from(json as Map)).toList();
+      return data
+          .map((json) => Map<String, dynamic>.from(json as Map))
+          .toList();
     } on DioException catch (e) {
       throw Exception(
         _buildApiErrorMessage(e, fallback: 'No se pudo cargar el historial.'),
@@ -188,7 +192,9 @@ class ApiService {
     try {
       final response = await _dio.get('${AppConstants.apiVersion}/admin/users');
       final List<dynamic> data = response.data;
-      return data.map((json) => Map<String, dynamic>.from(json as Map)).toList();
+      return data
+          .map((json) => Map<String, dynamic>.from(json as Map))
+          .toList();
     } on DioException catch (e) {
       throw Exception(
         _buildApiErrorMessage(

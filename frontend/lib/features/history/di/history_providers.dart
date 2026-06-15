@@ -6,7 +6,9 @@ import 'package:bucalscan_ai/features/history/domain/entities/analysis.dart';
 import 'package:bucalscan_ai/features/history/domain/repositories/history_repository.dart';
 import 'package:bucalscan_ai/features/history/domain/usecases/get_history_usecase.dart';
 
-final historyRemoteDataSourceProvider = Provider<HistoryRemoteDataSource>((ref) {
+final historyRemoteDataSourceProvider = Provider<HistoryRemoteDataSource>((
+  ref,
+) {
   return HistoryRemoteDataSource(ref.watch(authApiServiceProvider));
 });
 

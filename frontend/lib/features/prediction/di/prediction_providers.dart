@@ -9,12 +9,16 @@ import 'package:bucalscan_ai/features/prediction/domain/entities/prediction_resu
 import 'package:bucalscan_ai/features/prediction/domain/repositories/prediction_repository.dart';
 import 'package:bucalscan_ai/features/prediction/domain/usecases/predict_image_usecase.dart';
 
-final predictionRemoteDataSourceProvider = Provider<PredictionRemoteDataSource>((ref) {
-  return PredictionRemoteDataSource(ref.watch(authApiServiceProvider));
-});
+final predictionRemoteDataSourceProvider = Provider<PredictionRemoteDataSource>(
+  (ref) {
+    return PredictionRemoteDataSource(ref.watch(authApiServiceProvider));
+  },
+);
 
 final predictionRepositoryProvider = Provider<PredictionRepository>((ref) {
-  return PredictionRepositoryImpl(ref.watch(predictionRemoteDataSourceProvider));
+  return PredictionRepositoryImpl(
+    ref.watch(predictionRemoteDataSourceProvider),
+  );
 });
 
 final predictImageUseCaseProvider = Provider<PredictImageUseCase>((ref) {
@@ -44,12 +48,14 @@ class PredictionController extends StateNotifier<PredictionState> {
     File image, {
     String? patientId,
     String? patientName,
+    required bool consentToStore,
   }) async {
     state = const PredictionState(isLoading: true);
     try {
       final result = await _predictImageUseCase(
         PredictionImageInput(
           imagePath: image.path,
+          consentToStore: consentToStore,
           patientId: patientId,
           patientName: patientName,
         ),
