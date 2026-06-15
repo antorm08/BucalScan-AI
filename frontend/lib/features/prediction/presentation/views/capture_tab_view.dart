@@ -18,6 +18,7 @@ class CaptureTabView extends StatefulWidget {
 class _CaptureTabViewState extends State<CaptureTabView> {
   final ImagePicker _picker = ImagePicker();
   File? _selectedImage;
+  bool _hasStorageConsent = false;
   final TextEditingController _patientIdController = TextEditingController();
   final TextEditingController _patientNameController = TextEditingController();
 
@@ -49,7 +50,10 @@ class _CaptureTabViewState extends State<CaptureTabView> {
       predictionViewModel.clearResult();
       _patientIdController.clear();
       _patientNameController.clear();
-      setState(() => _selectedImage = File(image.path));
+      setState(() {
+        _selectedImage = File(image.path);
+        _hasStorageConsent = false;
+      });
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -268,8 +272,17 @@ class _CaptureTabViewState extends State<CaptureTabView> {
               ),
             ),
             const SizedBox(height: 12),
+            _ConsentCard(
+              isEnabled: hasImage && !viewModel.isLoading,
+              value: _hasStorageConsent,
+              onChanged: (value) {
+                setState(() => _hasStorageConsent = value ?? false);
+              },
+            ),
+            const SizedBox(height: 12),
             ElevatedButton.icon(
-              onPressed: _selectedImage == null || viewModel.isLoading
+              onPressed:
+                  _selectedImage == null || viewModel.isLoading || !_hasStorageConsent
                   ? null
                   : _analyzeImage,
               icon: viewModel.isLoading
@@ -283,7 +296,9 @@ class _CaptureTabViewState extends State<CaptureTabView> {
                 viewModel.isLoading
                     ? 'Preparando análisis...'
                     : hasImage
-                    ? 'Confirmar y analizar imagen'
+                    ? _hasStorageConsent
+                          ? 'Confirmar y analizar imagen'
+                          : 'Acepte el consentimiento para continuar'
                     : 'Seleccione una imagen para continuar',
               ),
               style: ElevatedButton.styleFrom(
@@ -293,6 +308,68 @@ class _CaptureTabViewState extends State<CaptureTabView> {
               ),
             ),
             const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ConsentCard extends StatelessWidget {
+  final bool isEnabled;
+  final bool value;
+  final ValueChanged<bool?> onChanged;
+
+  const _ConsentCard({
+    required this.isEnabled,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: AppColors.surfaceContainerLowest,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: AppColors.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Checkbox(
+              value: value,
+              onChanged: isEnabled ? onChanged : null,
+              activeColor: AppColors.primary,
+            ),
+            const SizedBox(width: 8),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Consentimiento para guardar el análisis',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.onSurface,
+                    ),
+                  ),
+                  SizedBox(height: 6),
+                  Text(
+                    'Autorizo que la imagen clínica, resultado, confianza, fecha y datos opcionales del paciente se almacenen en el historial asociado a mi cuenta para seguimiento clínico/académico.',
+                    style: TextStyle(
+                      fontSize: 13,
+                      height: 1.35,
+                      color: AppColors.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
