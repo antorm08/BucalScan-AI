@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:bucalscan_ai/presentation/views/auth/login_view.dart';
-import 'package:bucalscan_ai/presentation/views/auth/register_view.dart';
-import 'package:bucalscan_ai/presentation/views/home/home_view.dart';
+import 'package:bucalscan_ai/features/auth/presentation/views/login_view.dart';
+import 'package:bucalscan_ai/features/auth/presentation/views/register_view.dart';
+import 'package:bucalscan_ai/features/home/presentation/views/home_view.dart';
 
 class AppRouter {
   static const String login = '/login';

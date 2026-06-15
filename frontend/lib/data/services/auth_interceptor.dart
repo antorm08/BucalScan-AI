@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:dio/dio.dart';
+import 'package:bucalscan_ai/core/session/session_events.dart';
 import 'auth_storage_service.dart';
-import 'session_events.dart';
 
 class AuthInterceptor extends Interceptor {
   final AuthStorageService _storage;

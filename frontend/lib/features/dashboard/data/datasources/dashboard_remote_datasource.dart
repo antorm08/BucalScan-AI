@@ -7,12 +7,7 @@ class DashboardRemoteDataSource {
   const DashboardRemoteDataSource(this._apiService);
 
   Future<DailySummaryModel> getTodaySummary() async {
-    final model = await _apiService.getTodaySummary();
-    return DailySummaryModel(
-      total: model.total,
-      benign: model.benign,
-      malignant: model.malignant,
-      latestAnalysisAt: model.latestAnalysisAt,
-    );
+    final json = await _apiService.getTodaySummary();
+    return DailySummaryModel.fromJson(json);
   }
 }

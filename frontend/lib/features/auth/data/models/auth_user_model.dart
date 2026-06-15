@@ -24,4 +24,16 @@ class AuthUserModel extends AuthUser {
       role: json['role'] as String? ?? 'doctor',
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'full_name': fullName,
+      'doctor_id': doctorId,
+      'medical_center': medicalCenter,
+      'email': email,
+      'created_at': createdAt?.toIso8601String(),
+      'role': role,
+    };
+  }
 }

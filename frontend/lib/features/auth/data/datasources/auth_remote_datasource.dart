@@ -11,4 +11,24 @@ class AuthRemoteDataSource {
   }) {
     return _apiService.login(email: email, password: password);
   }
+
+  Future<Map<String, dynamic>> register({
+    required String fullName,
+    required String doctorId,
+    String? medicalCenter,
+    required String email,
+    required String password,
+  }) {
+    return _apiService.register(
+      fullName: fullName,
+      doctorId: doctorId,
+      medicalCenter: medicalCenter,
+      email: email,
+      password: password,
+    );
+  }
+
+  Future<Map<String, dynamic>> me() {
+    return _apiService.me();
+  }
 }

@@ -1,10 +1,6 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:bucalscan_ai/core/constants/app_constants.dart';
-import 'package:bucalscan_ai/data/models/admin_user_model.dart';
-import 'package:bucalscan_ai/data/models/analysis_model.dart';
-import 'package:bucalscan_ai/data/models/daily_summary_model.dart';
-import 'package:bucalscan_ai/data/models/prediction_result_model.dart';
 
 class ApiService {
   final Dio _dio;
@@ -49,7 +45,7 @@ class ApiService {
     }
   }
 
-  Future<PredictionResultModel> predictImage(
+  Future<Map<String, dynamic>> predictImage(
     File image, {
     String? patientId,
     String? patientName,
@@ -67,7 +63,7 @@ class ApiService {
         data: formData,
       );
 
-      return PredictionResultModel.fromJson(response.data);
+      return Map<String, dynamic>.from(response.data as Map);
     } on FormatException {
       throw Exception(
         'La respuesta del servidor no incluyo todos los datos esperados del analisis.',
@@ -160,11 +156,11 @@ class ApiService {
     }
   }
 
-  Future<List<AnalysisModel>> getHistory() async {
+  Future<List<Map<String, dynamic>>> getHistory() async {
     try {
       final response = await _dio.get('${AppConstants.apiVersion}/history');
       final List<dynamic> data = response.data;
-      return data.map((json) => AnalysisModel.fromJson(json)).toList();
+      return data.map((json) => Map<String, dynamic>.from(json as Map)).toList();
     } on DioException catch (e) {
       throw Exception(
         _buildApiErrorMessage(e, fallback: 'No se pudo cargar el historial.'),
@@ -172,12 +168,12 @@ class ApiService {
     }
   }
 
-  Future<DailySummaryModel> getTodaySummary() async {
+  Future<Map<String, dynamic>> getTodaySummary() async {
     try {
       final response = await _dio.get(
         '${AppConstants.apiVersion}/summary/today',
       );
-      return DailySummaryModel.fromJson(response.data);
+      return Map<String, dynamic>.from(response.data as Map);
     } on DioException catch (e) {
       throw Exception(
         _buildApiErrorMessage(
@@ -188,11 +184,11 @@ class ApiService {
     }
   }
 
-  Future<List<AdminUserModel>> getAdminUsers() async {
+  Future<List<Map<String, dynamic>>> getAdminUsers() async {
     try {
       final response = await _dio.get('${AppConstants.apiVersion}/admin/users');
       final List<dynamic> data = response.data;
-      return data.map((json) => AdminUserModel.fromJson(json)).toList();
+      return data.map((json) => Map<String, dynamic>.from(json as Map)).toList();
     } on DioException catch (e) {
       throw Exception(
         _buildApiErrorMessage(
@@ -203,7 +199,7 @@ class ApiService {
     }
   }
 
-  Future<AdminUserModel> updateAdminUserStatus({
+  Future<Map<String, dynamic>> updateAdminUserStatus({
     required int userId,
     required String status,
   }) async {
@@ -212,7 +208,7 @@ class ApiService {
         '${AppConstants.apiVersion}/admin/users/$userId/status',
         data: {'status': status},
       );
-      return AdminUserModel.fromJson(response.data);
+      return Map<String, dynamic>.from(response.data as Map);
     } on DioException catch (e) {
       throw Exception(
         _buildApiErrorMessage(e, fallback: 'No se pudo actualizar el usuario.'),
