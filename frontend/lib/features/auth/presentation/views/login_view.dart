@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:provider/provider.dart' as provider;
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
 import 'package:bucalscan_ai/core/widgets/app_text_field.dart';
 import 'package:bucalscan_ai/features/auth/domain/entities/auth_user.dart';
 import 'package:bucalscan_ai/features/auth/di/auth_providers.dart';
+import 'package:bucalscan_ai/features/auth/di/auth_viewmodel_provider.dart';
 import 'package:bucalscan_ai/features/auth/presentation/views/register_view.dart';
 import 'package:bucalscan_ai/features/home/presentation/views/home_view.dart';
-import 'package:bucalscan_ai/features/auth/presentation/viewmodels/auth_viewmodel.dart';
 
 class LoginView extends ConsumerStatefulWidget {
   final VoidCallback? onAuthenticated;
@@ -52,26 +51,27 @@ class _LoginViewState extends ConsumerState<LoginView> {
 
   Future<void> _handleLogin() async {
     if (_formKey.currentState!.validate()) {
-      final session = await ref.read(authControllerProvider.notifier).login(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-      );
+      final session = await ref
+          .read(authControllerProvider.notifier)
+          .login(
+            email: _emailController.text.trim(),
+            password: _passwordController.text,
+          );
 
       if (session != null && mounted) {
-        provider.Provider.of<AuthViewModel>(
-          context,
-          listen: false,
-        ).syncAuthenticatedUser(
-          AuthUser(
-            id: session.user.id,
-            fullName: session.user.fullName,
-            doctorId: session.user.doctorId,
-            medicalCenter: session.user.medicalCenter,
-            email: session.user.email,
-            createdAt: session.user.createdAt,
-            role: session.user.role,
-          ),
-        );
+        ref
+            .read(authViewModelProvider)
+            .syncAuthenticatedUser(
+              AuthUser(
+                id: session.user.id,
+                fullName: session.user.fullName,
+                doctorId: session.user.doctorId,
+                medicalCenter: session.user.medicalCenter,
+                email: session.user.email,
+                createdAt: session.user.createdAt,
+                role: session.user.role,
+              ),
+            );
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -237,11 +237,14 @@ class _LoginViewState extends ConsumerState<LoginView> {
                                     color: AppColors.errorContainer,
                                     borderRadius: BorderRadius.circular(10),
                                     border: Border.all(
-                                      color: AppColors.error.withValues(alpha: 0.25),
+                                      color: AppColors.error.withValues(
+                                        alpha: 0.25,
+                                      ),
                                     ),
                                   ),
                                   child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       const Icon(
                                         Icons.error_outline,
@@ -264,7 +267,9 @@ class _LoginViewState extends ConsumerState<LoginView> {
                                 ),
                               ),
                             ElevatedButton(
-                              onPressed: authState.isLoading ? null : _handleLogin,
+                              onPressed: authState.isLoading
+                                  ? null
+                                  : _handleLogin,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.primary,
                                 foregroundColor: AppColors.onPrimary,
@@ -282,9 +287,10 @@ class _LoginViewState extends ConsumerState<LoginView> {
                                       width: 20,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation<Color>(
-                                          Colors.white,
-                                        ),
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              Colors.white,
+                                            ),
                                       ),
                                     )
                                   : const Row(

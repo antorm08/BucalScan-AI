@@ -52,10 +52,7 @@ class AuthViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final session = await _repository.login(
-        email: email,
-        password: password,
-      );
+      final session = await _repository.login(email: email, password: password);
 
       _currentUser = session.user;
 

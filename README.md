@@ -18,7 +18,7 @@ BucalScan AI es una aplicacion movil para apoyo al tamizaje de lesiones orales. 
 
 | Capa | Tecnologia |
 |------|------------|
-| Aplicacion movil | Flutter, Dart, Provider, Dio |
+| Aplicacion movil | Flutter, Dart, Riverpod, Dio |
 | API | FastAPI, Uvicorn, Pydantic |
 | Autenticacion | JWT, bcrypt |
 | Base de datos | SQLite local; compatible con PostgreSQL mediante `DATABASE_URL` |

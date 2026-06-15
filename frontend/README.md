@@ -84,8 +84,7 @@ lib/
 
 ## Dependencias Destacadas
 
-- `provider`: gestion de estado.
-- `flutter_riverpod`: providers de dependencias por feature.
+- `flutter_riverpod`: gestion de estado e inyeccion de dependencias por feature.
 - `dio`: cliente HTTP e interceptores.
 - `image_picker`: seleccion/captura de imagenes.
 - `shared_preferences`: persistencia local del token.

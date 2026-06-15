@@ -1,24 +1,25 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
 import 'package:bucalscan_ai/core/widgets/app_app_bar.dart';
+import 'package:bucalscan_ai/features/dashboard/di/dashboard_providers.dart';
+import 'package:bucalscan_ai/features/history/di/history_providers.dart';
 import 'package:bucalscan_ai/features/home/presentation/views/home_view.dart';
-import 'package:bucalscan_ai/features/dashboard/presentation/viewmodels/summary_viewmodel.dart';
-import 'package:bucalscan_ai/features/history/presentation/viewmodels/history_viewmodel.dart';
+import 'package:bucalscan_ai/features/prediction/di/prediction_providers.dart';
 import 'package:bucalscan_ai/features/prediction/presentation/viewmodels/prediction_viewmodel.dart';
 
-class ResultView extends StatefulWidget {
+class ResultView extends ConsumerStatefulWidget {
   final File imageFile;
 
   const ResultView({super.key, required this.imageFile});
 
   @override
-  State<ResultView> createState() => _ResultViewState();
+  ConsumerState<ResultView> createState() => _ResultViewState();
 }
 
-class _ResultViewState extends State<ResultView> {
+class _ResultViewState extends ConsumerState<ResultView> {
   bool _hasSyncedPostAnalysis = false;
 
   ({String title, String message, IconData icon}) _getErrorPresentation(
@@ -213,7 +214,7 @@ class _ResultViewState extends State<ResultView> {
 
   @override
   Widget build(BuildContext context) {
-    final viewModel = context.watch<PredictionViewModel>();
+    final viewModel = ref.watch(predictionViewModelProvider);
     final result = viewModel.result;
 
     if (!_hasSyncedPostAnalysis &&
@@ -226,8 +227,8 @@ class _ResultViewState extends State<ResultView> {
           return;
         }
 
-        context.read<SummaryViewModel>().fetchTodaySummary();
-        context.read<HistoryViewModel>().fetchHistory();
+        ref.read(summaryViewModelProvider).fetchTodaySummary();
+        ref.read(historyViewModelProvider).fetchHistory();
       });
     }
 

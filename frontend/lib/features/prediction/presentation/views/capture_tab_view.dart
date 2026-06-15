@@ -1,21 +1,21 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:provider/provider.dart';
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
 import 'package:bucalscan_ai/core/widgets/app_app_bar.dart';
+import 'package:bucalscan_ai/features/prediction/di/prediction_providers.dart';
 import 'package:bucalscan_ai/features/prediction/presentation/views/result_view.dart';
-import 'package:bucalscan_ai/features/prediction/presentation/viewmodels/prediction_viewmodel.dart';
 
-class CaptureTabView extends StatefulWidget {
+class CaptureTabView extends ConsumerStatefulWidget {
   const CaptureTabView({super.key});
 
   @override
-  State<CaptureTabView> createState() => _CaptureTabViewState();
+  ConsumerState<CaptureTabView> createState() => _CaptureTabViewState();
 }
 
-class _CaptureTabViewState extends State<CaptureTabView> {
+class _CaptureTabViewState extends ConsumerState<CaptureTabView> {
   final ImagePicker _picker = ImagePicker();
   File? _selectedImage;
   bool _hasStorageConsent = false;
@@ -30,7 +30,7 @@ class _CaptureTabViewState extends State<CaptureTabView> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
-    final predictionViewModel = context.read<PredictionViewModel>();
+    final predictionViewModel = ref.read(predictionViewModelProvider);
 
     try {
       final XFile? image = await _picker.pickImage(
@@ -70,7 +70,7 @@ class _CaptureTabViewState extends State<CaptureTabView> {
       return;
     }
 
-    final viewModel = context.read<PredictionViewModel>();
+    final viewModel = ref.read(predictionViewModelProvider);
     if (viewModel.isLoading) {
       return;
     }
@@ -100,7 +100,7 @@ class _CaptureTabViewState extends State<CaptureTabView> {
 
   @override
   Widget build(BuildContext context) {
-    final viewModel = context.watch<PredictionViewModel>();
+    final viewModel = ref.watch(predictionViewModelProvider);
     final hasImage = _selectedImage != null;
 
     return Scaffold(

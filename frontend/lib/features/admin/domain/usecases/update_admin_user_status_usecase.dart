@@ -6,10 +6,7 @@ class UpdateAdminUserStatusUseCase {
 
   const UpdateAdminUserStatusUseCase(this._repository);
 
-  Future<AdminUser> call({
-    required int userId,
-    required String status,
-  }) {
+  Future<AdminUser> call({required int userId, required String status}) {
     return _repository.updateUserStatus(userId: userId, status: status);
   }
 }

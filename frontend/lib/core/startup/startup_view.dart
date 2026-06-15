@@ -85,7 +85,8 @@ class _StartupViewState extends State<StartupView> {
 
         setState(() {
           _error = e.toString().replaceFirst('Exception: ', '');
-          _statusMessage = 'El backend sigue iniciando. Reintentando automaticamente...';
+          _statusMessage =
+              'El backend sigue iniciando. Reintentando automaticamente...';
         });
 
         await Future<void>.delayed(_retryDelay);
@@ -116,7 +117,10 @@ class _StartupViewState extends State<StartupView> {
                   side: const BorderSide(color: AppColors.surfaceVariant),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 32,
+                  ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -223,7 +227,8 @@ class _StartupViewState extends State<StartupView> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          _error ?? 'No se pudo establecer conexion con el servidor.',
+                          _error ??
+                              'No se pudo establecer conexion con el servidor.',
                           textAlign: TextAlign.center,
                           style: const TextStyle(
                             fontSize: 13,

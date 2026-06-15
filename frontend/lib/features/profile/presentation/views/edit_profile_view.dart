@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
 import 'package:bucalscan_ai/core/widgets/app_app_bar.dart';
 import 'package:bucalscan_ai/core/widgets/app_text_field.dart';
-import 'package:bucalscan_ai/features/auth/presentation/viewmodels/auth_viewmodel.dart';
+import 'package:bucalscan_ai/features/auth/di/auth_viewmodel_provider.dart';
 
-class EditProfileView extends StatefulWidget {
+class EditProfileView extends ConsumerStatefulWidget {
   const EditProfileView({super.key});
 
   @override
-  State<EditProfileView> createState() => _EditProfileViewState();
+  ConsumerState<EditProfileView> createState() => _EditProfileViewState();
 }
 
-class _EditProfileViewState extends State<EditProfileView> {
+class _EditProfileViewState extends ConsumerState<EditProfileView> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _fullNameController;
   late final TextEditingController _medicalCenterController;
@@ -21,7 +21,7 @@ class _EditProfileViewState extends State<EditProfileView> {
   @override
   void initState() {
     super.initState();
-    final user = context.read<AuthViewModel>().currentUser;
+    final user = ref.read(authViewModelProvider).currentUser;
     _fullNameController = TextEditingController(text: user?.fullName ?? '');
     _medicalCenterController = TextEditingController(
       text: user?.medicalCenter ?? '',
@@ -40,7 +40,7 @@ class _EditProfileViewState extends State<EditProfileView> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final authViewModel = context.read<AuthViewModel>();
+    final authViewModel = ref.read(authViewModelProvider);
     final success = await authViewModel.updateProfile(
       fullName: _fullNameController.text.trim(),
       medicalCenter: _medicalCenterController.text.trim(),
@@ -69,7 +69,7 @@ class _EditProfileViewState extends State<EditProfileView> {
 
   @override
   Widget build(BuildContext context) {
-    final authViewModel = context.watch<AuthViewModel>();
+    final authViewModel = ref.watch(authViewModelProvider);
     final isLoading = authViewModel.isLoading;
 
     return Scaffold(

@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
 import 'package:bucalscan_ai/core/widgets/app_app_bar.dart';
+import 'package:bucalscan_ai/features/auth/di/auth_viewmodel_provider.dart';
 import 'package:bucalscan_ai/features/auth/presentation/views/login_view.dart';
 import 'package:bucalscan_ai/features/profile/presentation/views/edit_profile_view.dart';
 import 'package:bucalscan_ai/features/profile/presentation/views/model_info_view.dart';
-import 'package:bucalscan_ai/features/auth/presentation/viewmodels/auth_viewmodel.dart';
 
-class ProfileTabView extends StatelessWidget {
+class ProfileTabView extends ConsumerWidget {
   const ProfileTabView({super.key});
 
-  Future<void> _confirmLogout(BuildContext context) async {
+  Future<void> _confirmLogout(BuildContext context, WidgetRef ref) async {
     final shouldLogout = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -33,7 +33,7 @@ class ProfileTabView extends StatelessWidget {
       return;
     }
 
-    await context.read<AuthViewModel>().logout();
+    await ref.read(authViewModelProvider).logout();
     if (!context.mounted) {
       return;
     }
@@ -65,8 +65,8 @@ class ProfileTabView extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final user = context.watch<AuthViewModel>().currentUser;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(authViewModelProvider).currentUser;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -198,7 +198,7 @@ class ProfileTabView extends StatelessWidget {
                       'Cerrar sesión',
                       style: TextStyle(color: AppColors.error),
                     ),
-                    onTap: () => _confirmLogout(context),
+                    onTap: () => _confirmLogout(context, ref),
                   ),
                 ],
               ),

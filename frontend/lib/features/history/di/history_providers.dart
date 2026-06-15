@@ -5,6 +5,7 @@ import 'package:bucalscan_ai/features/history/data/repositories/history_reposito
 import 'package:bucalscan_ai/features/history/domain/entities/analysis.dart';
 import 'package:bucalscan_ai/features/history/domain/repositories/history_repository.dart';
 import 'package:bucalscan_ai/features/history/domain/usecases/get_history_usecase.dart';
+import 'package:bucalscan_ai/features/history/presentation/viewmodels/history_viewmodel.dart';
 
 final historyRemoteDataSourceProvider = Provider<HistoryRemoteDataSource>((
   ref,
@@ -18,6 +19,12 @@ final historyRepositoryProvider = Provider<HistoryRepository>((ref) {
 
 final getHistoryUseCaseProvider = Provider<GetHistoryUseCase>((ref) {
   return GetHistoryUseCase(ref.watch(historyRepositoryProvider));
+});
+
+final historyViewModelProvider = ChangeNotifierProvider<HistoryViewModel>((
+  ref,
+) {
+  return HistoryViewModel(ref.watch(getHistoryUseCaseProvider));
 });
 
 final historyControllerProvider =

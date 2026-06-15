@@ -5,7 +5,9 @@ import 'package:bucalscan_ai/features/profile/data/repositories/profile_reposito
 import 'package:bucalscan_ai/features/profile/domain/repositories/profile_repository.dart';
 import 'package:bucalscan_ai/features/profile/domain/usecases/update_profile_usecase.dart';
 
-final profileRemoteDataSourceProvider = Provider<ProfileRemoteDataSource>((ref) {
+final profileRemoteDataSourceProvider = Provider<ProfileRemoteDataSource>((
+  ref,
+) {
   return ProfileRemoteDataSource(ref.watch(authApiServiceProvider));
 });
 

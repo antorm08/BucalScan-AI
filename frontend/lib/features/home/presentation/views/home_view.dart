@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
 import 'package:bucalscan_ai/core/widgets/nav_bar_item.dart';
 import 'package:bucalscan_ai/features/admin/presentation/views/admin_users_view.dart';
+import 'package:bucalscan_ai/features/auth/di/auth_viewmodel_provider.dart';
 import 'package:bucalscan_ai/features/history/presentation/views/history_tab_view.dart';
 import 'package:bucalscan_ai/features/home/presentation/views/home_tab_view.dart';
 import 'package:bucalscan_ai/features/prediction/presentation/views/capture_tab_view.dart';
 import 'package:bucalscan_ai/features/profile/presentation/views/profile_tab_view.dart';
 import 'package:bucalscan_ai/features/auth/presentation/views/login_view.dart';
-import 'package:bucalscan_ai/features/auth/presentation/viewmodels/auth_viewmodel.dart';
 
 class HomeView extends StatefulWidget {
   final int initialIndex;
@@ -112,7 +112,7 @@ class _HomeViewState extends State<HomeView> {
   }
 }
 
-class _MainDrawer extends StatelessWidget {
+class _MainDrawer extends ConsumerWidget {
   final ValueChanged<int> onSelectTab;
 
   const _MainDrawer({required this.onSelectTab});
@@ -122,7 +122,7 @@ class _MainDrawer extends StatelessWidget {
     onSelectTab(index);
   }
 
-  Future<void> _logout(BuildContext context) async {
+  Future<void> _logout(BuildContext context, WidgetRef ref) async {
     final shouldLogout = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -145,7 +145,7 @@ class _MainDrawer extends StatelessWidget {
       return;
     }
 
-    await context.read<AuthViewModel>().logout();
+    await ref.read(authViewModelProvider).logout();
     if (!context.mounted) {
       return;
     }
@@ -157,8 +157,8 @@ class _MainDrawer extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final user = context.watch<AuthViewModel>().currentUser;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(authViewModelProvider).currentUser;
 
     return Drawer(
       child: SafeArea(
@@ -233,7 +233,7 @@ class _MainDrawer extends StatelessWidget {
                 'Cerrar sesión',
                 style: TextStyle(color: AppColors.error),
               ),
-              onTap: () => _logout(context),
+              onTap: () => _logout(context, ref),
             ),
           ],
         ),

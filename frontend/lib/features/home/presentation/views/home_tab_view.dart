@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
 import 'package:bucalscan_ai/core/widgets/app_app_bar.dart';
 import 'package:bucalscan_ai/features/admin/presentation/views/admin_users_view.dart';
-import 'package:bucalscan_ai/features/auth/presentation/viewmodels/auth_viewmodel.dart';
-import 'package:bucalscan_ai/features/dashboard/presentation/viewmodels/summary_viewmodel.dart';
+import 'package:bucalscan_ai/features/auth/di/auth_viewmodel_provider.dart';
+import 'package:bucalscan_ai/features/dashboard/di/dashboard_providers.dart';
 
-class HomeTabView extends StatefulWidget {
+class HomeTabView extends ConsumerStatefulWidget {
   final VoidCallback onStartCapture;
   final VoidCallback onOpenHistory;
 
@@ -17,10 +17,10 @@ class HomeTabView extends StatefulWidget {
   });
 
   @override
-  State<HomeTabView> createState() => _HomeTabViewState();
+  ConsumerState<HomeTabView> createState() => _HomeTabViewState();
 }
 
-class _HomeTabViewState extends State<HomeTabView> {
+class _HomeTabViewState extends ConsumerState<HomeTabView> {
   @override
   void initState() {
     super.initState();
@@ -29,13 +29,13 @@ class _HomeTabViewState extends State<HomeTabView> {
         return;
       }
 
-      context.read<SummaryViewModel>().fetchTodaySummary();
+      ref.read(summaryViewModelProvider).fetchTodaySummary();
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final currentUser = context.watch<AuthViewModel>().currentUser;
+    final currentUser = ref.watch(authViewModelProvider).currentUser;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -310,7 +310,7 @@ class _SecondaryActionCard extends StatelessWidget {
   }
 }
 
-class _SummaryCard extends StatelessWidget {
+class _SummaryCard extends ConsumerWidget {
   const _SummaryCard();
 
   String _formatLatestAnalysis(DateTime? date) {
@@ -334,204 +334,201 @@ class _SummaryCard extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Consumer<SummaryViewModel>(
-      builder: (context, viewModel, _) {
-        if (viewModel.isLoading) {
-          return Card(
-            color: AppColors.surfaceContainerLowest,
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: const BorderSide(color: AppColors.surfaceContainerHighest),
-            ),
-            child: const Padding(
-              padding: EdgeInsets.all(16),
-              child: SizedBox(
-                height: 220,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 16),
-                    Text(
-                      'Cargando resumen real del día...',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: AppColors.onSurfaceVariant),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        }
-
-        if (viewModel.error != null) {
-          return Card(
-            color: AppColors.surfaceContainerLowest,
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: const BorderSide(color: AppColors.surfaceContainerHighest),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const _SummaryHeader(),
-                  const SizedBox(height: 16),
-                  const Icon(
-                    Icons.error_outline,
-                    color: AppColors.onSurfaceVariant,
-                    size: 28,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    viewModel.error!.replaceFirst('Exception: ', ''),
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: AppColors.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  OutlinedButton.icon(
-                    onPressed: () {
-                      context.read<SummaryViewModel>().fetchTodaySummary();
-                    },
-                    icon: const Icon(Icons.refresh, size: 18),
-                    label: const Text('Reintentar'),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }
-
-        final summary = viewModel.summary;
-        final total = summary?.total ?? 0;
-        final benign = summary?.benign ?? 0;
-        final malignant = summary?.malignant ?? 0;
-        final benignRatio = _ratio(benign, total);
-        final malignantRatio = _ratio(malignant, total);
-        final latestAnalysisLabel = _formatLatestAnalysis(
-          summary?.latestAnalysisAt,
-        );
-
-        if (summary == null || viewModel.isEmpty) {
-          return Card(
-            color: AppColors.surfaceContainerLowest,
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: const BorderSide(color: AppColors.surfaceContainerHighest),
-            ),
-            child: const Padding(
-              padding: EdgeInsets.all(16),
-              child: SizedBox(
-                height: 220,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _SummaryHeader(),
-                    Spacer(),
-                    Icon(
-                      Icons.analytics_outlined,
-                      color: AppColors.onSurfaceVariant,
-                      size: 28,
-                    ),
-                    SizedBox(height: 12),
-                    Text(
-                      'Aún no hay análisis registrados hoy.',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: AppColors.onSurfaceVariant,
-                      ),
-                    ),
-                    Spacer(),
-                  ],
-                ),
-              ),
-            ),
-          );
-        }
-
-        return Card(
-          color: AppColors.surfaceContainerLowest,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: const BorderSide(color: AppColors.surfaceContainerHighest),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final viewModel = ref.watch(summaryViewModelProvider);
+    if (viewModel.isLoading) {
+      return Card(
+        color: AppColors.surfaceContainerLowest,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: const BorderSide(color: AppColors.surfaceContainerHighest),
+        ),
+        child: const Padding(
+          padding: EdgeInsets.all(16),
+          child: SizedBox(
+            height: 220,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _SummaryHeader(
-                  onRefresh: () {
-                    context.read<SummaryViewModel>().fetchTodaySummary();
-                  },
-                ),
-                const SizedBox(height: 16),
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
                 Text(
-                  '$total',
-                  style: const TextStyle(
-                    fontSize: 44,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.onSurface,
-                  ),
-                ),
-                const Text(
-                  'análisis procesados hoy',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  latestAnalysisLabel,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 18),
-                _SummaryDistributionBar(
-                  benignRatio: benignRatio,
-                  malignantRatio: malignantRatio,
-                ),
-                const SizedBox(height: 14),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _SummaryMetricCard(
-                        label: 'Benignos',
-                        value: benign,
-                        ratio: benignRatio,
-                        color: AppColors.benignText,
-                        backgroundColor: AppColors.benignBg,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _SummaryMetricCard(
-                        label: 'Malignos',
-                        value: malignant,
-                        ratio: malignantRatio,
-                        color: AppColors.error,
-                        backgroundColor: AppColors.errorContainer,
-                      ),
-                    ),
-                  ],
+                  'Cargando resumen real del día...',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: AppColors.onSurfaceVariant),
                 ),
               ],
             ),
           ),
-        );
-      },
+        ),
+      );
+    }
+
+    if (viewModel.error != null) {
+      return Card(
+        color: AppColors.surfaceContainerLowest,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: const BorderSide(color: AppColors.surfaceContainerHighest),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const _SummaryHeader(),
+              const SizedBox(height: 16),
+              const Icon(
+                Icons.error_outline,
+                color: AppColors.onSurfaceVariant,
+                size: 28,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                viewModel.error!.replaceFirst('Exception: ', ''),
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AppColors.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: () {
+                  ref.read(summaryViewModelProvider).fetchTodaySummary();
+                },
+                icon: const Icon(Icons.refresh, size: 18),
+                label: const Text('Reintentar'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final summary = viewModel.summary;
+    final total = summary?.total ?? 0;
+    final benign = summary?.benign ?? 0;
+    final malignant = summary?.malignant ?? 0;
+    final benignRatio = _ratio(benign, total);
+    final malignantRatio = _ratio(malignant, total);
+    final latestAnalysisLabel = _formatLatestAnalysis(
+      summary?.latestAnalysisAt,
+    );
+
+    if (summary == null || viewModel.isEmpty) {
+      return Card(
+        color: AppColors.surfaceContainerLowest,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: const BorderSide(color: AppColors.surfaceContainerHighest),
+        ),
+        child: const Padding(
+          padding: EdgeInsets.all(16),
+          child: SizedBox(
+            height: 220,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _SummaryHeader(),
+                Spacer(),
+                Icon(
+                  Icons.analytics_outlined,
+                  color: AppColors.onSurfaceVariant,
+                  size: 28,
+                ),
+                SizedBox(height: 12),
+                Text(
+                  'Aún no hay análisis registrados hoy.',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppColors.onSurfaceVariant,
+                  ),
+                ),
+                Spacer(),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Card(
+      color: AppColors.surfaceContainerLowest,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: AppColors.surfaceContainerHighest),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _SummaryHeader(
+              onRefresh: () {
+                ref.read(summaryViewModelProvider).fetchTodaySummary();
+              },
+            ),
+            const SizedBox(height: 16),
+            Text(
+              '$total',
+              style: const TextStyle(
+                fontSize: 44,
+                fontWeight: FontWeight.w800,
+                color: AppColors.onSurface,
+              ),
+            ),
+            const Text(
+              'análisis procesados hoy',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              latestAnalysisLabel,
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 18),
+            _SummaryDistributionBar(
+              benignRatio: benignRatio,
+              malignantRatio: malignantRatio,
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: _SummaryMetricCard(
+                    label: 'Benignos',
+                    value: benign,
+                    ratio: benignRatio,
+                    color: AppColors.benignText,
+                    backgroundColor: AppColors.benignBg,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _SummaryMetricCard(
+                    label: 'Malignos',
+                    value: malignant,
+                    ratio: malignantRatio,
+                    color: AppColors.error,
+                    backgroundColor: AppColors.errorContainer,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -8,6 +8,7 @@ import 'package:bucalscan_ai/features/prediction/domain/entities/prediction_imag
 import 'package:bucalscan_ai/features/prediction/domain/entities/prediction_result.dart';
 import 'package:bucalscan_ai/features/prediction/domain/repositories/prediction_repository.dart';
 import 'package:bucalscan_ai/features/prediction/domain/usecases/predict_image_usecase.dart';
+import 'package:bucalscan_ai/features/prediction/presentation/viewmodels/prediction_viewmodel.dart';
 
 final predictionRemoteDataSourceProvider = Provider<PredictionRemoteDataSource>(
   (ref) {
@@ -24,6 +25,12 @@ final predictionRepositoryProvider = Provider<PredictionRepository>((ref) {
 final predictImageUseCaseProvider = Provider<PredictImageUseCase>((ref) {
   return PredictImageUseCase(ref.watch(predictionRepositoryProvider));
 });
+
+final predictionViewModelProvider = ChangeNotifierProvider<PredictionViewModel>(
+  (ref) {
+    return PredictionViewModel(ref.watch(predictImageUseCaseProvider));
+  },
+);
 
 final predictionControllerProvider =
     StateNotifierProvider<PredictionController, PredictionState>((ref) {

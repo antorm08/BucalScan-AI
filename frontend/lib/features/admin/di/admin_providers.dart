@@ -67,10 +67,7 @@ class AdminUsersController extends StateNotifier<AdminUsersState> {
 
   Future<AdminUser?> toggleStatus(AdminUser user) async {
     final nextStatus = user.isActive ? 'suspended' : 'active';
-    state = AdminUsersState(
-      users: state.users,
-      updatingUserId: user.id,
-    );
+    state = AdminUsersState(users: state.users, updatingUserId: user.id);
 
     try {
       final updated = await _updateAdminUserStatusUseCase(

@@ -5,8 +5,11 @@ import 'package:bucalscan_ai/features/dashboard/data/repositories/dashboard_repo
 import 'package:bucalscan_ai/features/dashboard/domain/entities/daily_summary.dart';
 import 'package:bucalscan_ai/features/dashboard/domain/repositories/dashboard_repository.dart';
 import 'package:bucalscan_ai/features/dashboard/domain/usecases/get_today_summary_usecase.dart';
+import 'package:bucalscan_ai/features/dashboard/presentation/viewmodels/summary_viewmodel.dart';
 
-final dashboardRemoteDataSourceProvider = Provider<DashboardRemoteDataSource>((ref) {
+final dashboardRemoteDataSourceProvider = Provider<DashboardRemoteDataSource>((
+  ref,
+) {
   return DashboardRemoteDataSource(ref.watch(authApiServiceProvider));
 });
 
@@ -18,9 +21,19 @@ final getTodaySummaryUseCaseProvider = Provider<GetTodaySummaryUseCase>((ref) {
   return GetTodaySummaryUseCase(ref.watch(dashboardRepositoryProvider));
 });
 
+final summaryViewModelProvider = ChangeNotifierProvider<SummaryViewModel>((
+  ref,
+) {
+  return SummaryViewModel(ref.watch(getTodaySummaryUseCaseProvider));
+});
+
 final dashboardSummaryControllerProvider =
-    StateNotifierProvider<DashboardSummaryController, DashboardSummaryState>((ref) {
-      return DashboardSummaryController(ref.watch(getTodaySummaryUseCaseProvider));
+    StateNotifierProvider<DashboardSummaryController, DashboardSummaryState>((
+      ref,
+    ) {
+      return DashboardSummaryController(
+        ref.watch(getTodaySummaryUseCaseProvider),
+      );
     });
 
 class DashboardSummaryState {

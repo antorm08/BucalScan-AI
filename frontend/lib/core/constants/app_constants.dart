@@ -13,6 +13,8 @@ class AppConstants {
 
   static const List<String> lesionClasses = ['benign', 'malignant'];
 
-  static const String recommendationBenign = 'No immediate concern. Regular check-ups recommended.';
-  static const String recommendationMalignant = 'Malignant lesion suspected. Immediate medical attention required.';
+  static const String recommendationBenign =
+      'No immediate concern. Regular check-ups recommended.';
+  static const String recommendationMalignant =
+      'Malignant lesion suspected. Immediate medical attention required.';
 }

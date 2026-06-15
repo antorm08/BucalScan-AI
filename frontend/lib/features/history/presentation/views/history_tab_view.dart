@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
 import 'package:bucalscan_ai/core/widgets/app_app_bar.dart';
+import 'package:bucalscan_ai/features/history/di/history_providers.dart';
 import 'package:bucalscan_ai/features/history/domain/entities/analysis.dart';
 import 'package:bucalscan_ai/features/history/presentation/widgets/history_card.dart';
-import 'package:bucalscan_ai/features/history/presentation/viewmodels/history_viewmodel.dart';
 
-class HistoryTabView extends StatefulWidget {
+class HistoryTabView extends ConsumerStatefulWidget {
   const HistoryTabView({super.key});
 
   @override
-  State<HistoryTabView> createState() => _HistoryTabViewState();
+  ConsumerState<HistoryTabView> createState() => _HistoryTabViewState();
 }
 
-class _HistoryTabViewState extends State<HistoryTabView> {
+class _HistoryTabViewState extends ConsumerState<HistoryTabView> {
   final _searchController = TextEditingController();
 
   @override
@@ -24,7 +24,7 @@ class _HistoryTabViewState extends State<HistoryTabView> {
         return;
       }
 
-      context.read<HistoryViewModel>().fetchHistory();
+      ref.read(historyViewModelProvider).fetchHistory();
     });
   }
 
@@ -368,7 +368,7 @@ class _HistoryTabViewState extends State<HistoryTabView> {
                 TextField(
                   controller: _searchController,
                   onChanged: (value) {
-                    context.read<HistoryViewModel>().setSearchQuery(value);
+                    ref.read(historyViewModelProvider).setSearchQuery(value);
                   },
                   decoration: InputDecoration(
                     prefixIcon: const Icon(
@@ -411,8 +411,9 @@ class _HistoryTabViewState extends State<HistoryTabView> {
                 const SizedBox(height: 12),
                 SizedBox(
                   height: 36,
-                  child: Consumer<HistoryViewModel>(
-                    builder: (context, viewModel, _) {
+                  child: Builder(
+                    builder: (context) {
+                      final viewModel = ref.watch(historyViewModelProvider);
                       return ListView.separated(
                         scrollDirection: Axis.horizontal,
                         itemCount: filters.length,
@@ -533,8 +534,9 @@ class _HistoryTabViewState extends State<HistoryTabView> {
               builder: (context, constraints) {
                 final isCompact = constraints.maxWidth < 720;
 
-                return Consumer<HistoryViewModel>(
-                  builder: (context, viewModel, _) {
+                return Builder(
+                  builder: (context) {
+                    final viewModel = ref.watch(historyViewModelProvider);
                     if (viewModel.isLoading) {
                       return const Center(child: CircularProgressIndicator());
                     }
@@ -569,7 +571,9 @@ class _HistoryTabViewState extends State<HistoryTabView> {
                             const SizedBox(height: 16),
                             ElevatedButton.icon(
                               onPressed: () {
-                                context.read<HistoryViewModel>().fetchHistory();
+                                ref
+                                    .read(historyViewModelProvider)
+                                    .fetchHistory();
                               },
                               icon: const Icon(Icons.refresh),
                               label: const Text('Reintentar'),

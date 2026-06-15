@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:provider/provider.dart';
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
 import 'package:bucalscan_ai/features/admin/domain/entities/admin_user.dart';
 import 'package:bucalscan_ai/features/admin/di/admin_providers.dart';
-import 'package:bucalscan_ai/features/auth/presentation/viewmodels/auth_viewmodel.dart';
+import 'package:bucalscan_ai/features/auth/di/auth_viewmodel_provider.dart';
 
 class AdminUsersView extends ConsumerStatefulWidget {
   const AdminUsersView({super.key});
@@ -53,8 +52,10 @@ class _AdminUsersViewState extends ConsumerState<AdminUsersView> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            (error ?? 'No se pudo actualizar el usuario.')
-                .replaceFirst('Exception: ', ''),
+            (error ?? 'No se pudo actualizar el usuario.').replaceFirst(
+              'Exception: ',
+              '',
+            ),
           ),
         ),
       );
@@ -87,7 +88,7 @@ class _AdminUsersViewState extends ConsumerState<AdminUsersView> {
   Widget build(BuildContext context) {
     final state = ref.watch(adminUsersControllerProvider);
     final users = _filteredUsers(state.users);
-    final currentUserId = context.watch<AuthViewModel>().currentUser?.id;
+    final currentUserId = ref.watch(authViewModelProvider).currentUser?.id;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -331,13 +332,17 @@ class _AdminUserCard extends StatelessWidget {
     final statusBg = user.isActive
         ? AppColors.benignBg
         : AppColors.errorContainer;
-    final actionColor = user.isActive ? AppColors.primary : AppColors.benignText;
+    final actionColor = user.isActive
+        ? AppColors.primary
+        : AppColors.benignText;
 
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
+        border: Border.all(
+          color: AppColors.outlineVariant.withValues(alpha: 0.5),
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
@@ -483,7 +488,9 @@ class _AdminUserCard extends StatelessWidget {
                 SizedBox(
                   width: 180,
                   child: OutlinedButton.icon(
-                    onPressed: isUpdating || isCurrentUser ? null : onToggleStatus,
+                    onPressed: isUpdating || isCurrentUser
+                        ? null
+                        : onToggleStatus,
                     style: OutlinedButton.styleFrom(
                       foregroundColor: actionColor,
                       side: BorderSide(color: actionColor),
@@ -547,7 +554,9 @@ class _InfoChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.surfaceContainerLowest,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
+          border: Border.all(
+            color: AppColors.outlineVariant.withValues(alpha: 0.5),
+          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.025),
