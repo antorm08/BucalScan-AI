@@ -2,7 +2,7 @@ from datetime import UTC, date as date_type, datetime, timedelta
 from typing import Optional
 
 from sqlalchemy import case, func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from models import models
 from schemas import UserCreate, UserUpdate
 from auth.security import get_password_hash
@@ -29,13 +29,13 @@ def create_user(db: Session, user: UserCreate):
     return db_user
 
 def get_user_analyses(db: Session, user_id: int, skip: int = 0, limit: int = 100):
-    return db.query(models.Analysis).filter(
+    return db.query(models.Analysis).options(joinedload(models.Analysis.owner)).filter(
         models.Analysis.user_id == user_id
     ).order_by(models.Analysis.timestamp.desc()).offset(skip).limit(limit).all()
 
 
 def get_all_analyses(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.Analysis).order_by(
+    return db.query(models.Analysis).options(joinedload(models.Analysis.owner)).order_by(
         models.Analysis.timestamp.desc()
     ).offset(skip).limit(limit).all()
 

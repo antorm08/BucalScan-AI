@@ -47,6 +47,10 @@ async def get_history(
                 "patient_name": analysis.patient_name,
                 "model_version": analysis.model_version,
                 "processing_time_ms": analysis.processing_time_ms,
+                "created_by_id": analysis.owner.id if analysis.owner else None,
+                "created_by_name": analysis.owner.full_name if analysis.owner else None,
+                "created_by_email": analysis.owner.email if analysis.owner else None,
+                "created_by_doctor_id": analysis.owner.doctor_id if analysis.owner else None,
             }
         )
 

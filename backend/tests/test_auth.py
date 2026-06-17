@@ -420,8 +420,13 @@ class TestProtectedRoutes:
         )
 
         assert response.status_code == 200
-        ids = {item["id"] for item in response.json()}
+        items = response.json()
+        ids = {item["id"] for item in items}
         assert ids == {own_analysis.id}
+        assert items[0]["created_by_id"] == doctor.id
+        assert items[0]["created_by_name"] == doctor.full_name
+        assert items[0]["created_by_email"] == doctor.email
+        assert items[0]["created_by_doctor_id"] == doctor.doctor_id
 
     def test_history_admin_sees_all_analyses(self, client, db_session):
         admin = _create_db_user(

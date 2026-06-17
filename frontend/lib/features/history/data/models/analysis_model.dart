@@ -10,6 +10,10 @@ class AnalysisModel {
   final String? patientName;
   final String? modelVersion;
   final double? processingTimeMs;
+  final int? createdById;
+  final String? createdByName;
+  final String? createdByEmail;
+  final String? createdByDoctorId;
 
   const AnalysisModel({
     required this.id,
@@ -21,6 +25,10 @@ class AnalysisModel {
     this.patientName,
     this.modelVersion,
     this.processingTimeMs,
+    this.createdById,
+    this.createdByName,
+    this.createdByEmail,
+    this.createdByDoctorId,
   });
 
   factory AnalysisModel.fromJson(Map<String, dynamic> json) {
@@ -36,6 +44,10 @@ class AnalysisModel {
       processingTimeMs: json['processing_time_ms'] is num
           ? (json['processing_time_ms'] as num).toDouble()
           : null,
+      createdById: json['created_by_id'] as int?,
+      createdByName: json['created_by_name'] as String?,
+      createdByEmail: json['created_by_email'] as String?,
+      createdByDoctorId: json['created_by_doctor_id'] as String?,
     );
   }
 
@@ -51,6 +63,10 @@ class AnalysisModel {
       patientName: patientName,
       modelVersion: modelVersion,
       processingTimeMs: processingTimeMs,
+      createdById: createdById,
+      createdByName: createdByName,
+      createdByEmail: createdByEmail,
+      createdByDoctorId: createdByDoctorId,
     );
   }
 }

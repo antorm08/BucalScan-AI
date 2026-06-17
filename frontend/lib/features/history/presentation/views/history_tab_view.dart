@@ -53,6 +53,7 @@ class _HistoryTabViewState extends ConsumerState<HistoryTabView> {
         final confidence = analysis.confidence.clamp(0.0, 1.0);
         final hasImage =
             analysis.imageUrl != null && analysis.imageUrl!.trim().isNotEmpty;
+        final authorLabel = _formatAuthor(analysis);
 
         return SafeArea(
           child: LayoutBuilder(
@@ -288,6 +289,15 @@ class _HistoryTabViewState extends ConsumerState<HistoryTabView> {
                             label: 'ID paciente',
                             value: analysis.patientId ?? 'No registrado',
                           ),
+                          _DetailRow(
+                            label: 'Realizado por',
+                            value: authorLabel ?? 'No registrado',
+                          ),
+                          _DetailRow(
+                            label: 'Código médico',
+                            value:
+                                analysis.createdByDoctorId ?? 'No registrado',
+                          ),
                           _DetailRow(label: 'Predicción', value: displayLabel),
                           _DetailRow(
                             label: 'Tiempo de inferencia',
@@ -349,6 +359,24 @@ class _HistoryTabViewState extends ConsumerState<HistoryTabView> {
       return '${(milliseconds / 1000).toStringAsFixed(2)} s';
     }
     return '${milliseconds.toStringAsFixed(1)} ms';
+  }
+
+  String? _formatAuthor(Analysis analysis) {
+    final name = analysis.createdByName?.trim();
+    final email = analysis.createdByEmail?.trim();
+
+    if (name != null && name.isNotEmpty) {
+      if (email != null && email.isNotEmpty) {
+        return '$name ($email)';
+      }
+      return name;
+    }
+
+    final doctorId = analysis.createdByDoctorId?.trim();
+    if (doctorId != null && doctorId.isNotEmpty) return doctorId;
+    if (email != null && email.isNotEmpty) return email;
+
+    return null;
   }
 
   @override

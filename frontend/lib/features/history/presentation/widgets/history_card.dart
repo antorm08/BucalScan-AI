@@ -33,6 +33,7 @@ class HistoryCard extends StatelessWidget {
     }
 
     final displayLabel = prediction == 'malignant' ? 'Maligno' : 'Benigno';
+    final authorLabel = _formatAuthor(analysis);
 
     return GestureDetector(
       onTap: onTap,
@@ -179,6 +180,18 @@ class HistoryCard extends StatelessWidget {
                             color: AppColors.secondary,
                           ),
                         ),
+                        if (authorLabel != null) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            'Realizado por: $authorLabel',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppColors.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
                         if (analysis.processingTimeMs != null) ...[
                           const SizedBox(height: 2),
                           Text(
@@ -201,6 +214,19 @@ class HistoryCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String? _formatAuthor(Analysis analysis) {
+    final name = analysis.createdByName?.trim();
+    if (name != null && name.isNotEmpty) return name;
+
+    final doctorId = analysis.createdByDoctorId?.trim();
+    if (doctorId != null && doctorId.isNotEmpty) return doctorId;
+
+    final email = analysis.createdByEmail?.trim();
+    if (email != null && email.isNotEmpty) return email;
+
+    return null;
   }
 
   String _formatDate(DateTime date) {

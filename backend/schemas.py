@@ -48,6 +48,10 @@ class AnalysisHistory(BaseModel):
     patient_name: Optional[str] = None
     model_version: Optional[str] = None
     processing_time_ms: Optional[float] = None
+    created_by_id: Optional[int] = None
+    created_by_name: Optional[str] = None
+    created_by_email: Optional[str] = None
+    created_by_doctor_id: Optional[str] = None
 
 
 class DailySummary(BaseModel):
