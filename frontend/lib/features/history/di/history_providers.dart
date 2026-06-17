@@ -5,7 +5,6 @@ import 'package:bucalscan_ai/features/history/data/repositories/history_reposito
 import 'package:bucalscan_ai/features/history/domain/entities/analysis.dart';
 import 'package:bucalscan_ai/features/history/domain/repositories/history_repository.dart';
 import 'package:bucalscan_ai/features/history/domain/usecases/get_history_usecase.dart';
-import 'package:bucalscan_ai/features/history/presentation/viewmodels/history_viewmodel.dart';
 
 final historyRemoteDataSourceProvider = Provider<HistoryRemoteDataSource>((
   ref,
@@ -21,41 +20,119 @@ final getHistoryUseCaseProvider = Provider<GetHistoryUseCase>((ref) {
   return GetHistoryUseCase(ref.watch(historyRepositoryProvider));
 });
 
-final historyViewModelProvider = ChangeNotifierProvider<HistoryViewModel>((
-  ref,
-) {
-  return HistoryViewModel(ref.watch(getHistoryUseCaseProvider));
-});
-
-final historyControllerProvider =
-    StateNotifierProvider<HistoryController, HistoryState>((ref) {
-      return HistoryController(ref.watch(getHistoryUseCaseProvider));
-    });
-
 class HistoryState {
+  final List<Analysis> allHistory;
   final bool isLoading;
   final String? error;
-  final List<Analysis> analyses;
+  final String filter;
+  final String searchQuery;
+  final bool dateSortDescending;
 
   const HistoryState({
+    this.allHistory = const [],
     this.isLoading = false,
     this.error,
-    this.analyses = const [],
+    this.filter = 'Todos',
+    this.searchQuery = '',
+    this.dateSortDescending = true,
   });
-}
 
-class HistoryController extends StateNotifier<HistoryState> {
-  final GetHistoryUseCase _getHistoryUseCase;
+  List<Analysis> get history {
+    var filtered = List<Analysis>.from(allHistory);
 
-  HistoryController(this._getHistoryUseCase) : super(const HistoryState());
-
-  Future<void> fetchHistory() async {
-    state = const HistoryState(isLoading: true);
-    try {
-      final analyses = await _getHistoryUseCase();
-      state = HistoryState(analyses: analyses);
-    } catch (e) {
-      state = HistoryState(error: e.toString());
+    if (filter == 'Fecha') {
+      filtered.sort((a, b) {
+        final comparison = a.timestamp.compareTo(b.timestamp);
+        return dateSortDescending ? -comparison : comparison;
+      });
     }
+
+    if (filter != 'Todos') {
+      filtered = filtered.where((a) {
+        final pred = a.prediction.toLowerCase();
+        if (filter == 'Fecha') return true;
+        if (filter == 'Maligna') return pred == 'malignant';
+        if (filter == 'Benigna') return pred == 'benign';
+        return true;
+      }).toList();
+    }
+
+    if (searchQuery.isNotEmpty) {
+      final query = searchQuery.toLowerCase();
+      filtered = filtered.where((a) {
+        return a.prediction.toLowerCase().contains(query) ||
+            a.timestamp.toString().toLowerCase().contains(query) ||
+            a.id.toString().contains(query) ||
+            (a.patientId?.toLowerCase().contains(query) ?? false) ||
+            (a.patientName?.toLowerCase().contains(query) ?? false);
+      }).toList();
+    }
+
+    return filtered;
+  }
+
+  bool get hasAnyHistory => allHistory.isNotEmpty;
+  bool get hasActiveSearchOrFilter =>
+      searchQuery.isNotEmpty || (filter != 'Todos' && filter != 'Fecha');
+
+  HistoryState copyWith({
+    List<Analysis>? allHistory,
+    bool? isLoading,
+    String? error,
+    String? filter,
+    String? searchQuery,
+    bool? dateSortDescending,
+    bool clearHistory = false,
+    bool clearError = false,
+  }) {
+    return HistoryState(
+      allHistory: clearHistory ? const [] : allHistory ?? this.allHistory,
+      isLoading: isLoading ?? this.isLoading,
+      error: clearError ? null : error ?? this.error,
+      filter: filter ?? this.filter,
+      searchQuery: searchQuery ?? this.searchQuery,
+      dateSortDescending: dateSortDescending ?? this.dateSortDescending,
+    );
   }
 }
+
+class HistoryViewModel extends Notifier<HistoryState> {
+  @override
+  HistoryState build() {
+    return const HistoryState();
+  }
+
+  Future<void> fetchHistory() async {
+    state = state.copyWith(isLoading: true, clearError: true);
+
+    try {
+      final analyses = await ref.read(getHistoryUseCaseProvider)();
+      state = state.copyWith(allHistory: analyses, isLoading: false);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  void setFilter(String filter) {
+    if (filter == 'Fecha' && state.filter == 'Fecha') {
+      state = state.copyWith(dateSortDescending: !state.dateSortDescending);
+      return;
+    }
+
+    state = state.copyWith(
+      filter: filter,
+      dateSortDescending: filter == 'Fecha' ? true : state.dateSortDescending,
+    );
+  }
+
+  void setSearchQuery(String query) {
+    state = state.copyWith(searchQuery: query);
+  }
+
+  void clear() {
+    state = const HistoryState();
+  }
+}
+
+final historyViewModelProvider =
+    NotifierProvider<HistoryViewModel, HistoryState>(HistoryViewModel.new);

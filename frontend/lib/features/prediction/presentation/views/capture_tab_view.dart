@@ -30,7 +30,7 @@ class _CaptureTabViewState extends ConsumerState<CaptureTabView> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
-    final predictionViewModel = ref.read(predictionViewModelProvider);
+    final predictionViewModel = ref.read(predictionViewModelProvider.notifier);
 
     try {
       final XFile? image = await _picker.pickImage(
@@ -80,12 +80,14 @@ class _CaptureTabViewState extends ConsumerState<CaptureTabView> {
     final patientName = _patientNameController.text.trim();
 
     unawaited(
-      viewModel.predictImage(
-        imageFile,
-        patientId: patientId.isEmpty ? null : patientId,
-        patientName: patientName.isEmpty ? null : patientName,
-        consentToStore: _hasStorageConsent,
-      ),
+      ref
+          .read(predictionViewModelProvider.notifier)
+          .predictImage(
+            imageFile,
+            patientId: patientId.isEmpty ? null : patientId,
+            patientName: patientName.isEmpty ? null : patientName,
+            consentToStore: _hasStorageConsent,
+          ),
     );
 
     if (!mounted) {

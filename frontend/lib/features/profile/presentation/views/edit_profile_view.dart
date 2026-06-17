@@ -40,7 +40,7 @@ class _EditProfileViewState extends ConsumerState<EditProfileView> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final authViewModel = ref.read(authViewModelProvider);
+    final authViewModel = ref.read(authViewModelProvider.notifier);
     final success = await authViewModel.updateProfile(
       fullName: _fullNameController.text.trim(),
       medicalCenter: _medicalCenterController.text.trim(),
@@ -60,7 +60,10 @@ class _EditProfileViewState extends ConsumerState<EditProfileView> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(authViewModel.error ?? 'Error al actualizar el perfil'),
+          content: Text(
+            ref.read(authViewModelProvider).error ??
+                'Error al actualizar el perfil',
+          ),
           backgroundColor: AppColors.error,
         ),
       );
@@ -69,8 +72,8 @@ class _EditProfileViewState extends ConsumerState<EditProfileView> {
 
   @override
   Widget build(BuildContext context) {
-    final authViewModel = ref.watch(authViewModelProvider);
-    final isLoading = authViewModel.isLoading;
+    final authState = ref.watch(authViewModelProvider);
+    final isLoading = authState.isLoading;
 
     return Scaffold(
       backgroundColor: AppColors.background,

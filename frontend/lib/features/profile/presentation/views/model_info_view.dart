@@ -6,11 +6,11 @@ class ModelInfoView extends StatelessWidget {
   const ModelInfoView({super.key});
 
   static const _metrics = [
-    _MetricItem('Accuracy', '0.8776'),
-    _MetricItem('Precision', '0.8462'),
-    _MetricItem('Recall', '0.9167'),
-    _MetricItem('F1-Score', '0.8800'),
-    _MetricItem('AUC-ROC', '0.8983'),
+    _MetricItem('Accuracy', '0.8980'),
+    _MetricItem('Precision', '0.8519'),
+    _MetricItem('Recall', '0.9583'),
+    _MetricItem('F1-Score', '0.9020'),
+    _MetricItem('AUC-ROC', '0.9367'),
   ];
 
   @override
@@ -41,7 +41,7 @@ class ModelInfoView extends StatelessWidget {
                     ),
                     SizedBox(height: 14),
                     Text(
-                      'MobileNetV2 para clasificación binaria',
+                      'ResNet50 para clasificación binaria',
                       style: TextStyle(
                         color: AppColors.onPrimary,
                         fontSize: 22,
@@ -66,7 +66,7 @@ class ModelInfoView extends StatelessWidget {
               title: 'Entrada y salida',
               icon: Icons.input_outlined,
               children: [
-                _InfoRow(label: 'Arquitectura', value: 'MobileNetV2'),
+                _InfoRow(label: 'Arquitectura', value: 'ResNet50'),
                 _InfoRow(label: 'Formato', value: 'ONNX'),
                 _InfoRow(label: 'Entrada', value: 'Imagen RGB 224x224'),
                 _InfoRow(label: 'Clases', value: 'Benigna y Maligna'),
@@ -122,7 +122,7 @@ class ModelInfoView extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Text(
-                        'El F1-Score de 0.8800 supera el mínimo requerido de 0.80, por lo que el modelo cumple el criterio de desempeño definido para la demo.',
+                        'El F1-Score de 0.9020 supera el mínimo requerido de 0.80. El recall de 0.9583 indica alta sensibilidad para detectar lesiones malignas en el conjunto evaluado.',
                         style: TextStyle(
                           fontSize: 14,
                           height: 1.35,

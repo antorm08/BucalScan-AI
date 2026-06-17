@@ -49,7 +49,7 @@ class _BucalScanAiAppState extends ConsumerState<BucalScanAiApp> {
       return;
     }
 
-    final authViewModel = ref.read(authViewModelProvider);
+    final authViewModel = ref.read(authViewModelProvider.notifier);
     final isLoggedIn = await authViewModel.tryAutoLogin();
 
     if (!mounted) {

@@ -29,7 +29,7 @@ class _HomeTabViewState extends ConsumerState<HomeTabView> {
         return;
       }
 
-      ref.read(summaryViewModelProvider).fetchTodaySummary();
+      ref.read(summaryViewModelProvider.notifier).fetchTodaySummary();
     });
   }
 
@@ -396,7 +396,9 @@ class _SummaryCard extends ConsumerWidget {
               const SizedBox(height: 12),
               OutlinedButton.icon(
                 onPressed: () {
-                  ref.read(summaryViewModelProvider).fetchTodaySummary();
+                  ref
+                      .read(summaryViewModelProvider.notifier)
+                      .fetchTodaySummary();
                 },
                 icon: const Icon(Icons.refresh, size: 18),
                 label: const Text('Reintentar'),
@@ -469,7 +471,7 @@ class _SummaryCard extends ConsumerWidget {
           children: [
             _SummaryHeader(
               onRefresh: () {
-                ref.read(summaryViewModelProvider).fetchTodaySummary();
+                ref.read(summaryViewModelProvider.notifier).fetchTodaySummary();
               },
             ),
             const SizedBox(height: 16),

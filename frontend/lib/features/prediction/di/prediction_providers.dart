@@ -8,7 +8,6 @@ import 'package:bucalscan_ai/features/prediction/domain/entities/prediction_imag
 import 'package:bucalscan_ai/features/prediction/domain/entities/prediction_result.dart';
 import 'package:bucalscan_ai/features/prediction/domain/repositories/prediction_repository.dart';
 import 'package:bucalscan_ai/features/prediction/domain/usecases/predict_image_usecase.dart';
-import 'package:bucalscan_ai/features/prediction/presentation/viewmodels/prediction_viewmodel.dart';
 
 final predictionRemoteDataSourceProvider = Provider<PredictionRemoteDataSource>(
   (ref) {
@@ -26,30 +25,53 @@ final predictImageUseCaseProvider = Provider<PredictImageUseCase>((ref) {
   return PredictImageUseCase(ref.watch(predictionRepositoryProvider));
 });
 
-final predictionViewModelProvider = ChangeNotifierProvider<PredictionViewModel>(
-  (ref) {
-    return PredictionViewModel(ref.watch(predictImageUseCaseProvider));
-  },
-);
-
-final predictionControllerProvider =
-    StateNotifierProvider<PredictionController, PredictionState>((ref) {
-      return PredictionController(ref.watch(predictImageUseCaseProvider));
-    });
-
 class PredictionState {
+  final PredictionResult? result;
   final bool isLoading;
   final String? error;
-  final PredictionResult? result;
+  final String? analysisStatusMessage;
+  final String? patientId;
+  final String? patientName;
 
-  const PredictionState({this.isLoading = false, this.error, this.result});
+  const PredictionState({
+    this.result,
+    this.isLoading = false,
+    this.error,
+    this.analysisStatusMessage,
+    this.patientId,
+    this.patientName,
+  });
+
+  PredictionState copyWith({
+    PredictionResult? result,
+    bool? isLoading,
+    String? error,
+    String? analysisStatusMessage,
+    String? patientId,
+    String? patientName,
+    bool clearResult = false,
+    bool clearError = false,
+    bool clearStatus = false,
+    bool clearPatient = false,
+  }) {
+    return PredictionState(
+      result: clearResult ? null : result ?? this.result,
+      isLoading: isLoading ?? this.isLoading,
+      error: clearError ? null : error ?? this.error,
+      analysisStatusMessage: clearStatus
+          ? null
+          : analysisStatusMessage ?? this.analysisStatusMessage,
+      patientId: clearPatient ? null : patientId ?? this.patientId,
+      patientName: clearPatient ? null : patientName ?? this.patientName,
+    );
+  }
 }
 
-class PredictionController extends StateNotifier<PredictionState> {
-  final PredictImageUseCase _predictImageUseCase;
-
-  PredictionController(this._predictImageUseCase)
-    : super(const PredictionState());
+class PredictionViewModel extends Notifier<PredictionState> {
+  @override
+  PredictionState build() {
+    return const PredictionState();
+  }
 
   Future<void> predictImage(
     File image, {
@@ -57,9 +79,17 @@ class PredictionController extends StateNotifier<PredictionState> {
     String? patientName,
     required bool consentToStore,
   }) async {
-    state = const PredictionState(isLoading: true);
+    final stopwatch = Stopwatch()..start();
+
+    state = PredictionState(
+      isLoading: true,
+      patientId: patientId,
+      patientName: patientName,
+      analysisStatusMessage: 'Enviando imagen para analisis...',
+    );
+
     try {
-      final result = await _predictImageUseCase(
+      final result = await ref.read(predictImageUseCaseProvider)(
         PredictionImageInput(
           imagePath: image.path,
           consentToStore: consentToStore,
@@ -67,9 +97,31 @@ class PredictionController extends StateNotifier<PredictionState> {
           patientName: patientName,
         ),
       );
-      state = PredictionState(result: result);
+      state = state.copyWith(
+        result: result,
+        analysisStatusMessage: 'Procesando resultado...',
+      );
     } catch (e) {
-      state = PredictionState(error: e.toString());
+      state = state.copyWith(error: e.toString());
+    } finally {
+      if (state.error == null) {
+        const minimumLoadingDuration = Duration(milliseconds: 900);
+        final remainingTime = minimumLoadingDuration - stopwatch.elapsed;
+        if (remainingTime.inMilliseconds > 0) {
+          await Future<void>.delayed(remainingTime);
+        }
+      }
+
+      state = state.copyWith(isLoading: false, clearStatus: true);
     }
   }
+
+  void clearResult() {
+    state = const PredictionState();
+  }
 }
+
+final predictionViewModelProvider =
+    NotifierProvider<PredictionViewModel, PredictionState>(
+      PredictionViewModel.new,
+    );

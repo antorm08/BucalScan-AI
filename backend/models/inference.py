@@ -54,7 +54,7 @@ class OralLesionClassifier:
     def predict(self, image: Image.Image) -> dict:
         if self.model is None or self.input_name is None:
             raise RuntimeError(
-                f"Model file not loaded. Place mobilenetv2_oral.onnx at {self.model_path} or set MODEL_PATH in backend/.env."
+                f"Model file not loaded. Place the ONNX model at {self.model_path} or set MODEL_PATH in backend/.env."
             )
 
         image_tensor = self._preprocess(image)

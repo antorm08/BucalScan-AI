@@ -26,7 +26,7 @@ classifier = OralLesionClassifier()
 _ACCEPTED_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp"}
 _UPLOADS_DIR = Path(__file__).resolve().parent.parent / "uploads"
 _MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
-_MODEL_VERSION = Path(settings.model_path).stem
+_MODEL_VERSION = settings.model_version
 
 
 def _build_recommendation(prediction: str) -> str:

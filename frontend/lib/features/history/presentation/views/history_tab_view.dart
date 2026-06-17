@@ -24,7 +24,7 @@ class _HistoryTabViewState extends ConsumerState<HistoryTabView> {
         return;
       }
 
-      ref.read(historyViewModelProvider).fetchHistory();
+      ref.read(historyViewModelProvider.notifier).fetchHistory();
     });
   }
 
@@ -368,7 +368,9 @@ class _HistoryTabViewState extends ConsumerState<HistoryTabView> {
                 TextField(
                   controller: _searchController,
                   onChanged: (value) {
-                    ref.read(historyViewModelProvider).setSearchQuery(value);
+                    ref
+                        .read(historyViewModelProvider.notifier)
+                        .setSearchQuery(value);
                   },
                   decoration: InputDecoration(
                     prefixIcon: const Icon(
@@ -463,7 +465,9 @@ class _HistoryTabViewState extends ConsumerState<HistoryTabView> {
                           }
 
                           return GestureDetector(
-                            onTap: () => viewModel.setFilter(filter),
+                            onTap: () => ref
+                                .read(historyViewModelProvider.notifier)
+                                .setFilter(filter),
                             child: Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 16,
@@ -572,7 +576,7 @@ class _HistoryTabViewState extends ConsumerState<HistoryTabView> {
                             ElevatedButton.icon(
                               onPressed: () {
                                 ref
-                                    .read(historyViewModelProvider)
+                                    .read(historyViewModelProvider.notifier)
                                     .fetchHistory();
                               },
                               icon: const Icon(Icons.refresh),

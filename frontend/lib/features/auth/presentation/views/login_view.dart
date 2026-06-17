@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
 import 'package:bucalscan_ai/core/widgets/app_text_field.dart';
-import 'package:bucalscan_ai/features/auth/domain/entities/auth_user.dart';
-import 'package:bucalscan_ai/features/auth/di/auth_providers.dart';
 import 'package:bucalscan_ai/features/auth/di/auth_viewmodel_provider.dart';
 import 'package:bucalscan_ai/features/auth/presentation/views/register_view.dart';
 import 'package:bucalscan_ai/features/home/presentation/views/home_view.dart';
@@ -51,28 +49,14 @@ class _LoginViewState extends ConsumerState<LoginView> {
 
   Future<void> _handleLogin() async {
     if (_formKey.currentState!.validate()) {
-      final session = await ref
-          .read(authControllerProvider.notifier)
+      final success = await ref
+          .read(authViewModelProvider.notifier)
           .login(
             email: _emailController.text.trim(),
             password: _passwordController.text,
           );
 
-      if (session != null && mounted) {
-        ref
-            .read(authViewModelProvider)
-            .syncAuthenticatedUser(
-              AuthUser(
-                id: session.user.id,
-                fullName: session.user.fullName,
-                doctorId: session.user.doctorId,
-                medicalCenter: session.user.medicalCenter,
-                email: session.user.email,
-                createdAt: session.user.createdAt,
-                role: session.user.role,
-              ),
-            );
-
+      if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Row(
@@ -107,7 +91,7 @@ class _LoginViewState extends ConsumerState<LoginView> {
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authControllerProvider);
+    final authViewModel = ref.watch(authViewModelProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -228,7 +212,7 @@ class _LoginViewState extends ConsumerState<LoginView> {
                               },
                             ),
                             const SizedBox(height: 16),
-                            if (authState.error != null)
+                            if (authViewModel.error != null)
                               Padding(
                                 padding: const EdgeInsets.only(bottom: 12),
                                 child: Container(
@@ -254,7 +238,9 @@ class _LoginViewState extends ConsumerState<LoginView> {
                                       const SizedBox(width: 10),
                                       Expanded(
                                         child: Text(
-                                          _formatLoginError(authState.error!),
+                                          _formatLoginError(
+                                            authViewModel.error!,
+                                          ),
                                           style: const TextStyle(
                                             color: AppColors.onErrorContainer,
                                             fontSize: 13,
@@ -267,7 +253,7 @@ class _LoginViewState extends ConsumerState<LoginView> {
                                 ),
                               ),
                             ElevatedButton(
-                              onPressed: authState.isLoading
+                              onPressed: authViewModel.isLoading
                                   ? null
                                   : _handleLogin,
                               style: ElevatedButton.styleFrom(
@@ -281,7 +267,7 @@ class _LoginViewState extends ConsumerState<LoginView> {
                                 ),
                                 elevation: 0,
                               ),
-                              child: authState.isLoading
+                              child: authViewModel.isLoading
                                   ? const SizedBox(
                                       height: 20,
                                       width: 20,

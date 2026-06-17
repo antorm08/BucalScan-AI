@@ -7,7 +7,7 @@ Backend publicado: `https://bucalscan-ai.onrender.com`.
 ## Requisitos
 
 - Python 3.12 o compatible.
-- Modelo ONNX en `models/mobilenetv2_oral.onnx` o una ruta configurada con `MODEL_PATH`.
+- Modelo ONNX en la ruta configurada con `MODEL_PATH`; para el modelo ResNet50 ganador se recomienda `models/resnet50_oral.onnx`.
 - SQLite para desarrollo local o PostgreSQL mediante `DATABASE_URL`.
 
 ## Instalacion
@@ -78,7 +78,7 @@ La politica simple de privacidad y retencion esta documentada en `docs/privacy_r
 
 ## Inferencia
 
-- Arquitectura esperada: MobileNetV2.
+- Arquitectura configurable con `MODEL_ARCHITECTURE`; para el nuevo modelo ganador usar `ResNet50`.
 - Runtime: ONNX Runtime.
 - Entrada: imagen JPEG, PNG o WEBP.
 - Preprocesamiento: RGB, resize a `224x224`, normalizacion ImageNet y tensor `float32` con forma `[1, 3, 224, 224]`.
@@ -117,13 +117,14 @@ https://bucalscan-ai.onrender.com/health
 
 ## Validacion Del Modelo
 
-El modelo MobileNetV2 clasifica solo entre lesion benigna y lesion maligna. Sus metricas de validacion estan documentadas en `docs/model_validation.md`.
+El modelo configurado clasifica solo entre lesion benigna y lesion maligna. Sus metricas de validacion estan documentadas en `docs/model_validation.md`.
 
 | Modelo | Accuracy | Precision | Recall | F1-Score | AUC-ROC |
 |--------|---------:|----------:|-------:|---------:|--------:|
-| MobileNetV2 | 0.8776 | 0.8462 | 0.9167 | 0.8800 | 0.8983 |
+| MobileNetV2 anterior | 0.8776 | 0.8462 | 0.9167 | 0.8800 | 0.8983 |
+| ResNet50 ganador | 0.8980 | 0.8519 | 0.9583 | 0.9020 | 0.9367 |
 
-El F1-Score de `0.8800` supera el minimo requerido de `0.80`.
+El F1-Score del ResNet50 ganador, `0.9020`, supera el minimo requerido de `0.80`.
 
 ## Despliegue En Render
 

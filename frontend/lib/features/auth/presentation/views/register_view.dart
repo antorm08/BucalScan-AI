@@ -43,7 +43,7 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
         );
         return;
       }
-      final viewModel = ref.read(authViewModelProvider);
+      final viewModel = ref.read(authViewModelProvider.notifier);
       final success = await viewModel.register(
         fullName: _fullNameController.text.trim(),
         doctorId: _doctorIdController.text.trim(),

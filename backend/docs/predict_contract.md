@@ -2,7 +2,7 @@
 
 ## Descripción
 
-Recibe una imagen de una lesión oral y devuelve la clasificación del modelo MobileNetV2.
+Recibe una imagen de una lesión oral y devuelve la clasificación del modelo ONNX configurado, por ejemplo ResNet50.
 El endpoint requiere autenticación JWT y persiste el análisis para historial y dashboard.
 
 ---
@@ -135,8 +135,8 @@ La imagen recibida pasa por el siguiente pipeline antes de la inferencia:
 
 | Propiedad | Valor |
 |-----------|-------|
-| Archivo | `backend/models/mobilenetv2_oral.onnx` |
-| Arquitectura | MobileNetV2 |
+| Archivo | Configurable con `MODEL_PATH`, por ejemplo `backend/models/resnet50_oral.onnx` |
+| Arquitectura | Configurable con `MODEL_ARCHITECTURE`, por ejemplo `ResNet50` |
 | Input shape | `[1, 3, 224, 224]` |
 | Output shape | `[1, 1]` (sigmoid binario) ó `[1, 2]` (softmax 2 clases) |
 | Clases | `["benign", "malignant"]` |
@@ -162,7 +162,7 @@ El guardado solo se realiza si `consent_to_store=true` fue enviado en el formula
 | `image_path` | URL de Cloudinary si está configurado, o ruta local en `uploads/` |
 | `patient_id` | Metadata opcional enviada por el frontend |
 | `patient_name` | Metadata opcional enviada por el frontend |
-| `model_version` | Nombre del archivo ONNX configurado |
+| `model_version` | Version configurada con `MODEL_VERSION` |
 | `processing_time_ms` | Tiempo de inferencia medido por el backend |
 
 ---

@@ -33,7 +33,7 @@ class ProfileTabView extends ConsumerWidget {
       return;
     }
 
-    await ref.read(authViewModelProvider).logout();
+    await ref.read(authViewModelProvider.notifier).logout();
     if (!context.mounted) {
       return;
     }
@@ -170,7 +170,7 @@ class ProfileTabView extends ConsumerWidget {
                       color: AppColors.onSurfaceVariant,
                     ),
                     title: const Text('Acerca del modelo'),
-                    subtitle: const Text('MobileNetV2, métricas y clases'),
+                    subtitle: const Text('ResNet50, métricas y clases'),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () {
                       Navigator.push(

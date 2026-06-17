@@ -61,9 +61,11 @@ class Settings:
     model_path: str = _resolve_model_path(
         os.getenv(
             "MODEL_PATH",
-            str(BASE_DIR / "models" / "mobilenetv2_oral.onnx"),
+            str(BASE_DIR / "models" / "resnet50_oral.onnx"),
         )
     )
+    model_architecture: str = os.getenv("MODEL_ARCHITECTURE", "ResNet50")
+    model_version: str = os.getenv("MODEL_VERSION", Path(model_path).stem)
     cloudinary_cloud_name: Optional[str] = os.getenv("CLOUDINARY_CLOUD_NAME")
     cloudinary_api_key: Optional[str] = os.getenv("CLOUDINARY_API_KEY")
     cloudinary_api_secret: Optional[str] = os.getenv("CLOUDINARY_API_SECRET")

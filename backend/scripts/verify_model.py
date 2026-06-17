@@ -2,10 +2,17 @@
 Diagnostic script: loads the ONNX model and reports its metadata + a dummy inference.
 Run from the backend/ directory: python scripts/verify_model.py
 """
+import os
 import sys
 from pathlib import Path
 
 import numpy as np
+
+os.environ.setdefault("JWT_SECRET", "verify-model-script-only")
+BACKEND_DIR = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(BACKEND_DIR))
+
+from config import settings
 
 try:
     import onnxruntime as ort
@@ -13,7 +20,7 @@ except ImportError:
     print("ERROR: onnxruntime is not installed. Run: pip install onnxruntime")
     sys.exit(1)
 
-MODEL_PATH = Path(__file__).resolve().parent.parent / "models" / "mobilenetv2_oral.onnx"
+MODEL_PATH = Path(settings.model_path)
 
 EXPECTED_INPUT_SHAPE = (1, 3, 224, 224)
 EXPECTED_DTYPE = "float32"
@@ -46,7 +53,7 @@ def validate_shapes(session: ort.InferenceSession) -> bool:
             print(f"\nWARNING: Unexpected input shape {actual_shape}, expected {EXPECTED_INPUT_SHAPE}")
             ok = False
         else:
-            print(f"\nOK: Dynamic batch dimension detected — spatial shape matches {EXPECTED_INPUT_SHAPE[1:]}")
+            print(f"\nOK: Dynamic batch dimension detected; spatial shape matches {EXPECTED_INPUT_SHAPE[1:]}")
     else:
         print(f"\nOK: Input shape matches expected {EXPECTED_INPUT_SHAPE}")
 
@@ -88,6 +95,8 @@ def run_dummy_inference(session: ort.InferenceSession) -> None:
 
 def main() -> None:
     print(f"Model path: {MODEL_PATH}")
+    print(f"Model architecture: {settings.model_architecture}")
+    print(f"Model version: {settings.model_version}")
 
     if not MODEL_PATH.exists():
         print(f"ERROR: Model file not found at {MODEL_PATH}")

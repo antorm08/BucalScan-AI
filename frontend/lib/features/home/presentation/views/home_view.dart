@@ -145,7 +145,7 @@ class _MainDrawer extends ConsumerWidget {
       return;
     }
 
-    await ref.read(authViewModelProvider).logout();
+    await ref.read(authViewModelProvider.notifier).logout();
     if (!context.mounted) {
       return;
     }

@@ -8,7 +8,6 @@ import 'package:bucalscan_ai/features/dashboard/di/dashboard_providers.dart';
 import 'package:bucalscan_ai/features/history/di/history_providers.dart';
 import 'package:bucalscan_ai/features/home/presentation/views/home_view.dart';
 import 'package:bucalscan_ai/features/prediction/di/prediction_providers.dart';
-import 'package:bucalscan_ai/features/prediction/presentation/viewmodels/prediction_viewmodel.dart';
 
 class ResultView extends ConsumerStatefulWidget {
   final File imageFile;
@@ -189,22 +188,24 @@ class _ResultViewState extends ConsumerState<ResultView> {
     ];
   }
 
-  Future<void> _retryAnalysis(PredictionViewModel viewModel) async {
-    await viewModel.predictImage(
-      widget.imageFile,
-      patientId: viewModel.patientId,
-      patientName: viewModel.patientName,
-      consentToStore: true,
-    );
+  Future<void> _retryAnalysis(PredictionState state) async {
+    await ref
+        .read(predictionViewModelProvider.notifier)
+        .predictImage(
+          widget.imageFile,
+          patientId: state.patientId,
+          patientName: state.patientName,
+          consentToStore: true,
+        );
   }
 
-  void _goToNewAnalysis(PredictionViewModel viewModel) {
-    viewModel.clearResult();
+  void _goToNewAnalysis() {
+    ref.read(predictionViewModelProvider.notifier).clearResult();
     Navigator.pop(context);
   }
 
-  void _goToHistory(PredictionViewModel viewModel) {
-    viewModel.clearResult();
+  void _goToHistory() {
+    ref.read(predictionViewModelProvider.notifier).clearResult();
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (_) => const HomeView(initialIndex: 2)),
@@ -227,8 +228,8 @@ class _ResultViewState extends ConsumerState<ResultView> {
           return;
         }
 
-        ref.read(summaryViewModelProvider).fetchTodaySummary();
-        ref.read(historyViewModelProvider).fetchHistory();
+        ref.read(summaryViewModelProvider.notifier).fetchTodaySummary();
+        ref.read(historyViewModelProvider.notifier).fetchHistory();
       });
     }
 
@@ -294,7 +295,7 @@ class _ResultViewState extends ConsumerState<ResultView> {
                   children: [
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: () => _goToNewAnalysis(viewModel),
+                        onPressed: _goToNewAnalysis,
                         icon: const Icon(Icons.add_a_photo_outlined),
                         label: const Text('Otra imagen'),
                       ),
@@ -622,9 +623,9 @@ class _ResultViewState extends ConsumerState<ResultView> {
             ),
             const SizedBox(height: 24),
             _ResultActions(
-              onNewAnalysis: () => _goToNewAnalysis(viewModel),
+              onNewAnalysis: _goToNewAnalysis,
               onRetry: () => _retryAnalysis(viewModel),
-              onHistory: () => _goToHistory(viewModel),
+              onHistory: _goToHistory,
             ),
           ],
         ),

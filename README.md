@@ -8,7 +8,7 @@ BucalScan AI es una aplicacion movil para apoyo al tamizaje de lesiones orales. 
 
 - Frontend movil desarrollado con Flutter.
 - Backend REST desarrollado con FastAPI.
-- Inferencia local en el backend con modelo ONNX `MobileNetV2`.
+- Inferencia local en el backend con modelo ONNX configurable; el nuevo modelo ganador puede usarse como `ResNet50` mediante `MODEL_PATH`.
 - Autenticacion con JWT.
 - Persistencia de usuarios e historial de analisis en base de datos SQL.
 - Almacenamiento de imagenes en Cloudinary si esta configurado; en caso contrario, almacenamiento local en `backend/uploads`.
@@ -22,7 +22,7 @@ BucalScan AI es una aplicacion movil para apoyo al tamizaje de lesiones orales. 
 | API | FastAPI, Uvicorn, Pydantic |
 | Autenticacion | JWT, bcrypt |
 | Base de datos | SQLite local; compatible con PostgreSQL mediante `DATABASE_URL` |
-| IA | ONNX Runtime, MobileNetV2 |
+| IA | ONNX Runtime, ResNet50/ONNX configurable |
 | Imagenes | Pillow, Cloudinary opcional |
 | Pruebas | pytest, flutter test |
 
@@ -205,7 +205,7 @@ Configura las variables de produccion directamente en el panel de Render. No las
 
 ## Notas
 
-- El modelo esperado por defecto es `backend/models/mobilenetv2_oral.onnx`.
+- El modelo activo se configura con `MODEL_PATH`; para ResNet50 usa, por ejemplo, `backend/models/resnet50_oral.onnx`.
 - Las clases de salida son `benign` y `malignant`.
 - Si `CLOUDINARY_*` no esta configurado, las imagenes se guardan localmente.
 - En Android con emulador, si el backend corre en la maquina local, puede ser necesario usar `http://10.0.2.2:8000` en lugar de `http://localhost:8000`.
