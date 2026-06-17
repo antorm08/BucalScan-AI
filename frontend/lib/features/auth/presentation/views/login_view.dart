@@ -28,6 +28,12 @@ class _LoginViewState extends ConsumerState<LoginView> {
       return 'Usuario y clave incorrectos';
     }
 
+    if (normalized.contains('invalid or expired token') ||
+        normalized.contains('not authenticated') ||
+        normalized.contains('tu sesión expiró')) {
+      return 'Tu sesión expiró. Inicia sesión nuevamente.';
+    }
+
     if (normalized.contains('no se pudo conectar') ||
         normalized.contains('no respondio a tiempo')) {
       return 'No se pudo conectar con el servidor. Intente nuevamente en unos segundos.';

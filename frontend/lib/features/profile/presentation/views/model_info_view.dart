@@ -111,7 +111,7 @@ class ModelInfoView extends StatelessWidget {
                       (metric) => _MetricTile(
                         label: metric.label,
                         value: metric.value,
-                        highlight: metric.label == 'F1-Score',
+                        highlight: metric.label == 'Recall',
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -122,7 +122,7 @@ class ModelInfoView extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Text(
-                        'El F1-Score de 0.9020 supera el mínimo requerido de 0.80. El recall de 0.9583 indica alta sensibilidad para detectar lesiones malignas en el conjunto evaluado.',
+                        'ResNet50 fue seleccionado por ClinicalScore = 0.50 * Recall + 0.30 * F1 + 0.20 * AUC. Este criterio prioriza sensibilidad clínica; su recall de 0.9583 reduce el riesgo de omitir lesiones malignas en el conjunto evaluado.',
                         style: TextStyle(
                           fontSize: 14,
                           height: 1.35,

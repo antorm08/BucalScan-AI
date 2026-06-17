@@ -203,7 +203,11 @@ class _AdminHeader extends StatelessWidget {
             onPressed: () => Navigator.pop(context),
           ),
           const SizedBox(width: 14),
-          const Icon(Icons.group_add, color: AppColors.primary, size: 30),
+          const Icon(
+            Icons.admin_panel_settings_outlined,
+            color: AppColors.primary,
+            size: 28,
+          ),
           const SizedBox(width: 10),
           const Expanded(
             child: Text(
@@ -212,7 +216,7 @@ class _AdminHeader extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: AppColors.primary,
-                fontSize: 24,
+                fontSize: 20,
                 fontWeight: FontWeight.w800,
                 letterSpacing: -0.8,
               ),

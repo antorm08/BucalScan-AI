@@ -26,10 +26,18 @@ El resultado es una herramienta de apoyo clinico y no reemplaza el diagnostico p
 
 ## Metricas De Validacion
 
-| Modelo | Accuracy | Precision | Recall | F1-Score | AUC-ROC |
-|--------|---------:|----------:|-------:|---------:|--------:|
-| MobileNetV2 anterior | 0.8776 | 0.8462 | 0.9167 | 0.8800 | 0.8983 |
-| ResNet50 ganador | 0.8980 | 0.8519 | 0.9583 | 0.9020 | 0.9367 |
+| Modelo | Accuracy | Precision | Recall | F1-Score | AUC-ROC | ClinicalScore |
+|--------|---------:|----------:|-------:|---------:|--------:|--------------:|
+| MobileNetV2 anterior | 0.8776 | 0.8462 | 0.9167 | 0.8800 | 0.8983 | 0.9020 |
+| ResNet50 ganador | 0.8980 | 0.8519 | 0.9583 | 0.9020 | 0.9367 | 0.9379 |
+
+El modelo ganador se selecciono con el criterio clinico ponderado:
+
+```text
+ClinicalScore = 0.50 * Recall + 0.30 * F1 + 0.20 * AUC
+```
+
+Este puntaje prioriza el recall para reducir falsos negativos en casos malignos, sin descuidar F1-score ni AUC-ROC.
 
 ## Cumplimiento RNF-005
 
@@ -43,4 +51,4 @@ Resultado: cumple
 
 ## Interpretacion
 
-El modelo ResNet50 ganador supera el criterio minimo de F1-score y mejora el desempeno global frente al modelo anterior. El recall de `0.9583` es especialmente relevante para apoyo al tamizaje, porque reduce el riesgo de no detectar casos malignos dentro del conjunto evaluado. La precision de `0.8519` indica que las predicciones malignas mantienen un nivel adecuado de confiabilidad, aunque todo resultado debe interpretarse como apoyo y no como diagnostico definitivo.
+El modelo ResNet50 ganador supera el criterio minimo de F1-score y mejora el desempeno global frente al modelo anterior. Fue elegido por su mayor ClinicalScore, no solo por F1-score. El recall de `0.9583` es especialmente relevante para apoyo al tamizaje, porque reduce el riesgo de no detectar casos malignos dentro del conjunto evaluado. La precision de `0.8519` indica que las predicciones malignas mantienen un nivel adecuado de confiabilidad, aunque todo resultado debe interpretarse como apoyo y no como diagnostico definitivo.

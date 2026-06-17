@@ -119,12 +119,12 @@ https://bucalscan-ai.onrender.com/health
 
 El modelo configurado clasifica solo entre lesion benigna y lesion maligna. Sus metricas de validacion estan documentadas en `docs/model_validation.md`.
 
-| Modelo | Accuracy | Precision | Recall | F1-Score | AUC-ROC |
-|--------|---------:|----------:|-------:|---------:|--------:|
-| MobileNetV2 anterior | 0.8776 | 0.8462 | 0.9167 | 0.8800 | 0.8983 |
-| ResNet50 ganador | 0.8980 | 0.8519 | 0.9583 | 0.9020 | 0.9367 |
+| Modelo | Accuracy | Precision | Recall | F1-Score | AUC-ROC | ClinicalScore |
+|--------|---------:|----------:|-------:|---------:|--------:|--------------:|
+| MobileNetV2 anterior | 0.8776 | 0.8462 | 0.9167 | 0.8800 | 0.8983 | 0.9020 |
+| ResNet50 ganador | 0.8980 | 0.8519 | 0.9583 | 0.9020 | 0.9367 | 0.9379 |
 
-El F1-Score del ResNet50 ganador, `0.9020`, supera el minimo requerido de `0.80`.
+El ResNet50 ganador fue seleccionado con `ClinicalScore = 0.50 * Recall + 0.30 * F1 + 0.20 * AUC`, priorizando sensibilidad clinica. Su F1-Score, `0.9020`, supera el minimo requerido de `0.80`.
 
 ## Despliegue En Render
 

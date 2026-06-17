@@ -55,6 +55,17 @@ class _ResultViewState extends ConsumerState<ResultView> {
       );
     }
 
+    if (normalized.contains('model inference failed') ||
+        normalized.contains('model file not loaded') ||
+        normalized.contains('modelo de análisis no está disponible')) {
+      return (
+        title: 'Modelo no disponible',
+        message:
+            'El servidor no tiene disponible el modelo de análisis en este momento. Verifique el despliegue del backend o intente nuevamente más tarde.',
+        icon: Icons.cloud_sync_outlined,
+      );
+    }
+
     return (
       title: 'Error en el analisis',
       message: error.replaceFirst('Exception: ', ''),

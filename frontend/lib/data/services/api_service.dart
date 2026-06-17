@@ -238,12 +238,12 @@ class ApiService {
     if (data is Map<String, dynamic>) {
       final detail = data['detail'] ?? data['message'] ?? data['error'];
       if (detail is String && detail.trim().isNotEmpty) {
-        return detail;
+        return _translateServerMessage(detail);
       }
     }
 
     if (data is String && data.trim().isNotEmpty) {
-      return data;
+      return _translateServerMessage(data);
     }
 
     final message = error.message;
@@ -252,5 +252,25 @@ class ApiService {
     }
 
     return fallback;
+  }
+
+  String _translateServerMessage(String message) {
+    final normalized = message.toLowerCase();
+
+    if (normalized.contains('model inference failed') ||
+        normalized.contains('model file not loaded')) {
+      return 'No se pudo procesar la imagen porque el modelo de análisis no está disponible en el servidor. Intente nuevamente más tarde.';
+    }
+
+    if (normalized.contains('invalid or expired token') ||
+        normalized.contains('not authenticated')) {
+      return 'Tu sesión expiró. Inicia sesión nuevamente.';
+    }
+
+    if (normalized.contains('invalid credentials')) {
+      return 'Usuario y clave incorrectos.';
+    }
+
+    return message;
   }
 }
