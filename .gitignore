@@ -59,3 +59,6 @@ app.*.map.json
 AGENTS.md
 Plan de Desarrollo.txt
 backend/bucalscan_ai.db
+INFORME_SEMANA_12_BUCALSCAN_AI.md
+Informe_Tecnico_Pruebas_Software_Movil.md
+RESUMEN_PRUEBAS_AUTOMATICAS.md
