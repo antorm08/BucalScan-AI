@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
+import 'package:bucalscan_ai/core/validators/auth_validators.dart';
 import 'package:bucalscan_ai/core/widgets/app_text_field.dart';
 import 'package:bucalscan_ai/features/auth/di/auth_viewmodel_provider.dart';
 import 'package:bucalscan_ai/features/auth/presentation/views/register_view.dart';
@@ -193,15 +194,7 @@ class _LoginViewState extends ConsumerState<LoginView> {
                               hint: 'dr.smith@hospital.org',
                               icon: Icons.mail_outline,
                               keyboardType: TextInputType.emailAddress,
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Ingrese su correo electrónico';
-                                }
-                                if (!value.contains('@')) {
-                                  return 'Ingrese un correo válido';
-                                }
-                                return null;
-                              },
+                              validator: AuthValidators.validateEmail,
                             ),
                             const SizedBox(height: 16),
                             AppTextField(
@@ -210,12 +203,7 @@ class _LoginViewState extends ConsumerState<LoginView> {
                               hint: '••••••••',
                               icon: Icons.lock_outline,
                               obscureText: true,
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Ingrese su contraseña';
-                                }
-                                return null;
-                              },
+                              validator: AuthValidators.validateLoginPassword,
                             ),
                             const SizedBox(height: 16),
                             if (authViewModel.error != null)

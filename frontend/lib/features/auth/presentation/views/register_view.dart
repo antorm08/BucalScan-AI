@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
+import 'package:bucalscan_ai/core/validators/auth_validators.dart';
 import 'package:bucalscan_ai/core/widgets/app_text_field.dart';
 import 'package:bucalscan_ai/features/auth/di/auth_viewmodel_provider.dart';
 import 'package:bucalscan_ai/features/auth/presentation/views/login_view.dart';
@@ -146,12 +147,7 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
                               label: 'Nombre completo',
                               hint: 'Dra. Jane Doe',
                               icon: Icons.person,
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Ingrese su nombre completo';
-                                }
-                                return null;
-                              },
+                              validator: AuthValidators.validateFullName,
                             ),
                             const SizedBox(height: 16),
                             AppTextField(
@@ -159,12 +155,7 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
                               label: 'Número de licencia médica',
                               hint: 'MD-123456',
                               icon: Icons.badge,
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Ingrese su número de licencia';
-                                }
-                                return null;
-                              },
+                              validator: AuthValidators.validateDoctorId,
                             ),
                             const SizedBox(height: 16),
                             AppTextField(
@@ -183,15 +174,7 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
                               hint: 'jane.doe@hospital.org',
                               icon: Icons.mail,
                               keyboardType: TextInputType.emailAddress,
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Ingrese su correo electrónico';
-                                }
-                                if (!value.contains('@')) {
-                                  return 'Ingrese un correo válido';
-                                }
-                                return null;
-                              },
+                              validator: AuthValidators.validateEmail,
                             ),
                             const SizedBox(height: 16),
                             AppTextField(
@@ -200,15 +183,7 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
                               hint: '••••••••',
                               icon: Icons.lock,
                               obscureText: true,
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Ingrese una contraseña';
-                                }
-                                if (value.length < 6) {
-                                  return 'Mínimo 6 caracteres';
-                                }
-                                return null;
-                              },
+                              validator: AuthValidators.validateRegisterPassword,
                             ),
                             const SizedBox(height: 16),
                             AppTextField(
@@ -217,12 +192,11 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
                               hint: '••••••••',
                               icon: Icons.lock,
                               obscureText: true,
-                              validator: (value) {
-                                if (value != _passwordController.text) {
-                                  return 'Las contraseñas no coinciden';
-                                }
-                                return null;
-                              },
+                              validator: (value) => AuthValidators
+                                  .validateConfirmPassword(
+                                    value,
+                                    _passwordController.text,
+                                  ),
                             ),
                             const SizedBox(height: 16),
                             Row(
