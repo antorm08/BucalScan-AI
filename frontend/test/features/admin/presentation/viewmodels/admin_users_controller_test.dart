@@ -1,5 +1,5 @@
-import 'package:bucalscan_ai/features/admin/di/admin_providers.dart';
 import 'package:bucalscan_ai/features/admin/domain/entities/admin_user.dart';
+import 'package:bucalscan_ai/features/admin/presentation/viewmodels/admin_users_controller.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 

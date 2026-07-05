@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
 import 'package:bucalscan_ai/core/widgets/app_app_bar.dart';
-import 'package:bucalscan_ai/features/prediction/di/prediction_providers.dart';
+import 'package:bucalscan_ai/features/prediction/presentation/viewmodels/prediction_viewmodel.dart';
 import 'package:bucalscan_ai/features/prediction/presentation/views/result_view.dart';
 
 class CaptureTabView extends ConsumerStatefulWidget {

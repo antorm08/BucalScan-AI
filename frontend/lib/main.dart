@@ -6,7 +6,7 @@ import 'package:bucalscan_ai/core/session/session_events.dart';
 import 'package:bucalscan_ai/core/startup/startup_view.dart';
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
 import 'package:bucalscan_ai/features/auth/di/auth_providers.dart';
-import 'package:bucalscan_ai/features/auth/di/auth_viewmodel_provider.dart';
+import 'package:bucalscan_ai/features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import 'package:bucalscan_ai/features/auth/presentation/views/login_view.dart';
 import 'package:bucalscan_ai/features/home/presentation/views/home_view.dart';
 

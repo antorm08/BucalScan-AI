@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
 import 'package:bucalscan_ai/features/admin/domain/entities/admin_user.dart';
-import 'package:bucalscan_ai/features/admin/di/admin_providers.dart';
-import 'package:bucalscan_ai/features/auth/di/auth_viewmodel_provider.dart';
+import 'package:bucalscan_ai/features/admin/presentation/viewmodels/admin_users_controller.dart';
+import 'package:bucalscan_ai/features/auth/presentation/viewmodels/auth_viewmodel.dart';
 
 class AdminUsersView extends ConsumerStatefulWidget {
   const AdminUsersView({super.key});

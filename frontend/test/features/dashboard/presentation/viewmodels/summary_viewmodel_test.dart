@@ -1,5 +1,6 @@
 import 'package:bucalscan_ai/features/dashboard/di/dashboard_providers.dart';
 import 'package:bucalscan_ai/features/dashboard/domain/entities/daily_summary.dart';
+import 'package:bucalscan_ai/features/dashboard/presentation/viewmodels/summary_viewmodel.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';

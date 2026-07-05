@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
 import 'package:bucalscan_ai/core/validators/auth_validators.dart';
 import 'package:bucalscan_ai/core/widgets/app_text_field.dart';
-import 'package:bucalscan_ai/features/auth/di/auth_viewmodel_provider.dart';
+import 'package:bucalscan_ai/features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import 'package:bucalscan_ai/features/auth/presentation/views/register_view.dart';
 import 'package:bucalscan_ai/features/home/presentation/views/home_view.dart';
 

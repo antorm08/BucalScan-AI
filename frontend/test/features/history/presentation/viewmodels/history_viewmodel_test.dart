@@ -1,5 +1,6 @@
 import 'package:bucalscan_ai/features/history/di/history_providers.dart';
 import 'package:bucalscan_ai/features/history/domain/entities/analysis.dart';
+import 'package:bucalscan_ai/features/history/presentation/viewmodels/history_viewmodel.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';

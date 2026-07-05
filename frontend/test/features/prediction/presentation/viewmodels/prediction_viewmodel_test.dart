@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:bucalscan_ai/features/prediction/di/prediction_providers.dart';
 import 'package:bucalscan_ai/features/prediction/domain/entities/prediction_image_input.dart';
 import 'package:bucalscan_ai/features/prediction/domain/entities/prediction_result.dart';
+import 'package:bucalscan_ai/features/prediction/presentation/viewmodels/prediction_viewmodel.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';

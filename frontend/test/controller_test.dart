@@ -3,20 +3,23 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:bucalscan_ai/features/auth/di/auth_providers.dart';
-import 'package:bucalscan_ai/features/auth/di/auth_viewmodel_provider.dart';
 import 'package:bucalscan_ai/features/auth/domain/entities/auth_session.dart';
 import 'package:bucalscan_ai/features/auth/domain/entities/auth_user.dart';
 import 'package:bucalscan_ai/features/auth/domain/repositories/auth_repository.dart';
+import 'package:bucalscan_ai/features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import 'package:bucalscan_ai/features/dashboard/di/dashboard_providers.dart';
 import 'package:bucalscan_ai/features/dashboard/domain/entities/daily_summary.dart';
 import 'package:bucalscan_ai/features/dashboard/domain/repositories/dashboard_repository.dart';
+import 'package:bucalscan_ai/features/dashboard/presentation/viewmodels/summary_viewmodel.dart';
 import 'package:bucalscan_ai/features/history/di/history_providers.dart';
 import 'package:bucalscan_ai/features/history/domain/entities/analysis.dart';
 import 'package:bucalscan_ai/features/history/domain/repositories/history_repository.dart';
+import 'package:bucalscan_ai/features/history/presentation/viewmodels/history_viewmodel.dart';
 import 'package:bucalscan_ai/features/prediction/di/prediction_providers.dart';
 import 'package:bucalscan_ai/features/prediction/domain/entities/prediction_image_input.dart';
 import 'package:bucalscan_ai/features/prediction/domain/entities/prediction_result.dart';
 import 'package:bucalscan_ai/features/prediction/domain/repositories/prediction_repository.dart';
+import 'package:bucalscan_ai/features/prediction/presentation/viewmodels/prediction_viewmodel.dart';
 
 void main() {
   test('auth controller stores logged in user', () async {

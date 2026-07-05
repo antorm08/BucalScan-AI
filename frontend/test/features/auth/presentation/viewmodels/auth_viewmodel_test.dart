@@ -1,7 +1,7 @@
 import 'package:bucalscan_ai/features/auth/di/auth_providers.dart';
-import 'package:bucalscan_ai/features/auth/di/auth_viewmodel_provider.dart';
 import 'package:bucalscan_ai/features/auth/domain/entities/auth_session.dart';
 import 'package:bucalscan_ai/features/auth/domain/entities/auth_user.dart';
+import 'package:bucalscan_ai/features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import 'package:bucalscan_ai/features/profile/di/profile_providers.dart';
 import 'package:bucalscan_ai/features/profile/domain/entities/user_profile.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

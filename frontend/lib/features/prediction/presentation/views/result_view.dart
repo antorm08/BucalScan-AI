@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
 import 'package:bucalscan_ai/core/widgets/app_app_bar.dart';
-import 'package:bucalscan_ai/features/dashboard/di/dashboard_providers.dart';
-import 'package:bucalscan_ai/features/history/di/history_providers.dart';
+import 'package:bucalscan_ai/features/dashboard/presentation/viewmodels/summary_viewmodel.dart';
+import 'package:bucalscan_ai/features/history/presentation/viewmodels/history_viewmodel.dart';
 import 'package:bucalscan_ai/features/home/presentation/views/home_view.dart';
-import 'package:bucalscan_ai/features/prediction/di/prediction_providers.dart';
+import 'package:bucalscan_ai/features/prediction/presentation/viewmodels/prediction_viewmodel.dart';
 
 class ResultView extends ConsumerStatefulWidget {
   final File imageFile;

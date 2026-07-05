@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
 import 'package:bucalscan_ai/core/widgets/app_app_bar.dart';
 import 'package:bucalscan_ai/features/admin/presentation/views/admin_users_view.dart';
-import 'package:bucalscan_ai/features/auth/di/auth_viewmodel_provider.dart';
-import 'package:bucalscan_ai/features/dashboard/di/dashboard_providers.dart';
+import 'package:bucalscan_ai/features/auth/presentation/viewmodels/auth_viewmodel.dart';
+import 'package:bucalscan_ai/features/dashboard/presentation/viewmodels/summary_viewmodel.dart';
 
 class HomeTabView extends ConsumerStatefulWidget {
   final VoidCallback onStartCapture;

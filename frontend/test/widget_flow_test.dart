@@ -1,5 +1,5 @@
 import 'package:bucalscan_ai/features/auth/di/auth_providers.dart';
-import 'package:bucalscan_ai/features/auth/di/auth_viewmodel_provider.dart';
+import 'package:bucalscan_ai/features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import 'package:bucalscan_ai/features/auth/presentation/views/login_view.dart';
 import 'package:bucalscan_ai/features/dashboard/di/dashboard_providers.dart';
 import 'package:bucalscan_ai/features/history/di/history_providers.dart';
