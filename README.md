@@ -151,6 +151,49 @@ Para usar otro backend desplegado:
 flutter run --dart-define=API_BASE_URL=https://tu-backend.onrender.com
 ```
 
+## Ambientes De Ejecucion
+
+El proyecto cuenta con dos ambientes principales: prueba/local y produccion. Esta separacion permite validar el funcionamiento del sistema antes de usar la version estable conectada al backend desplegado.
+
+### Ambiente De Prueba
+
+El ambiente de prueba se ejecuta localmente para validar funcionalidades con datos controlados. En este ambiente, el backend FastAPI puede ejecutarse en `http://localhost:8000`, la base de datos puede ser SQLite local y se utilizan usuarios, imagenes y datos de prueba para verificar el flujo de registro, inicio de sesion, prediccion e historial.
+
+Comandos principales:
+
+```bash
+cd backend
+uvicorn main:app --reload
+```
+
+```bash
+cd frontend
+flutter run --dart-define=API_BASE_URL=http://localhost:8000
+```
+
+En emulador Android, si el backend corre en la maquina local, puede usarse `http://10.0.2.2:8000` en lugar de `http://localhost:8000`.
+
+### Ambiente De Produccion
+
+El ambiente de produccion corresponde a la version estable del sistema. El backend esta publicado en Render en `https://bucalscan-ai.onrender.com` y la aplicacion movil Flutter se conecta por defecto a esa URL mediante la variable `API_BASE_URL`.
+
+La app puede ejecutarse contra produccion con:
+
+```bash
+cd frontend
+flutter run
+```
+
+Tambien puede indicarse explicitamente la URL de produccion:
+
+```bash
+flutter run --dart-define=API_BASE_URL=https://bucalscan-ai.onrender.com
+```
+
+Texto sugerido para sustentacion:
+
+> El proyecto cuenta con dos ambientes. El ambiente de prueba se ejecuta localmente, usando el backend FastAPI en `http://localhost:8000`, base de datos SQLite local, usuarios de prueba e imagenes controladas para validar el flujo de autenticacion, prediccion e historial. El ambiente de produccion utiliza el backend desplegado en Render en `https://bucalscan-ai.onrender.com`, al cual se conecta por defecto la aplicacion movil Flutter mediante la variable `API_BASE_URL`.
+
 ## Endpoints Principales
 
 | Metodo | Endpoint | Autenticacion | Descripcion |
@@ -190,6 +233,22 @@ Frontend:
 cd frontend
 flutter test
 ```
+
+## Evidencias Para Sustentacion
+
+Para demostrar el despliegue completo del sistema, se recomienda registrar las siguientes evidencias:
+
+| Componente | Evidencia sugerida |
+|------------|--------------------|
+| Frontend movil | Capturas o video de la app ejecutandose en emulador o dispositivo fisico |
+| Backend local | Captura de `http://localhost:8000/docs` o respuesta de `GET /health` |
+| Backend produccion | Captura de `https://bucalscan-ai.onrender.com/health` o Swagger si esta habilitado |
+| Base de datos | Registro de usuarios, analisis o historial guardado |
+| Modelo IA | Respuesta de `/api/v1/predict` con clase, confianza y recomendacion |
+| Ambiente de prueba | App conectada a `http://localhost:8000` o `http://10.0.2.2:8000` |
+| Ambiente de produccion | App conectada a `https://bucalscan-ai.onrender.com` |
+| Pruebas backend | Resultado de ejecucion de `pytest` |
+| Pruebas frontend | Resultado de ejecucion de `flutter test` |
 
 ## Despliegue En Render
 
