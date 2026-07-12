@@ -11,6 +11,9 @@ class RegisterUseCase {
     String? medicalCenter,
     required String email,
     required String password,
+    String? workspaceChoice,
+    String? workspaceId,
+    String? workspaceName,
   }) {
     return _repository.register(
       fullName: fullName,
@@ -18,6 +21,9 @@ class RegisterUseCase {
       medicalCenter: medicalCenter,
       email: email,
       password: password,
+      workspaceChoice: workspaceChoice,
+      workspaceId: workspaceId,
+      workspaceName: workspaceName,
     );
   }
 }

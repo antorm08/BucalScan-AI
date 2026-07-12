@@ -28,17 +28,20 @@ void main() {
     );
   });
 
-  test('fetchUsers carga la lista de usuarios cuando la respuesta es correcta', () async {
-    when(
-      mockGetAdminUsersUseCase.call(),
-    ).thenAnswer((_) async => const [_doctor]);
+  test(
+    'fetchUsers carga la lista de usuarios cuando la respuesta es correcta',
+    () async {
+      when(
+        mockGetAdminUsersUseCase.call(),
+      ).thenAnswer((_) async => const [_doctor]);
 
-    await controller.fetchUsers();
+      await controller.fetchUsers();
 
-    expect(controller.state.users, hasLength(1));
-    expect(controller.state.isLoading, false);
-    expect(controller.state.error, isNull);
-  });
+      expect(controller.state.users, hasLength(1));
+      expect(controller.state.isLoading, false);
+      expect(controller.state.error, isNull);
+    },
+  );
 
   test('fetchUsers setea error cuando el caso de uso falla', () async {
     when(
@@ -51,30 +54,33 @@ void main() {
     expect(controller.state.error, isNotNull);
   });
 
-  test('toggleStatus suspende un usuario activo y actualiza la lista', () async {
-    when(
-      mockGetAdminUsersUseCase.call(),
-    ).thenAnswer((_) async => const [_doctor]);
-    await controller.fetchUsers();
+  test(
+    'toggleStatus suspende un usuario activo y actualiza la lista',
+    () async {
+      when(
+        mockGetAdminUsersUseCase.call(),
+      ).thenAnswer((_) async => const [_doctor]);
+      await controller.fetchUsers();
 
-    const suspended = AdminUser(
-      id: 1,
-      fullName: 'Dr. Smith',
-      doctorId: 'MD-001',
-      email: 'smith@hospital.org',
-      status: 'suspended',
-      role: 'doctor',
-    );
-    when(
-      mockUpdateAdminUserStatusUseCase.call(userId: 1, status: 'suspended'),
-    ).thenAnswer((_) async => suspended);
+      const suspended = AdminUser(
+        id: 1,
+        fullName: 'Dr. Smith',
+        doctorId: 'MD-001',
+        email: 'smith@hospital.org',
+        status: 'suspended',
+        role: 'doctor',
+      );
+      when(
+        mockUpdateAdminUserStatusUseCase.call(userId: 1, status: 'suspended'),
+      ).thenAnswer((_) async => suspended);
 
-    final result = await controller.toggleStatus(_doctor);
+      final result = await controller.toggleStatus(_doctor);
 
-    expect(result?.status, 'suspended');
-    expect(controller.state.users.single.status, 'suspended');
-    expect(controller.state.error, isNull);
-  });
+      expect(result?.status, 'suspended');
+      expect(controller.state.users.single.status, 'suspended');
+      expect(controller.state.error, isNull);
+    },
+  );
 
   test('toggleStatus mantiene la lista y setea error cuando falla', () async {
     when(

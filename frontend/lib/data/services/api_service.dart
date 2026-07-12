@@ -1,9 +1,12 @@
+// ignore_for_file: use_null_aware_elements
+
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:bucalscan_ai/core/constants/app_constants.dart';
 
 class ApiService {
   final Dio _dio;
+  String? _activeWorkspaceId;
 
   ApiService({List<Interceptor> interceptors = const []})
     : _dio = Dio(
@@ -18,30 +21,31 @@ class ApiService {
     }
   }
 
-  Future<void> pingHealth() async {
+  void setActiveWorkspace(String? workspaceId) {
+    _activeWorkspaceId = workspaceId;
+  }
+
+  Options _workspaceOptions() => Options(
+    headers: {
+      if (_activeWorkspaceId != null) 'X-Workspace-ID': _activeWorkspaceId,
+    },
+  );
+
+  Future<void> pingReadiness() async {
     try {
       final options = Options(
         sendTimeout: const Duration(seconds: 10),
         receiveTimeout: const Duration(seconds: 45),
       );
 
-      await _dio.get('/health', options: options);
+      await _dio.get(AppConstants.readinessEndpoint, options: options);
     } on DioException catch (e) {
-      try {
-        final fallbackOptions = Options(
-          sendTimeout: const Duration(seconds: 10),
-          receiveTimeout: const Duration(seconds: 45),
-        );
-        await _dio.get('/', options: fallbackOptions);
-        return;
-      } on DioException {
-        throw Exception(
-          _buildApiErrorMessage(
-            e,
-            fallback: 'No se pudo preparar la conexion con el servidor.',
-          ),
-        );
-      }
+      throw Exception(
+        _buildApiErrorMessage(
+          e,
+          fallback: 'El servicio de analisis aun no esta disponible.',
+        ),
+      );
     }
   }
 
@@ -50,11 +54,13 @@ class ApiService {
     String? patientId,
     String? patientName,
     required bool consentToStore,
+    String? lesionId,
   }) async {
     try {
       final formData = FormData.fromMap({
         'file': await MultipartFile.fromFile(image.path),
         'consent_to_store': consentToStore.toString(),
+        if (lesionId != null) 'lesion_id': lesionId,
         if (patientId != null && patientId.isNotEmpty) 'patient_id': patientId,
         if (patientName != null && patientName.isNotEmpty)
           'patient_name': patientName,
@@ -63,6 +69,7 @@ class ApiService {
       final response = await _dio.post(
         '${AppConstants.apiVersion}/predict',
         data: formData,
+        options: _workspaceOptions(),
       );
 
       return Map<String, dynamic>.from(response.data as Map);
@@ -86,6 +93,9 @@ class ApiService {
     String? medicalCenter,
     required String email,
     required String password,
+    String? workspaceChoice,
+    String? workspaceId,
+    String? workspaceName,
   }) async {
     try {
       final response = await _dio.post(
@@ -97,6 +107,9 @@ class ApiService {
             'medical_center': medicalCenter,
           'email': email,
           'password': password,
+          if (workspaceChoice != null) 'workspace_choice': workspaceChoice,
+          if (workspaceId != null) 'workspace_id': workspaceId,
+          if (workspaceName != null) 'workspace_name': workspaceName,
         },
       );
       return response.data;
@@ -105,6 +118,37 @@ class ApiService {
         _buildApiErrorMessage(e, fallback: 'No se pudo completar el registro.'),
       );
     }
+  }
+
+  Future<List<Map<String, dynamic>>> getList(
+    String path, {
+    Map<String, dynamic>? query,
+    bool workspaceScoped = false,
+  }) async {
+    final response = await _dio.get(
+      path,
+      queryParameters: query,
+      options: workspaceScoped ? _workspaceOptions() : null,
+    );
+    final raw = response.data is Map
+        ? ((response.data as Map)['items'] ?? (response.data as Map)['data'])
+        : response.data;
+    return (raw as List? ?? const [])
+        .map((item) => Map<String, dynamic>.from(item as Map))
+        .toList();
+  }
+
+  Future<Map<String, dynamic>> postJson(
+    String path,
+    Map<String, dynamic> data, {
+    bool workspaceScoped = false,
+  }) async {
+    final response = await _dio.post(
+      path,
+      data: data,
+      options: workspaceScoped ? _workspaceOptions() : null,
+    );
+    return Map<String, dynamic>.from(response.data as Map);
   }
 
   Future<Map<String, dynamic>> login({
@@ -234,6 +278,10 @@ class ApiService {
     }
 
     final data = error.response?.data;
+
+    if (error.response?.statusCode == 403) {
+      return 'No tiene permiso para realizar esta accion en el espacio de trabajo activo.';
+    }
 
     if (data is Map<String, dynamic>) {
       final detail = data['detail'] ?? data['message'] ?? data['error'];

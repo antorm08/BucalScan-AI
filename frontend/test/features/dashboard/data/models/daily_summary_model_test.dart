@@ -43,7 +43,10 @@ void main() {
       expect(entity.total, 3);
       expect(entity.benign, 2);
       expect(entity.malignant, 1);
-      expect(entity.latestAnalysisAt, DateTime.parse('2026-01-01T10:00:00.000Z'));
+      expect(
+        entity.latestAnalysisAt,
+        DateTime.parse('2026-01-01T10:00:00.000Z'),
+      );
     });
 
     test('deja la fecha en null cuando latestAnalysisAt es null', () {
@@ -54,17 +57,20 @@ void main() {
       expect(entity.latestAnalysisAt, isNull);
     });
 
-    test('deja la fecha en null cuando latestAnalysisAt es una cadena vacía', () {
-      const model = DailySummaryModel(
-        total: 0,
-        benign: 0,
-        malignant: 0,
-        latestAnalysisAt: '',
-      );
+    test(
+      'deja la fecha en null cuando latestAnalysisAt es una cadena vacía',
+      () {
+        const model = DailySummaryModel(
+          total: 0,
+          benign: 0,
+          malignant: 0,
+          latestAnalysisAt: '',
+        );
 
-      final entity = model.toEntity();
+        final entity = model.toEntity();
 
-      expect(entity.latestAnalysisAt, isNull);
-    });
+        expect(entity.latestAnalysisAt, isNull);
+      },
+    );
   });
 }

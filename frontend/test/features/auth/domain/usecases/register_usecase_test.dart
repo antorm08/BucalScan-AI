@@ -13,35 +13,38 @@ void main() {
     useCase = RegisterUseCase(mockRepository);
   });
 
-  test('delega el registro en el repositorio con los datos correctos', () async {
-    when(
-      mockRepository.register(
+  test(
+    'delega el registro en el repositorio con los datos correctos',
+    () async {
+      when(
+        mockRepository.register(
+          fullName: 'Dra. Jane Doe',
+          doctorId: 'MD-123456',
+          medicalCenter: 'Hospital Central',
+          email: 'jane.doe@hospital.org',
+          password: '123456',
+        ),
+      ).thenAnswer((_) async {});
+
+      await useCase.call(
         fullName: 'Dra. Jane Doe',
         doctorId: 'MD-123456',
         medicalCenter: 'Hospital Central',
         email: 'jane.doe@hospital.org',
         password: '123456',
-      ),
-    ).thenAnswer((_) async {});
+      );
 
-    await useCase.call(
-      fullName: 'Dra. Jane Doe',
-      doctorId: 'MD-123456',
-      medicalCenter: 'Hospital Central',
-      email: 'jane.doe@hospital.org',
-      password: '123456',
-    );
-
-    verify(
-      mockRepository.register(
-        fullName: 'Dra. Jane Doe',
-        doctorId: 'MD-123456',
-        medicalCenter: 'Hospital Central',
-        email: 'jane.doe@hospital.org',
-        password: '123456',
-      ),
-    ).called(1);
-  });
+      verify(
+        mockRepository.register(
+          fullName: 'Dra. Jane Doe',
+          doctorId: 'MD-123456',
+          medicalCenter: 'Hospital Central',
+          email: 'jane.doe@hospital.org',
+          password: '123456',
+        ),
+      ).called(1);
+    },
+  );
 
   test('propaga la excepción cuando el registro falla', () async {
     when(

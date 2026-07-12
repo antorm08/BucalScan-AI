@@ -14,17 +14,20 @@ void main() {
     repository = DashboardRepositoryImpl(mockRemoteDataSource);
   });
 
-  test('getTodaySummary mapea el modelo a entidad cuando la respuesta es correcta', () async {
-    when(mockRemoteDataSource.getTodaySummary()).thenAnswer(
-      (_) async => const DailySummaryModel(total: 3, benign: 2, malignant: 1),
-    );
+  test(
+    'getTodaySummary mapea el modelo a entidad cuando la respuesta es correcta',
+    () async {
+      when(mockRemoteDataSource.getTodaySummary()).thenAnswer(
+        (_) async => const DailySummaryModel(total: 3, benign: 2, malignant: 1),
+      );
 
-    final result = await repository.getTodaySummary();
+      final result = await repository.getTodaySummary();
 
-    expect(result.total, 3);
-    expect(result.benign, 2);
-    expect(result.malignant, 1);
-  });
+      expect(result.total, 3);
+      expect(result.benign, 2);
+      expect(result.malignant, 1);
+    },
+  );
 
   test('propaga la excepción cuando la fuente remota falla', () async {
     when(

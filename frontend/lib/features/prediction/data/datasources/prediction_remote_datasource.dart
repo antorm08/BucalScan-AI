@@ -15,6 +15,7 @@ class PredictionRemoteDataSource {
       patientId: input.patientId,
       patientName: input.patientName,
       consentToStore: input.consentToStore,
+      lesionId: input.lesionId,
     );
     return PredictionResultModel.fromJson(json);
   }

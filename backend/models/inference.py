@@ -28,6 +28,22 @@ class OralLesionClassifier:
         self.model = ort.InferenceSession(str(self.model_path), providers=["CPUExecutionProvider"])
         self.input_name = self.model.get_inputs()[0].name
 
+    def validate_contract(self) -> None:
+        if self.model is None:
+            raise RuntimeError("Model is not loaded.")
+        inputs = self.model.get_inputs()
+        outputs = self.model.get_outputs()
+        if len(inputs) != 1 or not outputs:
+            raise RuntimeError("Expected one input and at least one output.")
+        shape = tuple(inputs[0].shape)
+        if len(shape) != 4 or tuple(shape[1:]) != (3, 224, 224):
+            raise RuntimeError("Expected model input shape [batch, 3, 224, 224].")
+        if inputs[0].type != "tensor(float)":
+            raise RuntimeError("Expected float32 model input.")
+        output_shape = tuple(outputs[0].shape)
+        if not output_shape or output_shape[-1] not in (1, 2):
+            raise RuntimeError("Expected one binary logit or two class logits.")
+
     def _preprocess(self, image: Image.Image) -> np.ndarray:
         """Convert a PIL image to a normalized float32 tensor [1, 3, 224, 224].
 

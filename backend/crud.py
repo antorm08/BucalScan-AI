@@ -13,7 +13,7 @@ def get_user(db: Session, user_id: int):
 def get_user_by_email(db: Session, email: str):
     return db.query(models.User).filter(models.User.email == email).first()
 
-def create_user(db: Session, user: UserCreate):
+def create_user(db: Session, user: UserCreate, *, commit: bool = True):
     hashed_password = get_password_hash(user.password)
     db_user = models.User(
         full_name=user.full_name,
@@ -21,11 +21,17 @@ def create_user(db: Session, user: UserCreate):
         medical_center=user.medical_center,
         email=user.email,
         hashed_password=hashed_password,
-        role="doctor",
+        role="professional",
+        status="pending",
+        profession=user.profession,
+        specialty=user.specialty,
     )
     db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
+    if commit:
+        db.commit()
+        db.refresh(db_user)
+    else:
+        db.flush()
     return db_user
 
 def get_user_analyses(db: Session, user_id: int, skip: int = 0, limit: int = 100):

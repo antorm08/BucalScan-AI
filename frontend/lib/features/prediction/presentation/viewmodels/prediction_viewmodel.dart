@@ -58,6 +58,7 @@ class PredictionViewModel extends Notifier<PredictionState> {
     String? patientId,
     String? patientName,
     required bool consentToStore,
+    String? lesionId,
   }) async {
     final stopwatch = Stopwatch()..start();
 
@@ -75,6 +76,7 @@ class PredictionViewModel extends Notifier<PredictionState> {
           consentToStore: consentToStore,
           patientId: patientId,
           patientName: patientName,
+          lesionId: lesionId,
         ),
       );
       state = state.copyWith(

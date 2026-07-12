@@ -66,6 +66,8 @@ uvicorn main:app --reload
 |--------|----------|---------------|-------------|
 | `GET` | `/` | No | Informacion de la API |
 | `GET` | `/health` | No | Estado del servicio |
+| `GET` | `/live` | No | Proceso activo, sin revisar dependencias |
+| `GET` | `/ready` | No | Base de datos y contrato ResNet50 disponibles |
 | `POST` | `/api/v1/auth/register` | No | Registro de usuario |
 | `POST` | `/api/v1/auth/login` | No | Inicio de sesion |
 | `GET` | `/api/v1/auth/me` | Si | Perfil del usuario autenticado |
@@ -73,7 +75,7 @@ uvicorn main:app --reload
 | `GET` | `/api/v1/history` | Si | Historial de analisis |
 | `GET` | `/api/v1/summary/today` | Si | Resumen diario |
 
-El contrato del endpoint de prediccion esta documentado en `docs/predict_contract.md`.
+Los endpoints clinicos requieren `X-Workspace-ID`. El contrato del endpoint de prediccion esta documentado en `docs/predict_contract.md`.
 La politica simple de privacidad y retencion esta documentada en `docs/privacy_retention.md`.
 
 ## Inferencia
@@ -102,6 +104,14 @@ python scripts/verify_model.py
 python -m pytest
 ```
 
+Las migraciones se ejecutan explicitamente, nunca durante el arranque:
+
+```bash
+alembic upgrade head
+```
+
+El flujo seguro de Neon, verificacion, rollback y limitaciones se documenta en `docs/migration_and_deployment.md`.
+
 Pruebas especificas:
 
 ```bash
@@ -109,10 +119,10 @@ python -m pytest tests/test_auth.py -v
 python -m pytest tests/test_inference.py -v
 ```
 
-Antes de una demo en Render, abre `/health` para despertar el servicio y confirmar disponibilidad:
+Antes de una demo en Render, consulta `/ready` para despertar el servicio y confirmar disponibilidad:
 
 ```text
-https://bucalscan-ai.onrender.com/health
+https://bucalscan-ai.onrender.com/ready
 ```
 
 ## Validacion Del Modelo

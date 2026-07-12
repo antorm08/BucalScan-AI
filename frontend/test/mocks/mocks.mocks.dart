@@ -181,6 +181,9 @@ class MockAuthRemoteDataSource extends _i1.Mock
     String? medicalCenter,
     required String? email,
     required String? password,
+    String? workspaceChoice,
+    String? workspaceId,
+    String? workspaceName,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#register, [], {
@@ -189,6 +192,9 @@ class MockAuthRemoteDataSource extends _i1.Mock
               #medicalCenter: medicalCenter,
               #email: email,
               #password: password,
+              #workspaceChoice: workspaceChoice,
+              #workspaceId: workspaceId,
+              #workspaceName: workspaceName,
             }),
             returnValue: _i13.Future<Map<String, dynamic>>.value(
               <String, dynamic>{},
@@ -457,6 +463,9 @@ class MockAuthRepository extends _i1.Mock implements _i22.AuthRepository {
     String? medicalCenter,
     required String? email,
     required String? password,
+    String? workspaceChoice,
+    String? workspaceId,
+    String? workspaceName,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#register, [], {
@@ -465,6 +474,9 @@ class MockAuthRepository extends _i1.Mock implements _i22.AuthRepository {
               #medicalCenter: medicalCenter,
               #email: email,
               #password: password,
+              #workspaceChoice: workspaceChoice,
+              #workspaceId: workspaceId,
+              #workspaceName: workspaceName,
             }),
             returnValue: _i13.Future<void>.value(),
             returnValueForMissingStub: _i13.Future<void>.value(),
@@ -692,6 +704,9 @@ class MockRegisterUseCase extends _i1.Mock implements _i30.RegisterUseCase {
     String? medicalCenter,
     required String? email,
     required String? password,
+    String? workspaceChoice,
+    String? workspaceId,
+    String? workspaceName,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#call, [], {
@@ -700,6 +715,9 @@ class MockRegisterUseCase extends _i1.Mock implements _i30.RegisterUseCase {
               #medicalCenter: medicalCenter,
               #email: email,
               #password: password,
+              #workspaceChoice: workspaceChoice,
+              #workspaceId: workspaceId,
+              #workspaceName: workspaceName,
             }),
             returnValue: _i13.Future<void>.value(),
             returnValueForMissingStub: _i13.Future<void>.value(),

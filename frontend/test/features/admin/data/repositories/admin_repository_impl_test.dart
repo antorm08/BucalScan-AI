@@ -66,14 +66,17 @@ void main() {
     expect(result.isActive, false);
   });
 
-  test('updateUserStatus propaga la excepción cuando la fuente remota falla', () async {
-    when(
-      mockRemoteDataSource.updateUserStatus(userId: 1, status: 'active'),
-    ).thenThrow(Exception('No se pudo actualizar el usuario.'));
+  test(
+    'updateUserStatus propaga la excepción cuando la fuente remota falla',
+    () async {
+      when(
+        mockRemoteDataSource.updateUserStatus(userId: 1, status: 'active'),
+      ).thenThrow(Exception('No se pudo actualizar el usuario.'));
 
-    expect(
-      () => repository.updateUserStatus(userId: 1, status: 'active'),
-      throwsException,
-    );
-  });
+      expect(
+        () => repository.updateUserStatus(userId: 1, status: 'active'),
+        throwsException,
+      );
+    },
+  );
 }

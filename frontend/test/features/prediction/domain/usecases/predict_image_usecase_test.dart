@@ -15,26 +15,29 @@ void main() {
     useCase = PredictImageUseCase(mockRepository);
   });
 
-  test('delega en el repositorio y retorna el resultado del análisis', () async {
-    const input = PredictionImageInput(
-      imagePath: '/tmp/image.jpg',
-      consentToStore: true,
-      patientId: 'P-001',
-      patientName: 'Paciente Prueba',
-    );
-    const result = PredictionResult(
-      prediction: 'benign',
-      confidence: 0.88,
-      recommendation: 'Control periodico.',
-    );
+  test(
+    'delega en el repositorio y retorna el resultado del análisis',
+    () async {
+      const input = PredictionImageInput(
+        imagePath: '/tmp/image.jpg',
+        consentToStore: true,
+        patientId: 'P-001',
+        patientName: 'Paciente Prueba',
+      );
+      const result = PredictionResult(
+        prediction: 'benign',
+        confidence: 0.88,
+        recommendation: 'Control periodico.',
+      );
 
-    when(mockRepository.predictImage(input)).thenAnswer((_) async => result);
+      when(mockRepository.predictImage(input)).thenAnswer((_) async => result);
 
-    final response = await useCase.call(input);
+      final response = await useCase.call(input);
 
-    expect(response.prediction, 'benign');
-    verify(mockRepository.predictImage(input)).called(1);
-  });
+      expect(response.prediction, 'benign');
+      verify(mockRepository.predictImage(input)).called(1);
+    },
+  );
 
   test('propaga la excepción cuando el análisis falla', () async {
     const input = PredictionImageInput(

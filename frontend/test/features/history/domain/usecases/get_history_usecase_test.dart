@@ -14,22 +14,25 @@ void main() {
     useCase = GetHistoryUseCase(mockRepository);
   });
 
-  test('retorna la lista de análisis cuando el repositorio responde correctamente', () async {
-    final analyses = [
-      Analysis(
-        id: 1,
-        prediction: 'benign',
-        confidence: 0.91,
-        timestamp: DateTime(2026, 1, 1, 9),
-      ),
-    ];
-    when(mockRepository.getHistory()).thenAnswer((_) async => analyses);
+  test(
+    'retorna la lista de análisis cuando el repositorio responde correctamente',
+    () async {
+      final analyses = [
+        Analysis(
+          id: 1,
+          prediction: 'benign',
+          confidence: 0.91,
+          timestamp: DateTime(2026, 1, 1, 9),
+        ),
+      ];
+      when(mockRepository.getHistory()).thenAnswer((_) async => analyses);
 
-    final result = await useCase.call();
+      final result = await useCase.call();
 
-    expect(result, hasLength(1));
-    expect(result.first.prediction, 'benign');
-  });
+      expect(result, hasLength(1));
+      expect(result.first.prediction, 'benign');
+    },
+  );
 
   test('retorna una lista vacía cuando no hay análisis', () async {
     when(mockRepository.getHistory()).thenAnswer((_) async => []);

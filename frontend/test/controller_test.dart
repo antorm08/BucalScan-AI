@@ -138,6 +138,9 @@ class _FakeAuthRepository implements AuthRepository {
     String? medicalCenter,
     required String email,
     required String password,
+    String? workspaceChoice,
+    String? workspaceId,
+    String? workspaceName,
   }) async {}
 
   @override

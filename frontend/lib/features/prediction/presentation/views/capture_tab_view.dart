@@ -7,6 +7,8 @@ import 'package:bucalscan_ai/core/theme/app_colors.dart';
 import 'package:bucalscan_ai/core/widgets/app_app_bar.dart';
 import 'package:bucalscan_ai/features/prediction/presentation/viewmodels/prediction_viewmodel.dart';
 import 'package:bucalscan_ai/features/prediction/presentation/views/result_view.dart';
+import 'package:bucalscan_ai/features/clinical/presentation/views/patient_lesion_picker.dart';
+import 'package:bucalscan_ai/features/clinical/presentation/viewmodels/clinical_controller.dart';
 
 class CaptureTabView extends ConsumerStatefulWidget {
   const CaptureTabView({super.key});
@@ -58,7 +60,9 @@ class _CaptureTabViewState extends ConsumerState<CaptureTabView> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('No se pudo obtener la imagen seleccionada. $e'),
+            content: Text(
+              'No se pudo acceder a ${source == ImageSource.camera ? 'la camara' : 'la galeria'}. Revise el permiso de BucalScan AI en los ajustes del dispositivo. $e',
+            ),
           ),
         );
       }
@@ -78,14 +82,19 @@ class _CaptureTabViewState extends ConsumerState<CaptureTabView> {
     final imageFile = _selectedImage!;
     final patientId = _patientIdController.text.trim();
     final patientName = _patientNameController.text.trim();
+    final clinical = ref.read(clinicalControllerProvider);
 
     unawaited(
       ref
           .read(predictionViewModelProvider.notifier)
           .predictImage(
             imageFile,
-            patientId: patientId.isEmpty ? null : patientId,
-            patientName: patientName.isEmpty ? null : patientName,
+            patientId:
+                clinical.patient?.id ?? (patientId.isEmpty ? null : patientId),
+            patientName:
+                clinical.patient?.fullName ??
+                (patientName.isEmpty ? null : patientName),
+            lesionId: clinical.lesion?.id,
             consentToStore: _hasStorageConsent,
           ),
     );
@@ -104,6 +113,7 @@ class _CaptureTabViewState extends ConsumerState<CaptureTabView> {
   Widget build(BuildContext context) {
     final viewModel = ref.watch(predictionViewModelProvider);
     final hasImage = _selectedImage != null;
+    final clinical = ref.watch(clinicalControllerProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -188,6 +198,8 @@ class _CaptureTabViewState extends ConsumerState<CaptureTabView> {
               ),
             ),
             const SizedBox(height: 12),
+            const PatientLesionPicker(),
+            const SizedBox(height: 12),
             Card(
               color: AppColors.surfaceContainerLowest,
               elevation: 0,
@@ -201,7 +213,7 @@ class _CaptureTabViewState extends ConsumerState<CaptureTabView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Datos del paciente (opcional)',
+                      'Referencia complementaria (opcional)',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -210,7 +222,7 @@ class _CaptureTabViewState extends ConsumerState<CaptureTabView> {
                     ),
                     const SizedBox(height: 10),
                     const Text(
-                      'Estos datos ayudan a identificar el resultado en el historial. Puede dejarlos vacíos si el caso no requiere registro nominal.',
+                      'El paciente y la lesion se seleccionan arriba. Estos campos solo mantienen compatibilidad con registros anteriores.',
                       style: TextStyle(
                         fontSize: 12,
                         color: AppColors.onSurfaceVariant,
@@ -287,6 +299,8 @@ class _CaptureTabViewState extends ConsumerState<CaptureTabView> {
               onPressed:
                   _selectedImage == null ||
                       viewModel.isLoading ||
+                      clinical.patient == null ||
+                      clinical.lesion == null ||
                       !_hasStorageConsent
                   ? null
                   : _analyzeImage,
@@ -303,7 +317,7 @@ class _CaptureTabViewState extends ConsumerState<CaptureTabView> {
                     : hasImage
                     ? _hasStorageConsent
                           ? 'Confirmar y analizar imagen'
-                          : 'Acepte el consentimiento para continuar'
+                          : 'Confirme la autorizacion para continuar'
                     : 'Seleccione una imagen para continuar',
               ),
               style: ElevatedButton.styleFrom(
@@ -356,7 +370,7 @@ class _ConsentCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Consentimiento para guardar el análisis',
+                    'Atestacion profesional de autorizacion',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
@@ -365,7 +379,7 @@ class _ConsentCard extends StatelessWidget {
                   ),
                   SizedBox(height: 6),
                   Text(
-                    'Autorizo que la imagen clínica, resultado, confianza, fecha y datos opcionales del paciente se almacenen en el historial asociado a mi cuenta para seguimiento clínico/académico.',
+                    'Como profesional actuante, confirmo que obtuve la autorizacion del paciente para capturar, analizar y almacenar esta imagen clinica y su resultado.',
                     style: TextStyle(
                       fontSize: 13,
                       height: 1.35,

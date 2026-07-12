@@ -33,13 +33,16 @@ void main() {
     expect(result.first.timestamp, DateTime.parse('2026-01-01T09:00:00.000Z'));
   });
 
-  test('getHistory retorna una lista vacía cuando la fuente remota no tiene datos', () async {
-    when(mockRemoteDataSource.getHistory()).thenAnswer((_) async => []);
+  test(
+    'getHistory retorna una lista vacía cuando la fuente remota no tiene datos',
+    () async {
+      when(mockRemoteDataSource.getHistory()).thenAnswer((_) async => []);
 
-    final result = await repository.getHistory();
+      final result = await repository.getHistory();
 
-    expect(result, isEmpty);
-  });
+      expect(result, isEmpty);
+    },
+  );
 
   test('propaga la excepción cuando la fuente remota falla', () async {
     when(

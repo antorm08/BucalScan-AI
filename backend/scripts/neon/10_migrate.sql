@@ -1,0 +1,16 @@
+-- Generation manifest; this file is intentionally not the generated artifact.
+-- Alembic offline mode now emits the complete PostgreSQL schema and legacy
+-- backfill without inspecting or connecting to a database. Use a non-secret
+-- dialect-only URL so the output includes PostgreSQL transaction semantics:
+--
+-- PowerShell:
+--   $env:DATABASE_URL='postgresql://unused:unused@localhost/unused'
+--   alembic upgrade head --sql > scripts/neon/10_migrate.generated.sql
+--
+-- POSIX shell:
+--   DATABASE_URL='postgresql://unused:unused@localhost/unused' \
+--     alembic upgrade head --sql > scripts/neon/10_migrate.generated.sql
+--
+-- Offline mode does not open the URL. Review the generated BEGIN/COMMIT script,
+-- validate it on disposable PostgreSQL, and only then provide that reviewed
+-- artifact to the project owner for manual execution.

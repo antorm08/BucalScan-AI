@@ -20,6 +20,7 @@ class StartupView extends StatefulWidget {
 
 class _StartupViewState extends State<StartupView> {
   static const Duration _retryDelay = Duration(seconds: 4);
+  static const int _automaticAttempts = 6;
 
   bool _isLoading = true;
   String? _error;
@@ -57,11 +58,11 @@ class _StartupViewState extends State<StartupView> {
         _currentAttempt = attempt;
         _statusMessage = attempt == 1
             ? 'Conectando con el servidor...'
-            : 'Despertando servidor en Render...';
+            : 'Preparando el servicio de analisis...';
       });
 
       try {
-        await widget.apiService.pingHealth();
+        await widget.apiService.pingReadiness();
         if (!mounted) {
           return;
         }
@@ -85,9 +86,15 @@ class _StartupViewState extends State<StartupView> {
 
         setState(() {
           _error = e.toString().replaceFirst('Exception: ', '');
-          _statusMessage =
-              'El backend sigue iniciando. Reintentando automaticamente...';
+          _statusMessage = attempt >= _automaticAttempts
+              ? 'El servicio no esta disponible por el momento.'
+              : 'El servicio sigue preparandose. Reintentando automaticamente...';
         });
+
+        if (attempt >= _automaticAttempts) {
+          setState(() => _isLoading = false);
+          return;
+        }
 
         await Future<void>.delayed(_retryDelay);
       }
@@ -148,7 +155,7 @@ class _StartupViewState extends State<StartupView> {
                       ),
                       const SizedBox(height: 8),
                       const Text(
-                        'Preparando conexion con el backend de analisis',
+                        'Preparando el servicio de analisis',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 15,
@@ -184,7 +191,7 @@ class _StartupViewState extends State<StartupView> {
                         if (_currentAttempt > 1) ...[
                           const SizedBox(height: 8),
                           Text(
-                            'Intento $_currentAttempt. La app seguira consultando hasta que el backend responda.',
+                            'Intento $_currentAttempt. BucalScan AI seguira comprobando la disponibilidad.',
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               fontSize: 13,

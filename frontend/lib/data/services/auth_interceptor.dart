@@ -26,7 +26,7 @@ class AuthInterceptor extends Interceptor {
     ErrorInterceptorHandler handler,
   ) async {
     final statusCode = err.response?.statusCode;
-    if (statusCode == 401 || statusCode == 403) {
+    if (statusCode == 401) {
       await _storage.clear();
       SessionEvents().emitSessionExpired();
     }

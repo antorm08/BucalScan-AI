@@ -59,81 +59,87 @@ void main() {
     addTearDown(container.dispose);
   });
 
-  test('login cambia a estado success cuando las credenciales son válidas', () async {
-    when(
-      mockLoginUseCase.call(email: 'doctor@hospital.org', password: '123456'),
-    ).thenAnswer(
-      (_) async => const AuthSession(user: _user, token: 'token_jwt'),
-    );
-
-    final success = await container
-        .read(authViewModelProvider.notifier)
-        .login(email: 'doctor@hospital.org', password: '123456');
-
-    final state = container.read(authViewModelProvider);
-    expect(success, true);
-    expect(state.currentUser?.email, 'doctor@hospital.org');
-    expect(state.isAuthenticated, true);
-    expect(state.isLoading, false);
-    expect(state.error, isNull);
-    verify(
-      mockLoginUseCase.call(email: 'doctor@hospital.org', password: '123456'),
-    ).called(1);
-  });
-
-  test('login cambia a estado error cuando las credenciales son inválidas', () async {
-    when(
-      mockLoginUseCase.call(email: 'doctor@hospital.org', password: 'wrong'),
-    ).thenThrow(Exception('Invalid credentials'));
-
-    final success = await container
-        .read(authViewModelProvider.notifier)
-        .login(email: 'doctor@hospital.org', password: 'wrong');
-
-    final state = container.read(authViewModelProvider);
-    expect(success, false);
-    expect(state.currentUser, isNull);
-    expect(state.isLoading, false);
-    expect(state.error, isNotNull);
-  });
-
-  group('tryAutoLogin', () {
-    test('retorna false sin llamar a getCurrentUser cuando no hay token', () async {
+  test(
+    'login cambia a estado success cuando las credenciales son válidas',
+    () async {
       when(
-        mockHasSessionTokenUseCase.call(),
-      ).thenAnswer((_) async => false);
+        mockLoginUseCase.call(email: 'doctor@hospital.org', password: '123456'),
+      ).thenAnswer(
+        (_) async => const AuthSession(user: _user, token: 'token_jwt'),
+      );
 
-      final result = await container
+      final success = await container
           .read(authViewModelProvider.notifier)
-          .tryAutoLogin();
-
-      expect(result, false);
-      verifyNever(mockGetCurrentUserUseCase.call());
-    });
-
-    test('retorna true y guarda el usuario cuando el token es válido', () async {
-      when(mockHasSessionTokenUseCase.call()).thenAnswer((_) async => true);
-      when(
-        mockGetCurrentUserUseCase.call(),
-      ).thenAnswer((_) async => _user);
-
-      final result = await container
-          .read(authViewModelProvider.notifier)
-          .tryAutoLogin();
+          .login(email: 'doctor@hospital.org', password: '123456');
 
       final state = container.read(authViewModelProvider);
-      expect(result, true);
+      expect(success, true);
       expect(state.currentUser?.email, 'doctor@hospital.org');
-    });
+      expect(state.isAuthenticated, true);
+      expect(state.isLoading, false);
+      expect(state.error, isNull);
+      verify(
+        mockLoginUseCase.call(email: 'doctor@hospital.org', password: '123456'),
+      ).called(1);
+    },
+  );
+
+  test(
+    'login cambia a estado error cuando las credenciales son inválidas',
+    () async {
+      when(
+        mockLoginUseCase.call(email: 'doctor@hospital.org', password: 'wrong'),
+      ).thenThrow(Exception('Invalid credentials'));
+
+      final success = await container
+          .read(authViewModelProvider.notifier)
+          .login(email: 'doctor@hospital.org', password: 'wrong');
+
+      final state = container.read(authViewModelProvider);
+      expect(success, false);
+      expect(state.currentUser, isNull);
+      expect(state.isLoading, false);
+      expect(state.error, isNotNull);
+    },
+  );
+
+  group('tryAutoLogin', () {
+    test(
+      'retorna false sin llamar a getCurrentUser cuando no hay token',
+      () async {
+        when(mockHasSessionTokenUseCase.call()).thenAnswer((_) async => false);
+
+        final result = await container
+            .read(authViewModelProvider.notifier)
+            .tryAutoLogin();
+
+        expect(result, false);
+        verifyNever(mockGetCurrentUserUseCase.call());
+      },
+    );
+
+    test(
+      'retorna true y guarda el usuario cuando el token es válido',
+      () async {
+        when(mockHasSessionTokenUseCase.call()).thenAnswer((_) async => true);
+        when(mockGetCurrentUserUseCase.call()).thenAnswer((_) async => _user);
+
+        final result = await container
+            .read(authViewModelProvider.notifier)
+            .tryAutoLogin();
+
+        final state = container.read(authViewModelProvider);
+        expect(result, true);
+        expect(state.currentUser?.email, 'doctor@hospital.org');
+      },
+    );
 
     test('cierra sesión y retorna error cuando el token expiró', () async {
       when(mockHasSessionTokenUseCase.call()).thenAnswer((_) async => true);
       when(
         mockGetCurrentUserUseCase.call(),
       ).thenThrow(Exception('Invalid or expired token'));
-      when(
-        mockGetCachedUserUseCase.call(),
-      ).thenAnswer((_) async => _user);
+      when(mockGetCachedUserUseCase.call()).thenAnswer((_) async => _user);
       when(mockLogoutUseCase.call()).thenAnswer((_) async {});
 
       final result = await container
@@ -146,24 +152,25 @@ void main() {
       verify(mockLogoutUseCase.call()).called(1);
     });
 
-    test('usa el usuario en caché cuando falla por un error no relacionado a auth', () async {
-      when(mockHasSessionTokenUseCase.call()).thenAnswer((_) async => true);
-      when(
-        mockGetCurrentUserUseCase.call(),
-      ).thenThrow(Exception('Error de conexión'));
-      when(
-        mockGetCachedUserUseCase.call(),
-      ).thenAnswer((_) async => _user);
+    test(
+      'usa el usuario en caché cuando falla por un error no relacionado a auth',
+      () async {
+        when(mockHasSessionTokenUseCase.call()).thenAnswer((_) async => true);
+        when(
+          mockGetCurrentUserUseCase.call(),
+        ).thenThrow(Exception('Error de conexión'));
+        when(mockGetCachedUserUseCase.call()).thenAnswer((_) async => _user);
 
-      final result = await container
-          .read(authViewModelProvider.notifier)
-          .tryAutoLogin();
+        final result = await container
+            .read(authViewModelProvider.notifier)
+            .tryAutoLogin();
 
-      final state = container.read(authViewModelProvider);
-      expect(result, true);
-      expect(state.currentUser?.email, 'doctor@hospital.org');
-      verifyNever(mockLogoutUseCase.call());
-    });
+        final state = container.read(authViewModelProvider);
+        expect(result, true);
+        expect(state.currentUser?.email, 'doctor@hospital.org');
+        verifyNever(mockLogoutUseCase.call());
+      },
+    );
 
     test('retorna error cuando falla y no hay usuario en caché', () async {
       when(mockHasSessionTokenUseCase.call()).thenAnswer((_) async => true);

@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Oral Lesion Detector</string>
+	<string>BucalScan AI</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -15,7 +15,11 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>oral_lesion_detector</string>
+	<string>BucalScan AI</string>
+	<key>NSCameraUsageDescription</key>
+	<string>BucalScan AI necesita la camara para capturar imagenes clinicas de lesiones orales.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>BucalScan AI necesita acceso a sus fotos para seleccionar una imagen clinica.</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>

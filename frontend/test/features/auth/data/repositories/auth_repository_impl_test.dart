@@ -17,52 +17,62 @@ void main() {
   });
 
   group('login', () {
-    test('guarda el token y el usuario en el storage tras un login exitoso', () async {
-      when(
-        mockRemoteDataSource.login(
-          email: 'doctor@hospital.org',
-          password: '123456',
-        ),
-      ).thenAnswer(
-        (_) async => {
-          'data': {
-            'token': 'token_jwt_simulado',
-            'user': {
-              'id': 1,
-              'full_name': 'Doctor Test',
-              'doctor_id': 'DOC-001',
-              'email': 'doctor@hospital.org',
-              'role': 'doctor',
+    test(
+      'guarda el token y el usuario en el storage tras un login exitoso',
+      () async {
+        when(
+          mockRemoteDataSource.login(
+            email: 'doctor@hospital.org',
+            password: '123456',
+          ),
+        ).thenAnswer(
+          (_) async => {
+            'data': {
+              'token': 'token_jwt_simulado',
+              'user': {
+                'id': 1,
+                'full_name': 'Doctor Test',
+                'doctor_id': 'DOC-001',
+                'email': 'doctor@hospital.org',
+                'role': 'doctor',
+              },
             },
           },
-        },
-      );
-      when(mockStorage.saveToken(any)).thenAnswer((_) async {});
-      when(mockStorage.saveUserJson(any)).thenAnswer((_) async {});
+        );
+        when(mockStorage.saveToken(any)).thenAnswer((_) async {});
+        when(mockStorage.saveUserJson(any)).thenAnswer((_) async {});
 
-      final session = await repository.login(
-        email: 'doctor@hospital.org',
-        password: '123456',
-      );
+        final session = await repository.login(
+          email: 'doctor@hospital.org',
+          password: '123456',
+        );
 
-      expect(session.token, 'token_jwt_simulado');
-      expect(session.user.email, 'doctor@hospital.org');
-      verify(mockStorage.saveToken('token_jwt_simulado')).called(1);
-      verify(
-        mockStorage.saveUserJson((session as AuthSessionModel).userJson),
-      ).called(1);
-    });
+        expect(session.token, 'token_jwt_simulado');
+        expect(session.user.email, 'doctor@hospital.org');
+        verify(mockStorage.saveToken('token_jwt_simulado')).called(1);
+        verify(
+          mockStorage.saveUserJson((session as AuthSessionModel).userJson),
+        ).called(1);
+      },
+    );
 
-    test('propaga la excepción cuando las credenciales son inválidas', () async {
-      when(
-        mockRemoteDataSource.login(email: 'doctor@hospital.org', password: 'wrong'),
-      ).thenThrow(Exception('Invalid credentials'));
+    test(
+      'propaga la excepción cuando las credenciales son inválidas',
+      () async {
+        when(
+          mockRemoteDataSource.login(
+            email: 'doctor@hospital.org',
+            password: 'wrong',
+          ),
+        ).thenThrow(Exception('Invalid credentials'));
 
-      expect(
-        () => repository.login(email: 'doctor@hospital.org', password: 'wrong'),
-        throwsException,
-      );
-    });
+        expect(
+          () =>
+              repository.login(email: 'doctor@hospital.org', password: 'wrong'),
+          throwsException,
+        );
+      },
+    );
   });
 
   group('getCurrentUser', () {
@@ -88,13 +98,19 @@ void main() {
       verify(mockStorage.saveUserJson(any)).called(1);
     });
 
-    test('lanza FormatException cuando falta el usuario en la respuesta', () async {
-      when(
-        mockRemoteDataSource.me(),
-      ).thenAnswer((_) async => {'data': <String, dynamic>{}});
+    test(
+      'lanza FormatException cuando falta el usuario en la respuesta',
+      () async {
+        when(
+          mockRemoteDataSource.me(),
+        ).thenAnswer((_) async => {'data': <String, dynamic>{}});
 
-      expect(() => repository.getCurrentUser(), throwsA(isA<FormatException>()));
-    });
+        expect(
+          () => repository.getCurrentUser(),
+          throwsA(isA<FormatException>()),
+        );
+      },
+    );
   });
 
   group('hasSessionToken', () {

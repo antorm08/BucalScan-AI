@@ -18,6 +18,9 @@ class AuthRemoteDataSource {
     String? medicalCenter,
     required String email,
     required String password,
+    String? workspaceChoice,
+    String? workspaceId,
+    String? workspaceName,
   }) {
     return _apiService.register(
       fullName: fullName,
@@ -25,6 +28,9 @@ class AuthRemoteDataSource {
       medicalCenter: medicalCenter,
       email: email,
       password: password,
+      workspaceChoice: workspaceChoice,
+      workspaceId: workspaceId,
+      workspaceName: workspaceName,
     );
   }
 

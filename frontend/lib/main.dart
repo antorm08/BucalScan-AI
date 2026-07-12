@@ -9,6 +9,7 @@ import 'package:bucalscan_ai/features/auth/di/auth_providers.dart';
 import 'package:bucalscan_ai/features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import 'package:bucalscan_ai/features/auth/presentation/views/login_view.dart';
 import 'package:bucalscan_ai/features/home/presentation/views/home_view.dart';
+import 'package:bucalscan_ai/features/clinical/presentation/views/workspace_gate_view.dart';
 
 void main() {
   runApp(const ProviderScope(child: BucalScanAiApp()));
@@ -122,7 +123,7 @@ class _BucalScanAiAppState extends ConsumerState<BucalScanAiApp> {
               onReady: _enterApp,
             )
           : _isAuthenticated
-          ? const HomeView()
+          ? const WorkspaceGateView(child: HomeView())
           : LoginView(onAuthenticated: _markAuthenticated),
     );
   }

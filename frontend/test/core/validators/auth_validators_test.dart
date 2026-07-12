@@ -35,10 +35,7 @@ void main() {
     });
 
     test('rechaza valor vacío', () {
-      expect(
-        AuthValidators.validateLoginPassword(''),
-        'Ingrese su contraseña',
-      );
+      expect(AuthValidators.validateLoginPassword(''), 'Ingrese su contraseña');
     });
 
     test('acepta cualquier contraseña no vacía', () {
@@ -48,10 +45,7 @@ void main() {
 
   group('AuthValidators.validateFullName', () {
     test('rechaza vacío', () {
-      expect(
-        AuthValidators.validateFullName(''),
-        'Ingrese su nombre completo',
-      );
+      expect(AuthValidators.validateFullName(''), 'Ingrese su nombre completo');
     });
 
     test('acepta nombre válido', () {

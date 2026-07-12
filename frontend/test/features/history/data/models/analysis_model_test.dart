@@ -91,7 +91,10 @@ void main() {
         entity.timestamp.isAfter(before.subtract(const Duration(seconds: 5))),
         true,
       );
-      expect(entity.timestamp.isBefore(after.add(const Duration(seconds: 1))), true);
+      expect(
+        entity.timestamp.isBefore(after.add(const Duration(seconds: 1))),
+        true,
+      );
     });
   });
 }

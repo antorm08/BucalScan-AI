@@ -10,6 +10,9 @@ abstract class AuthRepository {
     String? medicalCenter,
     required String email,
     required String password,
+    String? workspaceChoice,
+    String? workspaceId,
+    String? workspaceName,
   });
 
   Future<AuthUser> getCurrentUser();

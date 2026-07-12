@@ -14,27 +14,30 @@ void main() {
     useCase = UpdateAdminUserStatusUseCase(mockRepository);
   });
 
-  test('delega la actualización de estado con los parámetros correctos', () async {
-    const updated = AdminUser(
-      id: 1,
-      fullName: 'Dr. Smith',
-      doctorId: 'MD-001',
-      email: 'smith@hospital.org',
-      status: 'suspended',
-      role: 'doctor',
-    );
+  test(
+    'delega la actualización de estado con los parámetros correctos',
+    () async {
+      const updated = AdminUser(
+        id: 1,
+        fullName: 'Dr. Smith',
+        doctorId: 'MD-001',
+        email: 'smith@hospital.org',
+        status: 'suspended',
+        role: 'doctor',
+      );
 
-    when(
-      mockRepository.updateUserStatus(userId: 1, status: 'suspended'),
-    ).thenAnswer((_) async => updated);
+      when(
+        mockRepository.updateUserStatus(userId: 1, status: 'suspended'),
+      ).thenAnswer((_) async => updated);
 
-    final result = await useCase.call(userId: 1, status: 'suspended');
+      final result = await useCase.call(userId: 1, status: 'suspended');
 
-    expect(result.status, 'suspended');
-    verify(
-      mockRepository.updateUserStatus(userId: 1, status: 'suspended'),
-    ).called(1);
-  });
+      expect(result.status, 'suspended');
+      verify(
+        mockRepository.updateUserStatus(userId: 1, status: 'suspended'),
+      ).called(1);
+    },
+  );
 
   test('propaga la excepción cuando la actualización falla', () async {
     when(

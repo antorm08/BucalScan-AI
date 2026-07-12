@@ -14,32 +14,35 @@ void main() {
     repository = ProfileRepositoryImpl(mockRemoteDataSource);
   });
 
-  test('updateProfile mapea el modelo a entidad cuando la respuesta es correcta', () async {
-    when(
-      mockRemoteDataSource.updateProfile(
+  test(
+    'updateProfile mapea el modelo a entidad cuando la respuesta es correcta',
+    () async {
+      when(
+        mockRemoteDataSource.updateProfile(
+          fullName: 'Dra. Jane Doe',
+          medicalCenter: 'Hospital Central',
+          email: 'jane.doe@hospital.org',
+        ),
+      ).thenAnswer(
+        (_) async => const UserProfileModel(
+          id: 1,
+          fullName: 'Dra. Jane Doe',
+          doctorId: 'MD-123456',
+          medicalCenter: 'Hospital Central',
+          email: 'jane.doe@hospital.org',
+          role: 'doctor',
+        ),
+      );
+
+      final result = await repository.updateProfile(
         fullName: 'Dra. Jane Doe',
         medicalCenter: 'Hospital Central',
         email: 'jane.doe@hospital.org',
-      ),
-    ).thenAnswer(
-      (_) async => const UserProfileModel(
-        id: 1,
-        fullName: 'Dra. Jane Doe',
-        doctorId: 'MD-123456',
-        medicalCenter: 'Hospital Central',
-        email: 'jane.doe@hospital.org',
-        role: 'doctor',
-      ),
-    );
+      );
 
-    final result = await repository.updateProfile(
-      fullName: 'Dra. Jane Doe',
-      medicalCenter: 'Hospital Central',
-      email: 'jane.doe@hospital.org',
-    );
-
-    expect(result.email, 'jane.doe@hospital.org');
-  });
+      expect(result.email, 'jane.doe@hospital.org');
+    },
+  );
 
   test('propaga la excepción cuando la fuente remota falla', () async {
     when(

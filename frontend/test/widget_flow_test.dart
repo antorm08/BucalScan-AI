@@ -58,16 +58,19 @@ void main() {
     final container = ProviderContainer(
       overrides: [
         authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
-        dashboardRepositoryProvider.overrideWithValue(FakeDashboardRepository()),
+        dashboardRepositoryProvider.overrideWithValue(
+          FakeDashboardRepository(),
+        ),
         historyRepositoryProvider.overrideWithValue(FakeHistoryRepository()),
-        predictionRepositoryProvider.overrideWithValue(FakePredictionRepository()),
+        predictionRepositoryProvider.overrideWithValue(
+          FakePredictionRepository(),
+        ),
       ],
     );
     addTearDown(container.dispose);
-    await container.read(authViewModelProvider.notifier).login(
-      email: 'doctor@hospital.org',
-      password: 'secret123',
-    );
+    await container
+        .read(authViewModelProvider.notifier)
+        .login(email: 'doctor@hospital.org', password: 'secret123');
 
     await tester.pumpWidget(
       UncontrolledProviderScope(

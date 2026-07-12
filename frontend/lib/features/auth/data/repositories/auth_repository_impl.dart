@@ -37,6 +37,9 @@ class AuthRepositoryImpl implements AuthRepository {
     String? medicalCenter,
     required String email,
     required String password,
+    String? workspaceChoice,
+    String? workspaceId,
+    String? workspaceName,
   }) {
     return _remoteDataSource.register(
       fullName: fullName,
@@ -44,6 +47,9 @@ class AuthRepositoryImpl implements AuthRepository {
       medicalCenter: medicalCenter,
       email: email,
       password: password,
+      workspaceChoice: workspaceChoice,
+      workspaceId: workspaceId,
+      workspaceName: workspaceName,
     );
   }
 

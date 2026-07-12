@@ -40,17 +40,20 @@ void main() {
     addTearDown(container.dispose);
   });
 
-  test('fetchHistory carga el historial cuando la respuesta es correcta', () async {
-    when(mockGetHistoryUseCase.call()).thenAnswer((_) async => _analyses);
+  test(
+    'fetchHistory carga el historial cuando la respuesta es correcta',
+    () async {
+      when(mockGetHistoryUseCase.call()).thenAnswer((_) async => _analyses);
 
-    await container.read(historyViewModelProvider.notifier).fetchHistory();
+      await container.read(historyViewModelProvider.notifier).fetchHistory();
 
-    final state = container.read(historyViewModelProvider);
-    expect(state.allHistory, hasLength(2));
-    expect(state.isLoading, false);
-    expect(state.error, isNull);
-    expect(state.hasAnyHistory, true);
-  });
+      final state = container.read(historyViewModelProvider);
+      expect(state.allHistory, hasLength(2));
+      expect(state.isLoading, false);
+      expect(state.error, isNull);
+      expect(state.hasAnyHistory, true);
+    },
+  );
 
   test('fetchHistory setea error cuando el caso de uso falla', () async {
     when(
@@ -87,22 +90,22 @@ void main() {
       expect(state.history.last.id, 1);
     });
 
-    test('filtro Fecha ordena ascendente cuando dateSortDescending es false', () {
-      final state = HistoryState(
-        allHistory: _analyses,
-        filter: 'Fecha',
-        dateSortDescending: false,
-      );
+    test(
+      'filtro Fecha ordena ascendente cuando dateSortDescending es false',
+      () {
+        final state = HistoryState(
+          allHistory: _analyses,
+          filter: 'Fecha',
+          dateSortDescending: false,
+        );
 
-      expect(state.history.first.id, 1);
-      expect(state.history.last.id, 2);
-    });
+        expect(state.history.first.id, 1);
+        expect(state.history.last.id, 2);
+      },
+    );
 
     test('búsqueda con resultados filtra por nombre de paciente', () {
-      final state = HistoryState(
-        allHistory: _analyses,
-        searchQuery: 'benigno',
-      );
+      final state = HistoryState(allHistory: _analyses, searchQuery: 'benigno');
 
       expect(state.history, hasLength(1));
       expect(state.history.single.patientName, 'Paciente Benigno');
@@ -134,9 +137,6 @@ void main() {
     expect(container.read(historyViewModelProvider).dateSortDescending, true);
 
     notifier.setFilter('Fecha');
-    expect(
-      container.read(historyViewModelProvider).dateSortDescending,
-      false,
-    );
+    expect(container.read(historyViewModelProvider).dateSortDescending, false);
   });
 }

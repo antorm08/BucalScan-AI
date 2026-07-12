@@ -24,7 +24,9 @@ void main() {
     );
     addTearDown(container.dispose);
 
-    tempImage = File('${Directory.systemTemp.path}/bucalscan-viewmodel-test.jpg');
+    tempImage = File(
+      '${Directory.systemTemp.path}/bucalscan-viewmodel-test.jpg',
+    );
     await tempImage.writeAsBytes([1, 2, 3]);
     addTearDown(() {
       if (tempImage.existsSync()) {
@@ -33,48 +35,50 @@ void main() {
     });
   });
 
-  test('predictImage guarda el resultado cuando el análisis es exitoso', () async {
-    const result = PredictionResult(
-      prediction: 'benign',
-      confidence: 0.88,
-      recommendation: 'Control periodico.',
-    );
+  test(
+    'predictImage guarda el resultado cuando el análisis es exitoso',
+    () async {
+      const result = PredictionResult(
+        prediction: 'benign',
+        confidence: 0.88,
+        recommendation: 'Control periodico.',
+      );
 
-    when(
-      mockPredictImageUseCase.call(any),
-    ).thenAnswer((_) async => result);
+      when(mockPredictImageUseCase.call(any)).thenAnswer((_) async => result);
 
-    await container.read(predictionViewModelProvider.notifier).predictImage(
-      tempImage,
-      patientId: 'P-001',
-      patientName: 'Paciente Prueba',
-      consentToStore: true,
-    );
+      await container
+          .read(predictionViewModelProvider.notifier)
+          .predictImage(
+            tempImage,
+            patientId: 'P-001',
+            patientName: 'Paciente Prueba',
+            consentToStore: true,
+          );
 
-    final state = container.read(predictionViewModelProvider);
-    expect(state.result?.prediction, 'benign');
-    expect(state.patientId, 'P-001');
-    expect(state.isLoading, false);
-    expect(state.error, isNull);
+      final state = container.read(predictionViewModelProvider);
+      expect(state.result?.prediction, 'benign');
+      expect(state.patientId, 'P-001');
+      expect(state.isLoading, false);
+      expect(state.error, isNull);
 
-    final captured =
-        verify(mockPredictImageUseCase.call(captureAny)).captured.single
-            as PredictionImageInput;
-    expect(captured.imagePath, tempImage.path);
-    expect(captured.patientId, 'P-001');
-    expect(captured.patientName, 'Paciente Prueba');
-    expect(captured.consentToStore, true);
-  });
+      final captured =
+          verify(mockPredictImageUseCase.call(captureAny)).captured.single
+              as PredictionImageInput;
+      expect(captured.imagePath, tempImage.path);
+      expect(captured.patientId, 'P-001');
+      expect(captured.patientName, 'Paciente Prueba');
+      expect(captured.consentToStore, true);
+    },
+  );
 
   test('predictImage setea error cuando el análisis falla', () async {
-    when(mockPredictImageUseCase.call(any)).thenThrow(
-      Exception('No se pudo completar el analisis de la imagen.'),
-    );
+    when(
+      mockPredictImageUseCase.call(any),
+    ).thenThrow(Exception('No se pudo completar el analisis de la imagen.'));
 
-    await container.read(predictionViewModelProvider.notifier).predictImage(
-      tempImage,
-      consentToStore: false,
-    );
+    await container
+        .read(predictionViewModelProvider.notifier)
+        .predictImage(tempImage, consentToStore: false);
 
     final state = container.read(predictionViewModelProvider);
     expect(state.result, isNull);

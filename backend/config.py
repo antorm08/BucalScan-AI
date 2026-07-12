@@ -70,6 +70,8 @@ class Settings:
     cloudinary_api_key: Optional[str] = os.getenv("CLOUDINARY_API_KEY")
     cloudinary_api_secret: Optional[str] = os.getenv("CLOUDINARY_API_SECRET")
     cloudinary_folder: str = os.getenv("CLOUDINARY_FOLDER", "bucalscan/analyses")
+    environment: str = os.getenv("ENVIRONMENT", "development").lower()
+    readiness_timeout_seconds: float = float(os.getenv("READINESS_TIMEOUT_SECONDS", "3"))
     cors_origins: list[str] = None
 
     def __post_init__(self):
@@ -78,6 +80,12 @@ class Settings:
             "cors_origins",
             _parse_cors_origins(os.getenv("CORS_ORIGINS", "*")),
         )
+
+        if self.environment == "production":
+            if self.database_url.startswith("sqlite"):
+                raise EnvironmentError("Production requires PostgreSQL DATABASE_URL.")
+            if not all((self.cloudinary_cloud_name, self.cloudinary_api_key, self.cloudinary_api_secret)):
+                raise EnvironmentError("Production requires complete Cloudinary configuration.")
 
 
 settings = Settings()

@@ -93,6 +93,9 @@ class AuthViewModel extends Notifier<AuthState> {
     String? medicalCenter,
     required String email,
     required String password,
+    String? workspaceChoice,
+    String? workspaceId,
+    String? workspaceName,
   }) async {
     state = state.copyWith(isLoading: true, clearError: true);
 
@@ -103,6 +106,9 @@ class AuthViewModel extends Notifier<AuthState> {
         medicalCenter: medicalCenter,
         email: email,
         password: password,
+        workspaceChoice: workspaceChoice,
+        workspaceId: workspaceId,
+        workspaceName: workspaceName,
       );
       state = state.copyWith(isLoading: false, clearError: true);
       return true;

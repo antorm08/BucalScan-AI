@@ -5,6 +5,8 @@ import 'package:bucalscan_ai/core/validators/auth_validators.dart';
 import 'package:bucalscan_ai/core/widgets/app_text_field.dart';
 import 'package:bucalscan_ai/features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import 'package:bucalscan_ai/features/auth/presentation/views/login_view.dart';
+import 'package:bucalscan_ai/features/auth/presentation/widgets/clinic_selector.dart';
+import 'package:bucalscan_ai/features/clinical/domain/entities/clinical_entities.dart';
 
 class RegisterView extends ConsumerStatefulWidget {
   const RegisterView({super.key});
@@ -22,6 +24,8 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   bool _acceptTerms = false;
+  String _workspaceChoice = 'existing';
+  ClinicalWorkspace? _selectedWorkspace;
 
   @override
   void dispose() {
@@ -48,11 +52,20 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
       final success = await viewModel.register(
         fullName: _fullNameController.text.trim(),
         doctorId: _doctorIdController.text.trim(),
-        medicalCenter: _medicalCenterController.text.trim().isEmpty
-            ? null
-            : _medicalCenterController.text.trim(),
+        medicalCenter:
+            _workspaceChoice == 'new' &&
+                _medicalCenterController.text.trim().isNotEmpty
+            ? _medicalCenterController.text.trim()
+            : null,
         email: _emailController.text.trim(),
         password: _passwordController.text,
+        workspaceChoice: _workspaceChoice,
+        workspaceId: _workspaceChoice == 'existing'
+            ? _selectedWorkspace?.id
+            : null,
+        workspaceName: _workspaceChoice == 'new'
+            ? _medicalCenterController.text.trim()
+            : null,
       );
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -63,7 +76,7 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
                 SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Cuenta creada correctamente. Ya puede iniciar sesión.',
+                    'Solicitud registrada. Inicie sesion para consultar su estado de aprobacion.',
                   ),
                 ),
               ],
@@ -158,14 +171,97 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
                               validator: AuthValidators.validateDoctorId,
                             ),
                             const SizedBox(height: 16),
-                            AppTextField(
-                              controller: _medicalCenterController,
-                              label: 'Centro médico (opcional)',
-                              hint: 'Hospital Central',
-                              icon: Icons.local_hospital,
-                              validator: (value) {
-                                return null;
-                              },
+                            DropdownButtonFormField<String>(
+                              initialValue: _workspaceChoice,
+                              decoration: const InputDecoration(
+                                labelText: 'Modalidad de trabajo',
+                                prefixIcon: Icon(Icons.business_outlined),
+                                border: OutlineInputBorder(),
+                              ),
+                              items: const [
+                                DropdownMenuItem(
+                                  value: 'existing',
+                                  child: Text(
+                                    'Solicitar acceso a una clinica activa',
+                                  ),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'new',
+                                  child: Text(
+                                    'Registrar nueva clinica o consultorio',
+                                  ),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'independent',
+                                  child: Text('Practica independiente'),
+                                ),
+                              ],
+                              onChanged: (value) => setState(() {
+                                _workspaceChoice = value ?? 'existing';
+                                _medicalCenterController.clear();
+                                _selectedWorkspace = null;
+                              }),
+                            ),
+                            const SizedBox(height: 16),
+                            if (_workspaceChoice == 'existing')
+                              FormField<ClinicalWorkspace>(
+                                validator: (_) => _selectedWorkspace == null
+                                    ? 'Seleccione una clinica activa'
+                                    : null,
+                                builder: (field) => Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    ClinicSelector(
+                                      selectedWorkspace: _selectedWorkspace,
+                                      onSelected: (workspace) {
+                                        setState(() {
+                                          _selectedWorkspace = workspace;
+                                        });
+                                        field.didChange(workspace);
+                                      },
+                                    ),
+                                    if (field.hasError)
+                                      Padding(
+                                        padding: const EdgeInsets.only(
+                                          left: 12,
+                                          top: 6,
+                                        ),
+                                        child: Text(
+                                          field.errorText!,
+                                          style: TextStyle(
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.error,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            if (_workspaceChoice == 'new')
+                              AppTextField(
+                                controller: _medicalCenterController,
+                                label: 'Nombre de la clinica o consultorio',
+                                hint: 'Consultorio Dental Central',
+                                icon: Icons.local_hospital,
+                                validator: (value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return 'Este dato es obligatorio';
+                                  }
+                                  return null;
+                                },
+                              ),
+                            const SizedBox(height: 8),
+                            Text(
+                              _workspaceChoice == 'new'
+                                  ? 'La clinica quedara visible como pendiente y sera revisada para evitar duplicados.'
+                                  : 'Su cuenta profesional quedara pendiente de aprobacion antes de poder realizar analisis.',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.onSurfaceVariant,
+                              ),
                             ),
                             const SizedBox(height: 16),
                             AppTextField(
@@ -183,7 +279,8 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
                               hint: '••••••••',
                               icon: Icons.lock,
                               obscureText: true,
-                              validator: AuthValidators.validateRegisterPassword,
+                              validator:
+                                  AuthValidators.validateRegisterPassword,
                             ),
                             const SizedBox(height: 16),
                             AppTextField(
@@ -192,8 +289,8 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
                               hint: '••••••••',
                               icon: Icons.lock,
                               obscureText: true,
-                              validator: (value) => AuthValidators
-                                  .validateConfirmPassword(
+                              validator: (value) =>
+                                  AuthValidators.validateConfirmPassword(
                                     value,
                                     _passwordController.text,
                                   ),

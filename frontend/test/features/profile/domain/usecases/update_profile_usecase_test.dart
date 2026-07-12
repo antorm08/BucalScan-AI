@@ -14,39 +14,42 @@ void main() {
     useCase = UpdateProfileUseCase(mockRepository);
   });
 
-  test('delega la actualización en el repositorio con los datos correctos', () async {
-    const profile = UserProfile(
-      id: 1,
-      fullName: 'Dra. Jane Doe',
-      doctorId: 'MD-123456',
-      medicalCenter: 'Hospital Central',
-      email: 'jane.doe@hospital.org',
-      role: 'doctor',
-    );
+  test(
+    'delega la actualización en el repositorio con los datos correctos',
+    () async {
+      const profile = UserProfile(
+        id: 1,
+        fullName: 'Dra. Jane Doe',
+        doctorId: 'MD-123456',
+        medicalCenter: 'Hospital Central',
+        email: 'jane.doe@hospital.org',
+        role: 'doctor',
+      );
 
-    when(
-      mockRepository.updateProfile(
+      when(
+        mockRepository.updateProfile(
+          fullName: 'Dra. Jane Doe',
+          medicalCenter: 'Hospital Central',
+          email: 'jane.doe@hospital.org',
+        ),
+      ).thenAnswer((_) async => profile);
+
+      final result = await useCase.call(
         fullName: 'Dra. Jane Doe',
         medicalCenter: 'Hospital Central',
         email: 'jane.doe@hospital.org',
-      ),
-    ).thenAnswer((_) async => profile);
+      );
 
-    final result = await useCase.call(
-      fullName: 'Dra. Jane Doe',
-      medicalCenter: 'Hospital Central',
-      email: 'jane.doe@hospital.org',
-    );
-
-    expect(result.email, 'jane.doe@hospital.org');
-    verify(
-      mockRepository.updateProfile(
-        fullName: 'Dra. Jane Doe',
-        medicalCenter: 'Hospital Central',
-        email: 'jane.doe@hospital.org',
-      ),
-    ).called(1);
-  });
+      expect(result.email, 'jane.doe@hospital.org');
+      verify(
+        mockRepository.updateProfile(
+          fullName: 'Dra. Jane Doe',
+          medicalCenter: 'Hospital Central',
+          email: 'jane.doe@hospital.org',
+        ),
+      ).called(1);
+    },
+  );
 
   test('propaga la excepción cuando la actualización falla', () async {
     when(

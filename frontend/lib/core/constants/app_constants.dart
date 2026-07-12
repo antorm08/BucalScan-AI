@@ -10,6 +10,7 @@ class AppConstants {
   static const String registerEndpoint = '$apiBaseUrl$apiVersion/auth/register';
   static const String loginEndpoint = '$apiBaseUrl$apiVersion/auth/login';
   static const String historyEndpoint = '$apiBaseUrl$apiVersion/history';
+  static const String readinessEndpoint = '/ready';
 
   static const List<String> lesionClasses = ['benign', 'malignant'];
 
@@ -17,4 +18,13 @@ class AppConstants {
       'No immediate concern. Regular check-ups recommended.';
   static const String recommendationMalignant =
       'Malignant lesion suspected. Immediate medical attention required.';
+}
+
+class ClinicalEndpoints {
+  static const String workspaces = '${AppConstants.apiVersion}/workspaces';
+  static const String memberships = '$workspaces/mine';
+  static const String patients = '${AppConstants.apiVersion}/patients';
+
+  static String patientLesions(String patientId) =>
+      '$patients/$patientId/lesions';
 }

@@ -11,7 +11,7 @@ os.environ["JWT_SECRET"] = "test-secret-key-for-testing-only-12345"
 os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 os.environ["JWT_EXPIRATION_MINUTES"] = "60"
 os.environ["MODEL_PATH"] = str(
-    Path(__file__).resolve().parent.parent / "models" / "mobilenetv2_oral.onnx"
+    Path(__file__).resolve().parent.parent / "models" / "resnet50_oral.onnx"
 )
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))

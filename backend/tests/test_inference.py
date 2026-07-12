@@ -2,6 +2,7 @@
 Automated tests for OralLesionClassifier.
 Run from backend/ directory: pytest tests/test_inference.py -v
 """
+import hashlib
 import sys
 from pathlib import Path
 
@@ -13,7 +14,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from models.inference import CLASSES, OralLesionClassifier
 
-MODEL_PATH = Path(__file__).resolve().parent.parent / "models" / "mobilenetv2_oral.onnx"
+MODEL_PATH = Path(__file__).resolve().parent.parent / "models" / "resnet50_oral.onnx"
+MODEL_DATA_PATH = MODEL_PATH.with_suffix(".onnx.data")
+APPROVED_SHA256 = {
+    MODEL_PATH.name: "f306e10a5a603788e55af425439bef67817ed926872e8a95f418aa7fd9d444dc",
+    MODEL_DATA_PATH.name: "2efdd0ccb3f0541a0c0b692276c5807f4342a67af7cadb94c2a58fecba59d25a",
+}
 TEST_IMAGE_PATH = Path(__file__).resolve().parent.parent / "test_images" / "ejemplo.png"
 
 
@@ -30,6 +36,11 @@ def _make_dummy_image(width: int = 224, height: int = 224) -> Image.Image:
 
 
 class TestModelLoading:
+    @pytest.mark.parametrize("path", [MODEL_PATH, MODEL_DATA_PATH])
+    def test_approved_resnet50_checksum(self, path):
+        digest = hashlib.sha256(path.read_bytes()).hexdigest()
+        assert digest == APPROVED_SHA256[path.name]
+
     def test_model_loads(self, classifier):
         assert classifier.model is not None
 
@@ -39,6 +50,9 @@ class TestModelLoading:
 
     def test_model_path_exists(self, classifier):
         assert classifier.model_path.exists()
+
+    def test_model_contract(self, classifier):
+        classifier.validate_contract()
 
 
 class TestPreprocess:

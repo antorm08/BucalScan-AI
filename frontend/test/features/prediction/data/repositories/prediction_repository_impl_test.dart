@@ -15,24 +15,27 @@ void main() {
     repository = PredictionRepositoryImpl(mockRemoteDataSource);
   });
 
-  test('predictImage mapea el modelo a entidad cuando la respuesta es correcta', () async {
-    const input = PredictionImageInput(
-      imagePath: '/tmp/image.jpg',
-      consentToStore: true,
-    );
-    when(mockRemoteDataSource.predictImage(input)).thenAnswer(
-      (_) async => const PredictionResultModel(
-        prediction: 'benign',
-        confidence: 0.88,
-        recommendation: 'Control periodico.',
-      ),
-    );
+  test(
+    'predictImage mapea el modelo a entidad cuando la respuesta es correcta',
+    () async {
+      const input = PredictionImageInput(
+        imagePath: '/tmp/image.jpg',
+        consentToStore: true,
+      );
+      when(mockRemoteDataSource.predictImage(input)).thenAnswer(
+        (_) async => const PredictionResultModel(
+          prediction: 'benign',
+          confidence: 0.88,
+          recommendation: 'Control periodico.',
+        ),
+      );
 
-    final result = await repository.predictImage(input);
+      final result = await repository.predictImage(input);
 
-    expect(result.prediction, 'benign');
-    expect(result.confidence, 0.88);
-  });
+      expect(result.prediction, 'benign');
+      expect(result.confidence, 0.88);
+    },
+  );
 
   test('propaga la excepción cuando la fuente remota falla', () async {
     const input = PredictionImageInput(

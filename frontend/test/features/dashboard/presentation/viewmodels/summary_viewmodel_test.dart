@@ -23,20 +23,23 @@ void main() {
     addTearDown(container.dispose);
   });
 
-  test('fetchTodaySummary carga el resumen cuando la respuesta es correcta', () async {
-    const summary = DailySummary(total: 3, benign: 2, malignant: 1);
-    when(
-      mockGetTodaySummaryUseCase.call(),
-    ).thenAnswer((_) async => summary);
+  test(
+    'fetchTodaySummary carga el resumen cuando la respuesta es correcta',
+    () async {
+      const summary = DailySummary(total: 3, benign: 2, malignant: 1);
+      when(mockGetTodaySummaryUseCase.call()).thenAnswer((_) async => summary);
 
-    await container.read(summaryViewModelProvider.notifier).fetchTodaySummary();
+      await container
+          .read(summaryViewModelProvider.notifier)
+          .fetchTodaySummary();
 
-    final state = container.read(summaryViewModelProvider);
-    expect(state.summary?.total, 3);
-    expect(state.summary?.malignant, 1);
-    expect(state.isEmpty, false);
-    expect(state.error, isNull);
-  });
+      final state = container.read(summaryViewModelProvider);
+      expect(state.summary?.total, 3);
+      expect(state.summary?.malignant, 1);
+      expect(state.isEmpty, false);
+      expect(state.error, isNull);
+    },
+  );
 
   test('fetchTodaySummary setea error cuando el caso de uso falla', () async {
     when(
