@@ -284,7 +284,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [clinicalRepositoryProvider.overrideWithValue(repository)],
-        child: const MaterialApp(home: HomeView(initialIndex: 3)),
+        child: const MaterialApp(home: HomeView(initialIndex: 1)),
       ),
     );
     await tester.pumpAndSettle();

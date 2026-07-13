@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:bucalscan_ai/features/prediction/di/prediction_providers.dart';
@@ -87,5 +88,99 @@ void main() {
     expect(state.result, isNull);
     expect(state.isLoading, false);
     expect(state.error, isNotNull);
+  });
+
+  test('retry reuses immutable findings and assessment snapshot', () async {
+    var calls = 0;
+    when(mockPredictImageUseCase.call(any)).thenAnswer((_) async {
+      calls++;
+      if (calls == 1) throw Exception('network');
+      return const PredictionResult(
+        prediction: 'benign',
+        confidence: 0.8,
+        recommendation: 'Review',
+      );
+    });
+    final assessment = <String, String>{'ulceration': 'unknown'};
+
+    await container
+        .read(predictionViewModelProvider.notifier)
+        .predictImage(
+          tempImage,
+          patientId: '10',
+          patientName: 'Paciente',
+          lesionId: '20',
+          consentToStore: true,
+          clinicalObservations: 'Borde irregular',
+          assessment: assessment,
+        );
+    assessment['ulceration'] = 'false';
+    await container.read(predictionViewModelProvider.notifier).retry();
+
+    final captured = verify(
+      mockPredictImageUseCase.call(captureAny),
+    ).captured.cast<PredictionImageInput>();
+    expect(captured, hasLength(2));
+    expect(captured.last.clinicalObservations, 'Borde irregular');
+    expect(captured.last.assessment, {'ulceration': 'unknown'});
+  });
+
+  test('explicit lifecycle blocks duplicate submission and start over is clean', () async {
+    final completion = Completer<PredictionResult>();
+    when(mockPredictImageUseCase.call(any)).thenAnswer((_) => completion.future);
+    final controller = container.read(predictionViewModelProvider.notifier);
+
+    controller.prepareContext(
+      patientId: '10',
+      patientName: 'Paciente',
+      lesionId: '20',
+    );
+    expect(
+      container.read(predictionViewModelProvider).status,
+      AnalysisAttemptStatus.contextReady,
+    );
+    controller.prepareImage();
+    expect(
+      container.read(predictionViewModelProvider).status,
+      AnalysisAttemptStatus.imageReady,
+    );
+
+    final first = controller.predictImage(
+      tempImage,
+      patientId: '10',
+      patientName: 'Paciente',
+      lesionId: '20',
+      consentToStore: true,
+    );
+    final duplicate = controller.predictImage(
+      tempImage,
+      patientId: '10',
+      patientName: 'Paciente',
+      lesionId: '20',
+      consentToStore: true,
+    );
+    await duplicate;
+    verify(mockPredictImageUseCase.call(any)).called(1);
+
+    completion.complete(
+      const PredictionResult(
+        prediction: 'benign',
+        confidence: 0.8,
+        recommendation: 'Review',
+      ),
+    );
+    await first;
+    expect(
+      container.read(predictionViewModelProvider).status,
+      AnalysisAttemptStatus.succeeded,
+    );
+
+    controller.clearResult();
+    final clean = container.read(predictionViewModelProvider);
+    expect(clean.status, AnalysisAttemptStatus.idle);
+    expect(clean.result, isNull);
+    expect(clean.error, isNull);
+    expect(clean.analysisStatusMessage, isNull);
+    expect(clean.attempt, isNull);
   });
 }

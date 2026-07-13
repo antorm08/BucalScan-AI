@@ -5,6 +5,7 @@ class PredictionImageInput {
   final bool consentToStore;
   final String? lesionId;
   final String? clinicalObservations;
+  final Map<String, String>? assessment;
 
   const PredictionImageInput({
     required this.imagePath,
@@ -13,5 +14,6 @@ class PredictionImageInput {
     this.patientName,
     this.lesionId,
     this.clinicalObservations,
+    this.assessment,
   });
 }

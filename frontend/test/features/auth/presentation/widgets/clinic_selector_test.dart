@@ -54,7 +54,8 @@ class _ClinicSearchRepository implements ClinicalRepository {
   Future<OralLesion> createLesion({
     required String patientId,
     required String anatomicalSite,
-    required String temporalDescription,
+    DateTime? observedAt,
+    String? estimatedDuration,
     String? notes,
   }) => throw UnimplementedError();
 }

@@ -1,10 +1,12 @@
 import 'package:bucalscan_ai/features/admin/presentation/viewmodels/admin_approvals_controller.dart';
 import 'package:bucalscan_ai/features/admin/presentation/viewmodels/admin_users_controller.dart';
+import 'package:bucalscan_ai/features/admin/presentation/viewmodels/admin_list_controllers.dart';
 import 'package:bucalscan_ai/features/clinical/presentation/viewmodels/clinical_controller.dart';
 import 'package:bucalscan_ai/features/dashboard/presentation/viewmodels/summary_viewmodel.dart';
 import 'package:bucalscan_ai/features/history/presentation/viewmodels/history_viewmodel.dart';
 import 'package:bucalscan_ai/features/prediction/presentation/viewmodels/prediction_viewmodel.dart';
 import 'package:bucalscan_ai/features/clinical/presentation/viewmodels/patient_follow_up_controller.dart';
+import 'package:bucalscan_ai/features/priority/presentation/viewmodels/clinical_priority_controller.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 void _resetUserSensitiveState(Ref ref) {
@@ -14,8 +16,12 @@ void _resetUserSensitiveState(Ref ref) {
   ref.invalidate(summaryViewModelProvider);
   ref.invalidate(predictionViewModelProvider);
   ref.invalidate(patientFollowUpControllerProvider);
+  ref.invalidate(clinicalPriorityControllerProvider);
   ref.invalidate(adminUsersControllerProvider);
   ref.invalidate(adminApprovalsControllerProvider);
+  ref.invalidate(adminCentersControllerProvider);
+  ref.invalidate(adminAccessControllerProvider);
+  ref.invalidate(adminUsersPageControllerProvider);
 }
 
 extension UserSensitiveRefReset on Ref {
@@ -30,8 +36,12 @@ extension UserSensitiveWidgetRefReset on WidgetRef {
     invalidate(summaryViewModelProvider);
     invalidate(predictionViewModelProvider);
     invalidate(patientFollowUpControllerProvider);
+    invalidate(clinicalPriorityControllerProvider);
     invalidate(adminUsersControllerProvider);
     invalidate(adminApprovalsControllerProvider);
+    invalidate(adminCentersControllerProvider);
+    invalidate(adminAccessControllerProvider);
+    invalidate(adminUsersPageControllerProvider);
   }
 
   void resetWorkspaceSensitiveState() {
@@ -42,5 +52,7 @@ extension UserSensitiveWidgetRefReset on WidgetRef {
     invalidate(summaryViewModelProvider);
     read(predictionViewModelProvider.notifier).clearResult();
     invalidate(predictionViewModelProvider);
+    read(clinicalPriorityControllerProvider.notifier).clearAll();
+    invalidate(clinicalPriorityControllerProvider);
   }
 }

@@ -22,6 +22,13 @@ class _PatientLesionPickerState extends ConsumerState<PatientLesionPicker> {
   int _requestGeneration = 0;
 
   @override
+  void initState() {
+    super.initState();
+    final patient = ref.read(clinicalControllerProvider).patient;
+    if (patient != null) Future.microtask(() => _choosePatient(patient));
+  }
+
+  @override
   void dispose() {
     _search.dispose();
     super.dispose();
@@ -56,6 +63,7 @@ class _PatientLesionPickerState extends ConsumerState<PatientLesionPicker> {
 
   Future<void> _choosePatient(Patient patient) async {
     final generation = ++_requestGeneration;
+    final previousLesion = ref.read(clinicalControllerProvider).lesion;
     ref.read(clinicalControllerProvider.notifier).selectPatient(patient);
     setState(() {
       _loading = true;
@@ -66,6 +74,12 @@ class _PatientLesionPickerState extends ConsumerState<PatientLesionPicker> {
       final lesions = await ref.read(getLesionsUseCaseProvider)(patient.id);
       if (mounted && generation == _requestGeneration) {
         setState(() => _lesions = lesions);
+        if (previousLesion != null &&
+            lesions.any((item) => item.id == previousLesion.id)) {
+          ref
+              .read(clinicalControllerProvider.notifier)
+              .selectLesion(previousLesion);
+        }
       }
     } catch (_) {
       if (mounted && generation == _requestGeneration) {
@@ -82,28 +96,42 @@ class _PatientLesionPickerState extends ConsumerState<PatientLesionPicker> {
     final code = TextEditingController();
     final name = TextEditingController();
     final document = TextEditingController();
+    final formKey = GlobalKey<FormState>();
     final submit = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Nuevo paciente'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: code,
-              decoration: const InputDecoration(labelText: 'Codigo clinico *'),
-            ),
-            TextField(
-              controller: name,
-              decoration: const InputDecoration(labelText: 'Nombre completo *'),
-            ),
-            TextField(
-              controller: document,
-              decoration: const InputDecoration(
-                labelText: 'Documento (opcional)',
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: code,
+                decoration: const InputDecoration(
+                  labelText: 'Código clínico *',
+                ),
+                validator: (value) => value?.trim().isEmpty == true
+                    ? 'Ingrese un código clínico.'
+                    : null,
               ),
-            ),
-          ],
+              TextFormField(
+                controller: name,
+                decoration: const InputDecoration(
+                  labelText: 'Nombre completo *',
+                ),
+                validator: (value) => value?.trim().isEmpty == true
+                    ? 'Ingrese el nombre completo.'
+                    : null,
+              ),
+              TextField(
+                controller: document,
+                decoration: const InputDecoration(
+                  labelText: 'Documento (opcional)',
+                ),
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -111,17 +139,17 @@ class _PatientLesionPickerState extends ConsumerState<PatientLesionPicker> {
             child: const Text('Cancelar'),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () {
+              if (formKey.currentState!.validate()) {
+                Navigator.pop(context, true);
+              }
+            },
             child: const Text('Crear'),
           ),
         ],
       ),
     );
-    if (submit != true ||
-        code.text.trim().isEmpty ||
-        name.text.trim().isEmpty) {
-      return;
-    }
+    if (submit != true) return;
     try {
       final patient = await ref.read(createPatientUseCaseProvider)(
         clinicalCode: code.text.trim(),
@@ -133,7 +161,7 @@ class _PatientLesionPickerState extends ConsumerState<PatientLesionPicker> {
       if (mounted) {
         setState(
           () => _error =
-              'No se pudo crear el paciente. Revisa si el código o documento ya existe.',
+              'No se pudo crear el paciente. El código clínico o documento puede estar registrado en este centro.',
         );
       }
     }
@@ -141,53 +169,103 @@ class _PatientLesionPickerState extends ConsumerState<PatientLesionPicker> {
 
   Future<void> _createLesion(Patient patient) async {
     final site = TextEditingController();
-    final temporal = TextEditingController();
+    final duration = TextEditingController();
     final notes = TextEditingController();
+    DateTime? observedAt;
+    final formKey = GlobalKey<FormState>();
     final submit = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Nueva lesion'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: site,
-              decoration: const InputDecoration(labelText: 'Sitio anatomico *'),
-            ),
-            TextField(
-              controller: temporal,
-              decoration: const InputDecoration(
-                labelText: 'Fecha inicial o duracion *',
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Nueva lesión'),
+          content: Form(
+            key: formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: site,
+                    decoration: const InputDecoration(
+                      labelText: 'Sitio anatómico *',
+                      hintText: 'Ej.: borde lateral de lengua',
+                    ),
+                    validator: (value) => value?.trim().isEmpty == true
+                        ? 'Ingrese el sitio anatómico.'
+                        : null,
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      final value = await showDatePicker(
+                        context: context,
+                        firstDate: DateTime(1900),
+                        lastDate: DateTime.now(),
+                        initialDate: observedAt ?? DateTime.now(),
+                      );
+                      if (value != null) {
+                        setDialogState(() => observedAt = value);
+                      }
+                    },
+                    icon: const Icon(Icons.calendar_today_outlined),
+                    label: Text(
+                      observedAt == null
+                          ? 'Fecha de primera observación'
+                          : 'Observada el ${observedAt!.day}/${observedAt!.month}/${observedAt!.year}',
+                    ),
+                  ),
+                  TextFormField(
+                    controller: duration,
+                    decoration: const InputDecoration(
+                      labelText: 'Duración estimada',
+                      hintText: 'Ej.: aproximadamente 3 semanas',
+                      helperText:
+                          'Independiente de la fecha de primera observación.',
+                    ),
+                    validator: (value) =>
+                        observedAt == null && value!.trim().isEmpty
+                        ? 'Indique una fecha o una duración estimada.'
+                        : null,
+                  ),
+                  TextField(
+                    controller: notes,
+                    maxLines: 3,
+                    decoration: const InputDecoration(
+                      labelText: 'Notas longitudinales de la lesión',
+                      helperText:
+                          'Describen su seguimiento, no los hallazgos de una evaluación puntual.',
+                    ),
+                  ),
+                ],
               ),
             ),
-            TextField(
-              controller: notes,
-              decoration: const InputDecoration(labelText: 'Notas clinicas'),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () {
+                if (formKey.currentState!.validate()) {
+                  Navigator.pop(context, true);
+                }
+              },
+              child: const Text('Crear'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Crear'),
-          ),
-        ],
       ),
     );
-    if (submit != true ||
-        site.text.trim().isEmpty ||
-        temporal.text.trim().isEmpty) {
-      return;
-    }
+    if (submit != true) return;
     try {
       final lesion = await ref.read(createLesionUseCaseProvider)(
         patientId: patient.id,
         anatomicalSite: site.text.trim(),
-        temporalDescription: temporal.text.trim(),
+        observedAt: observedAt,
+        estimatedDuration: duration.text.trim().isEmpty
+            ? null
+            : duration.text.trim(),
         notes: notes.text.trim(),
       );
       if (!mounted) return;
@@ -209,7 +287,7 @@ class _PatientLesionPickerState extends ConsumerState<PatientLesionPicker> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Paciente y lesion',
+              'Paciente y lesión',
               style: Theme.of(context).textTheme.titleMedium,
             ),
             if (patient == null) ...[
@@ -284,7 +362,7 @@ class _PatientLesionPickerState extends ConsumerState<PatientLesionPicker> {
               TextButton.icon(
                 onPressed: () => _createLesion(patient),
                 icon: const Icon(Icons.add),
-                label: const Text('Registrar nueva lesion'),
+                label: const Text('Registrar nueva lesión'),
               ),
             ],
             if (_loading) const LinearProgressIndicator(),

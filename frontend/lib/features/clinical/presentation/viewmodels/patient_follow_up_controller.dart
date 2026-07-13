@@ -138,7 +138,8 @@ class PatientFollowUpController extends Notifier<PatientFollowUpState> {
 
   Future<bool> addLesion({
     required String anatomicalSite,
-    required String temporalDescription,
+    DateTime? observedAt,
+    String? estimatedDuration,
     String? notes,
   }) async {
     final patient = state.patient;
@@ -156,7 +157,8 @@ class PatientFollowUpController extends Notifier<PatientFollowUpState> {
       final lesion = await ref.read(createLesionUseCaseProvider)(
         patientId: patient.id,
         anatomicalSite: anatomicalSite,
-        temporalDescription: temporalDescription,
+        observedAt: observedAt,
+        estimatedDuration: estimatedDuration,
         notes: notes,
       );
       if (!_isCurrent(generation, workspaceId)) return false;
@@ -177,7 +179,12 @@ class PatientFollowUpController extends Notifier<PatientFollowUpState> {
     }
   }
 
-  Future<bool> updateLesion({required String status, String? notes}) async {
+  Future<bool> updateLesion({
+    required String status,
+    String? notes,
+    DateTime? observedAt,
+    String? estimatedDuration,
+  }) async {
     final detail = state.lesionDetail;
     if (detail == null || state.actionStatus == FollowUpActionStatus.updating) {
       return false;
@@ -193,6 +200,8 @@ class PatientFollowUpController extends Notifier<PatientFollowUpState> {
         lesionId: detail.lesion.id,
         status: status,
         notes: notes,
+        observedAt: observedAt,
+        estimatedDuration: estimatedDuration,
       );
       if (!_isCurrent(generation, workspaceId)) return false;
       state = state.copyWith(

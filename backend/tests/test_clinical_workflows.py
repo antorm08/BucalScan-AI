@@ -195,10 +195,43 @@ def test_multiple_lesions_and_repeated_evaluations(client, db_session, monkeypat
     assert db_session.query(models.ModelPrediction).count() == 2
     assert db_session.query(models.ConsentAttestation).count() == 2
 
-    history = client.get("/api/v1/history", headers=headers).json()
+    history = client.get("/api/v1/history", headers=headers).json()["items"]
     assert {entry["evaluation_id"] for entry in history} == {value.id for value in evaluations}
     assert {entry["patient_record_id"] for entry in history} == {patient["id"]}
     assert {entry["lesion_id"] for entry in history} == {lesion_one.json()["id"]}
+
+
+def test_active_prediction_ignores_legacy_patient_name_and_writes_canonical_history(client, db_session, monkeypatch):
+    professional = _user(db_session, "active-contract")
+    workspace, _ = _workspace(db_session, professional, "active-contract")
+    headers = _headers(professional, workspace)
+    patient = client.post(
+        "/api/v1/patients", headers=headers,
+        json=_patient_payload(code="ACTIVE-1", name="Canonical Patient"),
+    ).json()
+    lesion = client.post(
+        f"/api/v1/patients/{patient['id']}/lesions", headers=headers,
+        json={"anatomical_site": "tongue", "observed_at": "2026-07-13"},
+    ).json()
+    monkeypatch.setattr("routers.predict.classifier.predict", lambda image: {
+        "prediction": "benign", "confidence": 0.8,
+        "probabilities": {"benign": 0.8, "malignant": 0.2},
+    })
+    monkeypatch.setattr("routers.predict.upload_image", lambda *args, **kwargs: "https://images.example.test/active.png")
+
+    response = client.post(
+        "/api/v1/predict", headers=headers,
+        data={
+            "consent_to_store": "true", "patient_id": patient["id"],
+            "lesion_id": lesion["id"], "patient_name": "Injected legacy name",
+        },
+        files={"file": ("lesion.png", _png_bytes(), "image/png")},
+    )
+
+    assert response.status_code == 200
+    analysis = db_session.query(models.Analysis).one()
+    assert analysis.patient_name == "Canonical Patient"
+    assert analysis.patient_id == "ACTIVE-1"
 
 
 def test_lesion_detail_and_update_are_workspace_scoped(client, db_session):

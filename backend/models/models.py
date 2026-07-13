@@ -2,7 +2,7 @@ from datetime import UTC, datetime
 
 from sqlalchemy import (
     Boolean, Column, Date, DateTime, Float, ForeignKey, Index, Integer,
-    String, Text, UniqueConstraint,
+    JSON, String, Text, UniqueConstraint,
 )
 from sqlalchemy.orm import relationship
 
@@ -119,6 +119,7 @@ class Patient(Base):
 
     workspace = relationship("ClinicalWorkspace", back_populates="patients")
     lesions = relationship("OralLesion", back_populates="patient")
+    created_by = relationship("User", foreign_keys=[created_by_id])
 
 
 class OralLesion(Base):
@@ -138,6 +139,7 @@ class OralLesion(Base):
 
     patient = relationship("Patient", back_populates="lesions")
     evaluations = relationship("ClinicalEvaluation", back_populates="lesion", order_by="ClinicalEvaluation.evaluated_at")
+    created_by = relationship("User", foreign_keys=[created_by_id])
 
 
 class ClinicalEvaluation(Base):
@@ -156,6 +158,7 @@ class ClinicalEvaluation(Base):
     image = relationship("LesionImage", back_populates="evaluation", uselist=False, cascade="all, delete-orphan")
     prediction = relationship("ModelPrediction", back_populates="evaluation", uselist=False, cascade="all, delete-orphan")
     consent_attestation = relationship("ConsentAttestation", back_populates="evaluation", uselist=False, cascade="all, delete-orphan")
+    assessment_snapshot = relationship("ClinicalAssessmentSnapshot", back_populates="evaluation", uselist=False, cascade="all, delete-orphan")
 
 
 class LesionImage(Base):
@@ -198,3 +201,53 @@ class ConsentAttestation(Base):
     attested_at = Column(DateTime, nullable=False, default=_utcnow_naive)
 
     evaluation = relationship("ClinicalEvaluation", back_populates="consent_attestation")
+
+
+class ClinicalAssessmentSnapshot(Base):
+    __tablename__ = "clinical_assessment_snapshots"
+    __table_args__ = (
+        UniqueConstraint("evaluation_id", name="uq_assessment_evaluation"),
+        Index("ix_assessments_workspace_assessed", "workspace_id", "assessed_at"),
+        Index("ix_assessments_lesion", "lesion_id"),
+    )
+
+    id = Column(Integer, primary_key=True)
+    workspace_id = Column(Integer, ForeignKey("clinical_workspaces.id"), nullable=False)
+    patient_id = Column(Integer, ForeignKey("patients.id"), nullable=False)
+    lesion_id = Column(Integer, ForeignKey("oral_lesions.id"), nullable=False)
+    evaluation_id = Column(Integer, ForeignKey("clinical_evaluations.id", ondelete="CASCADE"), nullable=False)
+    assessor_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    schema_version = Column(String, nullable=False)
+    ruleset_version = Column(String, nullable=False)
+    canonical_payload = Column(JSON, nullable=False)
+    completion_status = Column(String, nullable=False)
+    assessed_at = Column(DateTime, nullable=False, default=_utcnow_naive)
+    created_at = Column(DateTime, nullable=False, default=_utcnow_naive)
+
+    evaluation = relationship("ClinicalEvaluation", back_populates="assessment_snapshot")
+    priority_result = relationship("ClinicalPriorityResult", back_populates="assessment", uselist=False, cascade="all, delete-orphan")
+
+
+class ClinicalPriorityResult(Base):
+    __tablename__ = "clinical_priority_results"
+    __table_args__ = (
+        UniqueConstraint("assessment_id", name="uq_priority_assessment"),
+        UniqueConstraint("evaluation_id", name="uq_priority_evaluation"),
+        Index("ix_priority_workspace_evaluated", "workspace_id", "evaluated_at"),
+        Index("ix_priority_code", "priority_code"),
+    )
+
+    id = Column(Integer, primary_key=True)
+    assessment_id = Column(Integer, ForeignKey("clinical_assessment_snapshots.id", ondelete="CASCADE"), nullable=False)
+    workspace_id = Column(Integer, ForeignKey("clinical_workspaces.id"), nullable=False)
+    evaluation_id = Column(Integer, ForeignKey("clinical_evaluations.id", ondelete="CASCADE"), nullable=False)
+    priority_code = Column(String, nullable=False)
+    reason_codes = Column(JSON, nullable=False)
+    rendered_reasons = Column(JSON, nullable=False)
+    ruleset_id = Column(String, nullable=False)
+    ruleset_version = Column(String, nullable=False)
+    engine_version = Column(String, nullable=False)
+    evaluated_at = Column(DateTime, nullable=False, default=_utcnow_naive)
+    created_at = Column(DateTime, nullable=False, default=_utcnow_naive)
+
+    assessment = relationship("ClinicalAssessmentSnapshot", back_populates="priority_result")

@@ -72,6 +72,8 @@ class Settings:
     cloudinary_folder: str = os.getenv("CLOUDINARY_FOLDER", "bucalscan/analyses")
     environment: str = os.getenv("ENVIRONMENT", "development").lower()
     readiness_timeout_seconds: float = float(os.getenv("READINESS_TIMEOUT_SECONDS", "10"))
+    clinical_priority_mode: str = os.getenv("CLINICAL_PRIORITY_MODE", "disabled").lower()
+    clinical_priority_ruleset: str = os.getenv("CLINICAL_PRIORITY_RULESET", "clinical-priority-v1-draft")
     cors_origins: list[str] = None
 
     def __post_init__(self):

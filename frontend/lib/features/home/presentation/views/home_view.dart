@@ -1,19 +1,20 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:bucalscan_ai/core/theme/app_colors.dart';
-import 'package:bucalscan_ai/core/widgets/nav_bar_item.dart';
-import 'package:bucalscan_ai/features/admin/presentation/views/admin_users_view.dart';
-import 'package:bucalscan_ai/features/auth/presentation/viewmodels/auth_viewmodel.dart';
-import 'package:bucalscan_ai/features/history/presentation/views/history_tab_view.dart';
-import 'package:bucalscan_ai/features/home/presentation/views/home_tab_view.dart';
-import 'package:bucalscan_ai/features/prediction/presentation/views/capture_tab_view.dart';
-import 'package:bucalscan_ai/features/profile/presentation/views/profile_tab_view.dart';
-import 'package:bucalscan_ai/features/auth/presentation/views/login_view.dart';
 import 'package:bucalscan_ai/core/session/user_sensitive_state.dart';
+import 'package:bucalscan_ai/core/theme/app_colors.dart';
+import 'package:bucalscan_ai/features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import 'package:bucalscan_ai/features/clinical/domain/entities/clinical_entities.dart';
 import 'package:bucalscan_ai/features/clinical/presentation/viewmodels/clinical_controller.dart';
 import 'package:bucalscan_ai/features/clinical/presentation/views/patients_view.dart';
+import 'package:bucalscan_ai/features/history/presentation/views/history_tab_view.dart';
+import 'package:bucalscan_ai/features/home/presentation/views/home_tab_view.dart';
 import 'package:bucalscan_ai/features/prediction/presentation/viewmodels/prediction_viewmodel.dart';
+import 'package:bucalscan_ai/features/prediction/presentation/views/capture_tab_view.dart';
+import 'package:bucalscan_ai/features/profile/presentation/views/help_center_view.dart';
+import 'package:bucalscan_ai/features/profile/presentation/views/model_info_view.dart';
+import 'package:bucalscan_ai/features/profile/presentation/views/profile_tab_view.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+enum _AccountAction { profile, help, model, workspace, logout }
 
 class HomeView extends ConsumerStatefulWidget {
   final int initialIndex;
@@ -26,45 +27,48 @@ class HomeView extends ConsumerStatefulWidget {
 
 class _HomeViewState extends ConsumerState<HomeView> {
   late int _currentIndex;
-
-  late final List<Widget> _screens;
+  List<GlobalKey<NavigatorState>> _navigatorKeys = List.generate(
+    4,
+    (_) => GlobalKey<NavigatorState>(),
+  );
+  late final Set<int> _visited;
 
   @override
   void initState() {
     super.initState();
-    _screens = [
-      HomeTabView(
-        onStartCapture: () => _selectTab(1),
-        onOpenHistory: () => _selectTab(2),
-      ),
-      const CaptureTabView(),
-      const HistoryTabView(),
-      PatientsView(onRepeatAnalysis: _repeatAnalysis),
-      const ProfileTabView(),
-    ];
-    _currentIndex = widget.initialIndex.clamp(0, _screens.length - 1).toInt();
+    _currentIndex = widget.initialIndex.clamp(0, 3);
+    _visited = {_currentIndex};
   }
 
-  void _selectTab(int index) {
-    setState(() => _currentIndex = index);
-  }
+  void _selectTab(int index) => setState(() {
+    _currentIndex = index;
+    _visited.add(index);
+  });
 
   void _repeatAnalysis(Patient patient, OralLesion lesion) {
     ref.read(clinicalControllerProvider.notifier)
       ..selectPatient(patient)
       ..selectLesion(lesion);
     ref.read(predictionViewModelProvider.notifier).clearResult();
-    Navigator.of(context).popUntil((route) => route.isFirst);
-    _selectTab(1);
+    for (final key in _navigatorKeys) {
+      key.currentState?.popUntil((route) => route.isFirst);
+    }
+    _selectTab(2);
   }
 
   Future<void> _changeWorkspace() async {
+    final active = ref
+        .read(clinicalControllerProvider)
+        .workspaces
+        .where((workspace) => workspace.canEnter)
+        .toList();
+    if (active.length <= 1) return;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Cambiar espacio'),
+        title: const Text('Cambiar centro de trabajo'),
         content: const Text(
-          'Se limpiarán el paciente, la lesión, la predicción y los datos clínicos cargados.',
+          'Se limpiarán únicamente la selección actual, la imagen y los borradores no guardados. Los pacientes, lesiones y análisis ya guardados permanecerán disponibles.',
         ),
         actions: [
           TextButton(
@@ -73,268 +77,218 @@ class _HomeViewState extends ConsumerState<HomeView> {
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Cambiar espacio'),
+            child: const Text('Cambiar centro'),
           ),
         ],
       ),
     );
     if (confirmed != true || !mounted) return;
-    Navigator.of(context).popUntil((route) => route.isFirst);
+    for (final key in _navigatorKeys) {
+      key.currentState?.popUntil((route) => route.isFirst);
+    }
     ref.resetWorkspaceSensitiveState();
+    setState(() {
+      _currentIndex = 0;
+      _visited
+        ..clear()
+        ..add(0);
+      _navigatorKeys = List.generate(4, (_) => GlobalKey<NavigatorState>());
+    });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      drawer: _MainDrawer(
-        onSelectTab: _selectTab,
-        onChangeWorkspace: _changeWorkspace,
-      ),
-      body: Column(
-        children: [
-          Consumer(
-            builder: (context, ref, _) {
-              final workspace = ref
-                  .watch(clinicalControllerProvider)
-                  .activeWorkspace;
-              if (workspace == null) return const SizedBox.shrink();
-              return Material(
-                color: AppColors.primaryFixed,
-                child: SafeArea(
-                  bottom: false,
-                  child: ListTile(
-                    dense: true,
-                    leading: const Icon(
-                      Icons.domain_outlined,
-                      color: AppColors.primary,
-                    ),
-                    title: Text(
-                      'Espacio activo: ${workspace.name}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    trailing: TextButton(
-                      onPressed: _changeWorkspace,
-                      child: const Text('Cambiar espacio'),
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-          Expanded(child: _screens[_currentIndex]),
-        ],
-      ),
-      floatingActionButton: Builder(
-        builder: (context) {
-          return FloatingActionButton.small(
-            onPressed: () => Scaffold.of(context).openDrawer(),
-            backgroundColor: AppColors.primary,
-            foregroundColor: AppColors.onPrimary,
-            tooltip: 'Abrir menú',
-            child: const Icon(Icons.menu),
-          );
-        },
-      ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: AppColors.surfaceContainerLowest,
-          border: const Border(
-            top: BorderSide(color: AppColors.surfaceVariant),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 12,
-              offset: const Offset(0, -4),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                NavBarItem(
-                  icon: Icons.home,
-                  label: 'Inicio',
-                  isActive: _currentIndex == 0,
-                  onTap: () => _selectTab(0),
-                ),
-                NavBarItem(
-                  icon: Icons.add_a_photo,
-                  label: 'Nueva Captura',
-                  isActive: _currentIndex == 1,
-                  onTap: () => _selectTab(1),
-                ),
-                NavBarItem(
-                  icon: Icons.people_outline,
-                  label: 'Pacientes',
-                  isActive: _currentIndex == 3,
-                  onTap: () => _selectTab(3),
-                ),
-                NavBarItem(
-                  icon: Icons.history,
-                  label: 'Historial',
-                  isActive: _currentIndex == 2,
-                  onTap: () => _selectTab(2),
-                ),
-                NavBarItem(
-                  icon: Icons.person,
-                  label: 'Perfil',
-                  isActive: _currentIndex == 4,
-                  onTap: () => _selectTab(4),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _MainDrawer extends ConsumerWidget {
-  final ValueChanged<int> onSelectTab;
-  final VoidCallback onChangeWorkspace;
-
-  const _MainDrawer({
-    required this.onSelectTab,
-    required this.onChangeWorkspace,
-  });
-
-  void _goToTab(BuildContext context, int index) {
-    Navigator.pop(context);
-    onSelectTab(index);
-  }
-
-  Future<void> _logout(BuildContext context, WidgetRef ref) async {
-    final shouldLogout = await showDialog<bool>(
+  Future<void> _logout() async {
+    final confirmed = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
+      builder: (context) => AlertDialog(
         title: const Text('Cerrar sesión'),
-        content: const Text('¿Desea cerrar sesión?'),
+        content: const Text('Se descartará cualquier borrador no guardado.'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
+            onPressed: () => Navigator.pop(context, false),
             child: const Text('Cancelar'),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
+            onPressed: () => Navigator.pop(context, true),
             child: const Text('Cerrar sesión'),
           ),
         ],
       ),
     );
-
-    if (shouldLogout != true || !context.mounted) {
-      return;
+    if (confirmed == true && mounted) {
+      await ref.read(authViewModelProvider.notifier).logout();
     }
+  }
 
-    await ref.read(authViewModelProvider.notifier).logout();
-    if (!context.mounted) {
-      return;
-    }
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (_) => const LoginView()),
-      (route) => false,
+  void _open(Widget page) {
+    _navigatorKeys[_currentIndex].currentState?.push(
+      MaterialPageRoute<void>(builder: (_) => page),
     );
   }
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(authViewModelProvider).currentUser;
+  void _handleAccountAction(_AccountAction action) {
+    switch (action) {
+      case _AccountAction.profile:
+        _open(const ProfileTabView());
+        return;
+      case _AccountAction.help:
+        _open(const HelpCenterView());
+        return;
+      case _AccountAction.model:
+        _open(const ModelInfoView());
+        return;
+      case _AccountAction.workspace:
+        _changeWorkspace();
+        return;
+      case _AccountAction.logout:
+        _logout();
+        return;
+    }
+  }
 
-    return Drawer(
-      child: SafeArea(
-        child: Column(
-          children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              color: AppColors.primary,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(
-                    Icons.health_and_safety_outlined,
-                    color: AppColors.onPrimary,
-                    size: 36,
+  @override
+  Widget build(BuildContext context) {
+    final clinical = ref.watch(clinicalControllerProvider);
+    final workspace = clinical.activeWorkspace;
+    final canSwitch =
+        clinical.workspaces.where((item) => item.canEnter).length > 1;
+    final destinations = <Widget>[
+      HomeTabView(
+        onStartCapture: () => _selectTab(2),
+        onOpenPatients: () => _selectTab(1),
+        onOpenHistory: () => _selectTab(3),
+      ),
+      PatientsView(onRepeatAnalysis: _repeatAnalysis),
+      CaptureTabView(onOpenHistory: () => _selectTab(3)),
+      HistoryTabView(onRepeatAnalysis: _repeatAnalysis),
+    ];
+
+    return PopScope(
+      canPop: !(_navigatorKeys[_currentIndex].currentState?.canPop() ?? false),
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _navigatorKeys[_currentIndex].currentState?.maybePop();
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          titleSpacing: 16,
+          title: Row(
+            children: [
+              const Icon(Icons.health_and_safety_outlined, size: 22),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'BucalScan AI',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    if (workspace != null)
+                      Text(
+                        '${workspace.name} · ${_roleLabel(workspace.role)}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.onSurfaceVariant,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            PopupMenuButton<_AccountAction>(
+              key: const Key('accountMenuButton'),
+              tooltip: 'Cuenta y ayuda',
+              onSelected: _handleAccountAction,
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: _AccountAction.profile,
+                  child: ListTile(
+                    leading: Icon(Icons.person_outline),
+                    title: Text('Cuenta y perfil'),
                   ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'BucalScan AI',
-                    style: TextStyle(
-                      color: AppColors.onPrimary,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
+                ),
+                const PopupMenuItem(
+                  value: _AccountAction.help,
+                  child: ListTile(
+                    leading: Icon(Icons.help_outline),
+                    title: Text('Centro de ayuda'),
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: _AccountAction.model,
+                  child: ListTile(
+                    leading: Icon(Icons.psychology_alt_outlined),
+                    title: Text('Modelo y apoyo de decisión'),
+                  ),
+                ),
+                if (canSwitch)
+                  const PopupMenuItem(
+                    value: _AccountAction.workspace,
+                    child: ListTile(
+                      leading: Icon(Icons.swap_horiz),
+                      title: Text('Cambiar centro'),
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    user?.fullName ?? 'Usuario autenticado',
-                    style: const TextStyle(color: AppColors.primaryFixed),
+                const PopupMenuDivider(),
+                const PopupMenuItem(
+                  value: _AccountAction.logout,
+                  child: ListTile(
+                    leading: Icon(Icons.logout, color: AppColors.error),
+                    title: Text(
+                      'Cerrar sesión',
+                      style: TextStyle(color: AppColors.error),
+                    ),
                   ),
-                ],
-              ),
+                ),
+              ],
+              icon: const Icon(Icons.account_circle_outlined),
             ),
-            ListTile(
-              leading: const Icon(Icons.dashboard_outlined),
-              title: const Text('Inicio / Dashboard'),
-              onTap: () => _goToTab(context, 0),
+          ],
+        ),
+        body: IndexedStack(
+          index: _currentIndex,
+          children: List.generate(
+            destinations.length,
+            (index) => !_visited.contains(index)
+                ? const SizedBox.shrink()
+                : Navigator(
+                    key: _navigatorKeys[index],
+                    onGenerateRoute: (_) => MaterialPageRoute<void>(
+                      builder: (_) => destinations[index],
+                    ),
+                  ),
+          ),
+        ),
+        bottomNavigationBar: NavigationBar(
+          selectedIndex: _currentIndex,
+          onDestinationSelected: _selectTab,
+          destinations: const [
+            NavigationDestination(
+              icon: Icon(Icons.home_outlined),
+              selectedIcon: Icon(Icons.home),
+              label: 'Inicio',
             ),
-            ListTile(
-              leading: const Icon(Icons.add_a_photo_outlined),
-              title: const Text('Captura o análisis'),
-              onTap: () => _goToTab(context, 1),
+            NavigationDestination(
+              icon: Icon(Icons.people_outline),
+              selectedIcon: Icon(Icons.people),
+              label: 'Pacientes',
             ),
-            ListTile(
-              leading: const Icon(Icons.people_outline),
-              title: const Text('Pacientes'),
-              onTap: () => _goToTab(context, 3),
+            NavigationDestination(
+              icon: Icon(Icons.add_a_photo_outlined),
+              selectedIcon: Icon(Icons.add_a_photo),
+              label: 'Analizar',
             ),
-            ListTile(
-              leading: const Icon(Icons.history_outlined),
-              title: const Text('Historial'),
-              onTap: () => _goToTab(context, 2),
-            ),
-            ListTile(
-              leading: const Icon(Icons.person_outline),
-              title: const Text('Perfil'),
-              onTap: () => _goToTab(context, 4),
-            ),
-            ListTile(
-              key: const Key('changeWorkspaceButton'),
-              leading: const Icon(Icons.swap_horiz),
-              title: const Text('Cambiar espacio'),
-              onTap: () {
-                Navigator.pop(context);
-                onChangeWorkspace();
-              },
-            ),
-            if (user?.isAdmin ?? false)
-              ListTile(
-                leading: const Icon(Icons.admin_panel_settings_outlined),
-                title: const Text('Administración'),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const AdminUsersView()),
-                  );
-                },
-              ),
-            const Spacer(),
-            const Divider(height: 1),
-            ListTile(
-              leading: const Icon(Icons.logout, color: AppColors.error),
-              title: const Text(
-                'Cerrar sesión',
-                style: TextStyle(color: AppColors.error),
-              ),
-              onTap: () => _logout(context, ref),
+            NavigationDestination(
+              icon: Icon(Icons.history_outlined),
+              selectedIcon: Icon(Icons.history),
+              label: 'Historial',
             ),
           ],
         ),
@@ -342,3 +296,9 @@ class _MainDrawer extends ConsumerWidget {
     );
   }
 }
+
+String _roleLabel(String? role) => switch (role) {
+  'clinic_admin' => 'Administración clínica',
+  'assistant' => 'Asistente',
+  _ => 'Profesional',
+};

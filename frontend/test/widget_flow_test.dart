@@ -80,12 +80,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Panel de análisis clínico'), findsOneWidget);
+    expect(find.text('Actividad del centro'), findsOneWidget);
     expect(find.text('3'), findsOneWidget);
-    expect(find.text('Benignos'), findsOneWidget);
-    expect(find.text('Malignos'), findsOneWidget);
+    expect(find.text('análisis procesados hoy'), findsOneWidget);
 
-    await tester.tap(find.text('Nueva Captura'));
+    await tester.tap(find.text('Analizar'));
     await tester.pumpAndSettle();
     expect(find.text('Captura guiada'), findsOneWidget);
     expect(find.text('Seleccione una imagen para continuar'), findsOneWidget);
@@ -102,7 +101,7 @@ void main() {
         overrides: [
           historyRepositoryProvider.overrideWithValue(FakeHistoryRepository()),
         ],
-        child: const MaterialApp(home: HomeView(initialIndex: 2)),
+        child: const MaterialApp(home: HomeView(initialIndex: 3)),
       ),
     );
     await tester.pumpAndSettle();
@@ -110,7 +109,7 @@ void main() {
     expect(find.text('Paciente Benigno'), findsOneWidget);
     expect(find.text('Paciente Maligno'), findsOneWidget);
 
-    await tester.tap(find.text('Maligna'));
+    await tester.tap(find.widgetWithText(FilterChip, 'Patrón maligno'));
     await tester.pumpAndSettle();
 
     expect(find.text('Paciente Benigno'), findsNothing);

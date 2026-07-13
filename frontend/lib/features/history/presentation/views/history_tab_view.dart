@@ -1,13 +1,22 @@
+import 'dart:async';
+
+import 'package:bucalscan_ai/core/theme/app_colors.dart';
+import 'package:bucalscan_ai/core/presentation/localized_status.dart';
+import 'package:bucalscan_ai/features/clinical/di/clinical_providers.dart';
+import 'package:bucalscan_ai/features/clinical/domain/entities/clinical_entities.dart';
+import 'package:bucalscan_ai/features/clinical/presentation/views/lesion_detail_view.dart';
+import 'package:bucalscan_ai/features/clinical/presentation/views/patient_detail_view.dart';
+import 'package:bucalscan_ai/features/history/domain/entities/analysis.dart';
+import 'package:bucalscan_ai/features/history/domain/entities/history_query.dart';
+import 'package:bucalscan_ai/features/history/presentation/viewmodels/history_viewmodel.dart';
+import 'package:bucalscan_ai/features/history/presentation/widgets/history_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:bucalscan_ai/core/theme/app_colors.dart';
-import 'package:bucalscan_ai/core/widgets/app_app_bar.dart';
-import 'package:bucalscan_ai/features/history/presentation/viewmodels/history_viewmodel.dart';
-import 'package:bucalscan_ai/features/history/domain/entities/analysis.dart';
-import 'package:bucalscan_ai/features/history/presentation/widgets/history_card.dart';
 
 class HistoryTabView extends ConsumerStatefulWidget {
-  const HistoryTabView({super.key});
+  final void Function(Patient, OralLesion)? onRepeatAnalysis;
+
+  const HistoryTabView({super.key, this.onRepeatAnalysis});
 
   @override
   ConsumerState<HistoryTabView> createState() => _HistoryTabViewState();
@@ -20,11 +29,7 @@ class _HistoryTabViewState extends ConsumerState<HistoryTabView> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) {
-        return;
-      }
-
-      ref.read(historyViewModelProvider.notifier).fetchHistory();
+      if (mounted) ref.read(historyViewModelProvider.notifier).refresh();
     });
   }
 
@@ -34,737 +39,635 @@ class _HistoryTabViewState extends ConsumerState<HistoryTabView> {
     super.dispose();
   }
 
-  void _showAnalysisDetail(Analysis analysis) {
+  Future<void> _pickDates() async {
+    final state = ref.read(historyViewModelProvider);
+    final range = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now(),
+      initialDateRange: state.criteria.dateFrom == null
+          ? null
+          : DateTimeRange(
+              start: state.criteria.dateFrom!.toLocal(),
+              end: (state.criteria.dateTo ?? state.criteria.dateFrom!)
+                  .toLocal(),
+            ),
+      helpText: 'Rango de evaluaciones',
+    );
+    if (range != null) {
+      await ref
+          .read(historyViewModelProvider.notifier)
+          .setDateRange(range.start, range.end);
+    }
+  }
+
+  Future<void> _openPatient(Analysis analysis) async {
+    final patientId = analysis.patientRecordId;
+    if (patientId == null) return _showUnavailable();
+    try {
+      final patient = await ref.read(getPatientUseCaseProvider)('$patientId');
+      if (!mounted || patient.id != '$patientId') return;
+      await Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => PatientDetailView(
+            patientId: patient.id,
+            onRepeatAnalysis: widget.onRepeatAnalysis ?? (_, _) {},
+          ),
+        ),
+      );
+    } catch (_) {
+      if (mounted) _showUnavailable();
+    }
+  }
+
+  Future<void> _openLesion(Analysis analysis) async {
+    final patientId = analysis.patientRecordId;
+    final lesionId = analysis.lesionId;
+    if (patientId == null || lesionId == null) return _showUnavailable();
+    try {
+      final results = await Future.wait([
+        ref.read(getPatientUseCaseProvider)('$patientId'),
+        ref.read(getLesionDetailUseCaseProvider)('$lesionId'),
+      ]);
+      final patient = results[0] as Patient;
+      final detail = results[1] as LesionDetail;
+      if (patient.id != '$patientId' ||
+          detail.lesion.id != '$lesionId' ||
+          detail.lesion.patientId != patient.id) {
+        return _showUnavailable();
+      }
+      if (!mounted) return;
+      await Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => LesionDetailView(
+            patient: patient,
+            lesionId: detail.lesion.id,
+            onRepeatAnalysis: widget.onRepeatAnalysis ?? (_, _) {},
+          ),
+        ),
+      );
+    } catch (_) {
+      if (mounted) _showUnavailable();
+    }
+  }
+
+  void _showUnavailable() {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        key: Key('historyUnavailableMessage'),
+        content: Text(
+          'El registro no está disponible o ya no tienes acceso en el centro activo.',
+        ),
+      ),
+    );
+  }
+
+  void _showDetail(Analysis analysis) {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        final prediction = analysis.prediction.toLowerCase();
-        final isMalignant = prediction == 'malignant';
-        final badgeColor = isMalignant ? AppColors.error : AppColors.benignText;
-        final badgeBackground = isMalignant
-            ? AppColors.errorContainer
-            : AppColors.benignBg;
-        final displayLabel = isMalignant ? 'Maligno' : 'Benigno';
-        final accentColor = isMalignant
-            ? AppColors.error
-            : AppColors.benignText;
-        final confidence = analysis.confidence.clamp(0.0, 1.0);
-        final hasImage =
-            analysis.imageUrl != null && analysis.imageUrl!.trim().isNotEmpty;
-        final authorLabel = _formatAuthor(analysis);
-
-        return SafeArea(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxHeight: constraints.maxHeight * 0.92,
-                  ),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceContainerLowest,
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Center(
-                            child: Container(
-                              width: 42,
-                              height: 4,
-                              decoration: BoxDecoration(
-                                color: AppColors.outlineVariant,
-                                borderRadius: BorderRadius.circular(999),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text(
-                                      'Detalle del análisis',
-                                      style: TextStyle(
-                                        fontSize: 22,
-                                        fontWeight: FontWeight.w700,
-                                        color: AppColors.onSurface,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      _formatDetailDate(analysis.timestamp),
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        color: AppColors.onSurfaceVariant,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: badgeBackground,
-                                  borderRadius: BorderRadius.circular(999),
-                                ),
-                                child: Text(
-                                  displayLabel,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                    color: badgeColor,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 20),
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: hasImage
-                                  ? AppColors.surfaceContainerLow
-                                  : accentColor.withValues(alpha: 0.08),
-                              borderRadius: BorderRadius.circular(18),
-                              border: Border.all(
-                                color: hasImage
-                                    ? AppColors.outlineVariant
-                                    : accentColor.withValues(alpha: 0.18),
-                              ),
-                            ),
-                            child: Column(
-                              children: [
-                                if (hasImage)
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(16),
-                                    child: AspectRatio(
-                                      aspectRatio: 16 / 9,
-                                      child: Image.network(
-                                        analysis.imageUrl!,
-                                        fit: BoxFit.cover,
-                                        errorBuilder:
-                                            (context, error, stackTrace) {
-                                              return _HistoryImageFallback(
-                                                accentColor: accentColor,
-                                              );
-                                            },
-                                      ),
-                                    ),
-                                  )
-                                else
-                                  _HistoryImageFallback(
-                                    accentColor: accentColor,
-                                  ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  hasImage
-                                      ? 'Imagen registrada'
-                                      : 'Vista previa no disponible',
-                                  style: const TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.onSurface,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  hasImage
-                                      ? 'La captura asociada se recupero correctamente desde el historial.'
-                                      : 'Este analisis no tiene una imagen publica disponible para mostrar en la app.',
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    color: AppColors.onSurfaceVariant,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: AppColors.surfaceContainerLow,
-                              borderRadius: BorderRadius.circular(18),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Confianza del modelo',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.onSurfaceVariant,
-                                  ),
-                                ),
-                                const SizedBox(height: 10),
-                                LayoutBuilder(
-                                  builder: (context, constraints) {
-                                    final useStackedLayout =
-                                        constraints.maxWidth < 320;
-                                    final percentage = Text(
-                                      '${(confidence * 100).toStringAsFixed(1)}%',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.fade,
-                                      softWrap: false,
-                                      style: const TextStyle(
-                                        fontSize: 30,
-                                        fontWeight: FontWeight.w800,
-                                        color: AppColors.onSurface,
-                                        letterSpacing: -1,
-                                      ),
-                                    );
-                                    final description = Text(
-                                      isMalignant
-                                          ? 'Resultado con indicios de riesgo alto segun la clasificacion actual.'
-                                          : 'Resultado con indicios compatibles con una lesion benigna.',
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        height: 1.35,
-                                        color: AppColors.onSurfaceVariant,
-                                      ),
-                                    );
-
-                                    if (useStackedLayout) {
-                                      return Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          percentage,
-                                          const SizedBox(height: 8),
-                                          description,
-                                        ],
-                                      );
-                                    }
-
-                                    return Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
-                                      children: [
-                                        SizedBox(width: 120, child: percentage),
-                                        const SizedBox(width: 14),
-                                        Expanded(child: description),
-                                      ],
-                                    );
-                                  },
-                                ),
-                                const SizedBox(height: 12),
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(999),
-                                  child: LinearProgressIndicator(
-                                    value: confidence,
-                                    minHeight: 10,
-                                    backgroundColor:
-                                        AppColors.surfaceContainerHighest,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      accentColor,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          _DetailRow(
-                            label: 'Paciente',
-                            value: analysis.patientName ?? 'No registrado',
-                          ),
-                          _DetailRow(
-                            label: 'ID paciente',
-                            value: analysis.patientId ?? 'No registrado',
-                          ),
-                          _DetailRow(
-                            label: 'Realizado por',
-                            value: authorLabel ?? 'No registrado',
-                          ),
-                          _DetailRow(
-                            label: 'Código médico',
-                            value:
-                                analysis.createdByDoctorId ?? 'No registrado',
-                          ),
-                          _DetailRow(label: 'Predicción', value: displayLabel),
-                          _DetailRow(
-                            label: 'Tiempo de inferencia',
-                            value: analysis.processingTimeMs == null
-                                ? 'No registrado'
-                                : _formatProcessingTime(
-                                    analysis.processingTimeMs!,
-                                  ),
-                          ),
-                          _DetailRow(
-                            label: 'Versión del modelo',
-                            value: analysis.modelVersion ?? 'No registrada',
-                          ),
-                          const SizedBox(height: 16),
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton.icon(
-                              onPressed: () => Navigator.pop(context),
-                              icon: const Icon(Icons.check),
-                              label: const Text('Cerrar'),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            },
+      useSafeArea: true,
+      builder: (sheetContext) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.88,
+        minChildSize: 0.55,
+        maxChildSize: 0.96,
+        builder: (_, controller) => ListView(
+          key: const Key('historyDetailSheet'),
+          controller: controller,
+          padding: EdgeInsets.fromLTRB(
+            20,
+            12,
+            20,
+            24 + MediaQuery.viewInsetsOf(sheetContext).bottom,
           ),
-        );
-      },
-    );
-  }
-
-  String _formatDetailDate(DateTime date) {
-    final months = [
-      'ene',
-      'feb',
-      'mar',
-      'abr',
-      'may',
-      'jun',
-      'jul',
-      'ago',
-      'sep',
-      'oct',
-      'nov',
-      'dic',
-    ];
-
-    final hour = date.hour.toString().padLeft(2, '0');
-    final minute = date.minute.toString().padLeft(2, '0');
-    return '${date.day} ${months[date.month - 1]} ${date.year} · $hour:$minute';
-  }
-
-  String _formatProcessingTime(double milliseconds) {
-    if (milliseconds >= 1000) {
-      return '${(milliseconds / 1000).toStringAsFixed(2)} s';
-    }
-    return '${milliseconds.toStringAsFixed(1)} ms';
-  }
-
-  String? _formatAuthor(Analysis analysis) {
-    final name = analysis.createdByName?.trim();
-    final email = analysis.createdByEmail?.trim();
-
-    if (name != null && name.isNotEmpty) {
-      if (email != null && email.isNotEmpty) {
-        return '$name ($email)';
-      }
-      return name;
-    }
-
-    final doctorId = analysis.createdByDoctorId?.trim();
-    if (doctorId != null && doctorId.isNotEmpty) return doctorId;
-    if (email != null && email.isNotEmpty) return email;
-
-    return null;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final filters = ['Todos', 'Fecha', 'Maligna', 'Benigna'];
-
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: const AppAppBar(),
-      body: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            color: AppColors.background,
-            child: Column(
-              children: [
-                TextField(
-                  controller: _searchController,
-                  onChanged: (value) {
-                    ref
-                        .read(historyViewModelProvider.notifier)
-                        .setSearchQuery(value);
-                  },
-                  decoration: InputDecoration(
-                    prefixIcon: const Icon(
-                      Icons.search,
-                      color: AppColors.outline,
-                    ),
-                    hintText:
-                        'Buscar por paciente, fecha, ID o clasificación...',
-                    hintStyle: const TextStyle(
-                      color: AppColors.onSurfaceVariant,
-                      fontSize: 14,
-                    ),
-                    filled: true,
-                    fillColor: AppColors.surfaceContainerLowest,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(999),
-                      borderSide: const BorderSide(
-                        color: AppColors.outlineVariant,
-                      ),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(999),
-                      borderSide: const BorderSide(
-                        color: AppColors.outlineVariant,
-                      ),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(999),
-                      borderSide: const BorderSide(
-                        color: AppColors.primaryContainer,
-                        width: 1.5,
-                      ),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                  ),
+          children: [
+            Center(
+              child: Container(
+                width: 44,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.outlineVariant,
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  height: 36,
-                  child: Builder(
-                    builder: (context) {
-                      final viewModel = ref.watch(historyViewModelProvider);
-                      return ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: filters.length,
-                        separatorBuilder: (context, index) =>
-                            const SizedBox(width: 8),
-                        itemBuilder: (context, index) {
-                          final filter = filters[index];
-                          final isActive = filter == viewModel.filter;
-                          Color bgColor, textColor;
-                          Border? border;
-                          List<BoxShadow>? boxShadow;
-                          IconData? trailingIcon;
-
-                          if (filter == 'Maligna' && isActive) {
-                            bgColor = AppColors.errorContainer;
-                            textColor = AppColors.onErrorContainer;
-                            border = Border.all(color: AppColors.error);
-                          } else if (filter == 'Benigna' && isActive) {
-                            bgColor = AppColors.benignBg;
-                            textColor = AppColors.benignText;
-                            border = Border.all(color: AppColors.benignText);
-                          } else if (isActive) {
-                            bgColor = AppColors.surfaceContainerLowest;
-                            textColor = AppColors.primary;
-                            border = Border.all(
-                              color: AppColors.primary,
-                              width: 1.4,
-                            );
-                            boxShadow = [
-                              BoxShadow(
-                                color: AppColors.primary.withValues(
-                                  alpha: 0.08,
-                                ),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ];
-                          } else {
-                            bgColor = AppColors.surfaceContainerHighest;
-                            textColor = AppColors.onSurface;
-                          }
-
-                          if (filter == 'Fecha' && isActive) {
-                            trailingIcon = viewModel.dateSortDescending
-                                ? Icons.south_rounded
-                                : Icons.north_rounded;
-                          }
-
-                          return GestureDetector(
-                            onTap: () => ref
-                                .read(historyViewModelProvider.notifier)
-                                .setFilter(filter),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: bgColor,
-                                borderRadius: BorderRadius.circular(999),
-                                border: border,
-                                boxShadow: boxShadow,
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  if (filter == 'Fecha') ...[
-                                    Icon(
-                                      Icons.calendar_today,
-                                      size: 16,
-                                      color: isActive
-                                          ? textColor
-                                          : AppColors.onSurfaceVariant,
-                                    ),
-                                    const SizedBox(width: 4),
-                                  ],
-                                  if (filter == 'Todos') ...[
-                                    Icon(
-                                      Icons.filter_list,
-                                      size: 16,
-                                      color: isActive
-                                          ? textColor
-                                          : AppColors.onSurfaceVariant,
-                                    ),
-                                    const SizedBox(width: 4),
-                                  ],
-                                  Text(
-                                    filter == 'Fecha'
-                                        ? 'Ordenar fecha'
-                                        : filter,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      letterSpacing: 0.5,
-                                      color: textColor,
-                                    ),
-                                  ),
-                                  if (trailingIcon != null) ...[
-                                    const SizedBox(width: 4),
-                                    Icon(
-                                      trailingIcon,
-                                      size: 16,
-                                      color: textColor,
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                          );
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Detalle de la evaluación',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            const SizedBox(height: 16),
+            _Detail(
+              label: 'Fecha de evaluación',
+              value: _date(analysis.evaluatedAt ?? analysis.timestamp),
+            ),
+            _Detail(label: 'Paciente', value: _available(analysis.patientName)),
+            _Detail(
+              label: 'Código clínico',
+              value: _available(analysis.patientId),
+            ),
+            _Detail(
+              label: 'Sitio de la lesión',
+              value: _available(analysis.lesionSite),
+            ),
+            _Detail(
+              label: 'Hallazgos de esta evaluación',
+              value: _available(analysis.clinicalObservations),
+            ),
+            _Detail(label: 'Profesional', value: _professional(analysis)),
+            _Detail(
+              label: 'Código profesional',
+              value: _available(
+                analysis.professionalDoctorId ?? analysis.createdByDoctorId,
+              ),
+            ),
+            _Detail(
+              label: 'Salida del modelo',
+              value: _predictionLabel(analysis.prediction),
+            ),
+            _Detail(
+              label: 'Confianza del clasificador',
+              value:
+                  '${(analysis.confidence.clamp(0, 1) * 100).toStringAsFixed(1)}%. No expresa diagnóstico ni probabilidad de cáncer.',
+            ),
+            _Detail(
+              label: 'Versión del modelo',
+              value: _available(analysis.modelVersion),
+            ),
+            if (analysis.priority case final priority?) ...[
+              const Divider(height: 28),
+              _Detail(
+                label: 'Prioridad clínica orientativa',
+                value: localizedPriorityStatus(priority.priorityCode).label,
+              ),
+              _Detail(
+                label: 'Motivos registrados',
+                value: priority.reasons.isEmpty
+                    ? 'No disponibles'
+                    : priority.reasons.join('\n'),
+              ),
+              _Detail(
+                label: 'Proveniencia de prioridad',
+                value:
+                    'Reglas ${priority.rulesetVersion}; motor ${priority.engineVersion}; resultado histórico no recalculado.',
+              ),
+            ],
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                OutlinedButton.icon(
+                  key: const Key('openHistoryPatient'),
+                  onPressed: analysis.patientRecordId == null
+                      ? null
+                      : () {
+                          Navigator.pop(sheetContext);
+                          _openPatient(analysis);
                         },
-                      );
-                    },
-                  ),
+                  icon: const Icon(Icons.person_outline),
+                  label: const Text('Abrir paciente'),
+                ),
+                OutlinedButton.icon(
+                  key: const Key('openHistoryLesion'),
+                  onPressed:
+                      analysis.patientRecordId == null ||
+                          analysis.lesionId == null
+                      ? null
+                      : () {
+                          Navigator.pop(sheetContext);
+                          _openLesion(analysis);
+                        },
+                  icon: const Icon(Icons.adjust),
+                  label: const Text('Abrir lesión'),
                 ),
               ],
             ),
-          ),
-          Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final isCompact = constraints.maxWidth < 720;
+            const SizedBox(height: 8),
+            FilledButton(
+              onPressed: () => Navigator.pop(sheetContext),
+              child: const Text('Cerrar'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-                return Builder(
-                  builder: (context) {
-                    final viewModel = ref.watch(historyViewModelProvider);
-                    if (viewModel.isLoading) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-
-                    if (viewModel.error != null) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(
-                              Icons.error_outline,
-                              size: 48,
-                              color: AppColors.onSurfaceVariant,
-                            ),
-                            const SizedBox(height: 16),
-                            const Text(
-                              'No se pudo cargar el historial',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: AppColors.onSurfaceVariant,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              viewModel.error!,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: AppColors.onSurfaceVariant,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            ElevatedButton.icon(
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(historyViewModelProvider);
+    final notifier = ref.read(historyViewModelProvider.notifier);
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: Column(
+        children: [
+          Material(
+            color: AppColors.background,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    key: const Key('historySearch'),
+                    controller: _searchController,
+                    onChanged: notifier.setSearchQuery,
+                    decoration: InputDecoration(
+                      labelText: 'Buscar historial',
+                      hintText: 'Paciente, código, lesión o profesional',
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: _searchController.text.isEmpty
+                          ? null
+                          : IconButton(
+                              tooltip: 'Limpiar búsqueda',
                               onPressed: () {
-                                ref
-                                    .read(historyViewModelProvider.notifier)
-                                    .fetchHistory();
+                                _searchController.clear();
+                                notifier.setSearchQuery('');
+                                setState(() {});
                               },
-                              icon: const Icon(Icons.refresh),
-                              label: const Text('Reintentar'),
+                              icon: const Icon(Icons.clear),
                             ),
-                          ],
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _Choice(
+                          label: 'Todos los modelos',
+                          selected: state.criteria.modelLabel == null,
+                          onTap: () => notifier.setModelLabel(null),
                         ),
-                      );
-                    }
-
-                    final history = viewModel.history;
-
-                    if (history.isEmpty) {
-                      final hasNoMatches =
-                          viewModel.hasAnyHistory &&
-                          viewModel.hasActiveSearchOrFilter;
-
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              hasNoMatches ? Icons.search_off : Icons.history,
-                              size: 64,
-                              color: AppColors.surfaceContainerHighest,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              hasNoMatches
-                                  ? 'No se encontraron resultados'
-                                  : 'No hay análisis registrados',
-                              style: const TextStyle(
-                                fontSize: 18,
-                                color: AppColors.onSurfaceVariant,
+                        _Choice(
+                          label: 'Patrón benigno',
+                          selected: state.criteria.modelLabel == 'benign',
+                          onTap: () => notifier.setModelLabel('benign'),
+                        ),
+                        _Choice(
+                          label: 'Patrón maligno',
+                          selected: state.criteria.modelLabel == 'malignant',
+                          onTap: () => notifier.setModelLabel('malignant'),
+                        ),
+                        if (state.priorityFilterEnabled)
+                          PopupMenuButton<String?>(
+                            key: const Key('historyPriorityFilter'),
+                            tooltip: 'Filtrar prioridad clínica',
+                            onSelected: notifier.setPriorityCode,
+                            itemBuilder: (_) => const [
+                              PopupMenuItem(
+                                value: null,
+                                child: Text('Cualquier prioridad'),
+                              ),
+                              PopupMenuItem(
+                                value: 'incomplete',
+                                child: Text('Incompleta'),
+                              ),
+                              PopupMenuItem(
+                                value: 'standard',
+                                child: Text('Estándar'),
+                              ),
+                              PopupMenuItem(
+                                value: 'prompt',
+                                child: Text('Pronta'),
+                              ),
+                              PopupMenuItem(
+                                value: 'urgent',
+                                child: Text('Urgente'),
+                              ),
+                              PopupMenuItem(
+                                value: 'emergency',
+                                child: Text('Emergencia'),
+                              ),
+                            ],
+                            child: Chip(
+                              avatar: const Icon(Icons.flag_outlined, size: 18),
+                              label: Text(
+                                state.criteria.priorityCode == null
+                                    ? 'Prioridad'
+                                    : localizedPriorityStatus(
+                                        state.criteria.priorityCode!,
+                                      ).label,
                               ),
                             ),
-                            const SizedBox(height: 8),
-                            Text(
-                              hasNoMatches
-                                  ? 'Pruebe con otra búsqueda o cambie los filtros activos.'
-                                  : 'Los análisis realizados aparecerán aquí',
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: AppColors.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-
-                    if (isCompact) {
-                      return ListView.separated(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: history.length,
-                        separatorBuilder: (context, index) =>
-                            const SizedBox(height: 12),
-                        itemBuilder: (context, index) {
-                          return HistoryCard(
-                            analysis: history[index],
-                            onTap: () => _showAnalysisDetail(history[index]),
-                          );
-                        },
-                      );
-                    }
-
-                    return GridView.builder(
-                      padding: const EdgeInsets.all(16),
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            mainAxisSpacing: 12,
-                            crossAxisSpacing: 12,
-                            childAspectRatio: 1.9,
                           ),
-                      itemCount: history.length,
-                      itemBuilder: (context, index) {
-                        return HistoryCard(
-                          analysis: history[index],
-                          onTap: () => _showAnalysisDetail(history[index]),
-                        );
-                      },
-                    );
-                  },
-                );
-              },
+                        const SizedBox(width: 8),
+                        ActionChip(
+                          key: const Key('historyDateFilter'),
+                          avatar: const Icon(
+                            Icons.date_range_outlined,
+                            size: 18,
+                          ),
+                          label: Text(
+                            state.criteria.dateFrom == null
+                                ? 'Fechas'
+                                : _dateSummary(state.criteria),
+                          ),
+                          onPressed: _pickDates,
+                        ),
+                        const SizedBox(width: 8),
+                        PopupMenuButton<(HistorySort, SortDirection)>(
+                          key: const Key('historySort'),
+                          tooltip: 'Ordenar historial',
+                          onSelected: (value) =>
+                              notifier.setSort(value.$1, value.$2),
+                          itemBuilder: (_) => const [
+                            PopupMenuItem(
+                              value: (
+                                HistorySort.evaluatedAt,
+                                SortDirection.descending,
+                              ),
+                              child: Text('Más recientes primero'),
+                            ),
+                            PopupMenuItem(
+                              value: (
+                                HistorySort.evaluatedAt,
+                                SortDirection.ascending,
+                              ),
+                              child: Text('Más antiguos primero'),
+                            ),
+                            PopupMenuItem(
+                              value: (
+                                HistorySort.patientName,
+                                SortDirection.ascending,
+                              ),
+                              child: Text('Paciente A-Z'),
+                            ),
+                            PopupMenuItem(
+                              value: (
+                                HistorySort.confidence,
+                                SortDirection.descending,
+                              ),
+                              child: Text('Mayor confianza primero'),
+                            ),
+                            PopupMenuItem(
+                              value: (
+                                HistorySort.lesionSite,
+                                SortDirection.ascending,
+                              ),
+                              child: Text('Sitio de lesión A-Z'),
+                            ),
+                          ],
+                          child: const Chip(
+                            avatar: Icon(Icons.sort, size: 18),
+                            label: Text('Ordenar'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (state.criteria.hasFilters) ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            _filterSummary(state.criteria),
+                            key: const Key('historyFilterSummary'),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ),
+                        TextButton(
+                          key: const Key('clearHistoryFilters'),
+                          onPressed: () {
+                            _searchController.clear();
+                            notifier.clearFilters();
+                          },
+                          child: const Text('Limpiar'),
+                        ),
+                      ],
+                    ),
+                  ],
+                  if (state.total > 0)
+                    Text(
+                      '${state.total} evaluaciones en el centro activo',
+                      key: const Key('historyTotal'),
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                ],
+              ),
             ),
           ),
+          Expanded(child: _body(state, notifier)),
         ],
+      ),
+    );
+  }
+
+  Widget _body(HistoryState state, HistoryViewModel notifier) {
+    if (state.isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(key: Key('historyLoading')),
+      );
+    }
+    if (state.error != null && state.items.isEmpty) {
+      return _Message(
+        icon: Icons.cloud_off_outlined,
+        title: 'No se pudo cargar el historial',
+        detail: state.error!,
+        action: TextButton.icon(
+          key: const Key('retryHistory'),
+          onPressed: notifier.refresh,
+          icon: const Icon(Icons.refresh),
+          label: const Text('Reintentar'),
+        ),
+      );
+    }
+    if (state.items.isEmpty) {
+      return _Message(
+        icon: state.criteria.hasFilters ? Icons.search_off : Icons.history,
+        title: state.criteria.hasFilters
+            ? 'No hay coincidencias'
+            : 'No hay evaluaciones registradas',
+        detail: state.criteria.hasFilters
+            ? 'Cambie o limpie los filtros para ampliar la búsqueda.'
+            : 'Las evaluaciones guardadas aparecerán aquí.',
+        action: state.criteria.hasFilters
+            ? TextButton(
+                onPressed: notifier.clearFilters,
+                child: const Text('Limpiar filtros'),
+              )
+            : null,
+      );
+    }
+    return RefreshIndicator(
+      onRefresh: notifier.refresh,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final columns = constraints.maxWidth >= 900
+              ? 3
+              : constraints.maxWidth >= 620
+              ? 2
+              : 1;
+          return CustomScrollView(
+            key: const Key('historyResults'),
+            slivers: [
+              if (state.isRefreshing)
+                const SliverToBoxAdapter(child: LinearProgressIndicator()),
+              SliverPadding(
+                padding: const EdgeInsets.all(16),
+                sliver: SliverGrid.builder(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: columns,
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
+                    mainAxisExtent: 178,
+                  ),
+                  itemCount: state.items.length,
+                  itemBuilder: (_, index) => HistoryCard(
+                    analysis: state.items[index],
+                    onTap: () => _showDetail(state.items[index]),
+                  ),
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                  child: state.hasNext
+                      ? OutlinedButton.icon(
+                          key: const Key('loadMoreHistory'),
+                          onPressed: state.isAppending
+                              ? null
+                              : notifier.loadMore,
+                          icon: state.isAppending
+                              ? const SizedBox.square(
+                                  dimension: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(Icons.expand_more),
+                          label: Text(
+                            state.isAppending ? 'Cargando...' : 'Cargar más',
+                          ),
+                        )
+                      : const Center(child: Text('Fin de los resultados')),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 }
 
-class _DetailRow extends StatelessWidget {
+class _Choice extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  const _Choice({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(right: 8),
+    child: FilterChip(
+      label: Text(label),
+      selected: selected,
+      onSelected: (_) => onTap(),
+    ),
+  );
+}
+
+class _Detail extends StatelessWidget {
   final String label;
   final String value;
-
-  const _DetailRow({required this.label, required this.value});
+  const _Detail({required this.label, required this.value});
 
   @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.4,
-              color: AppColors.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: const TextStyle(fontSize: 16, color: AppColors.onSurface),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 14),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: Theme.of(context).textTheme.labelMedium),
+        const SizedBox(height: 3),
+        SelectableText(value),
+      ],
+    ),
+  );
 }
 
-class _HistoryImageFallback extends StatelessWidget {
-  final Color accentColor;
-
-  const _HistoryImageFallback({required this.accentColor});
+class _Message extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String detail;
+  final Widget? action;
+  const _Message({
+    required this.icon,
+    required this.title,
+    required this.detail,
+    this.action,
+  });
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 24),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.85),
-        borderRadius: BorderRadius.circular(16),
-      ),
+  Widget build(BuildContext context) => Center(
+    child: SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.all(32),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.image_not_supported_outlined,
-            color: accentColor,
-            size: 30,
+          Icon(icon, size: 52, color: AppColors.onSurfaceVariant),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.titleMedium,
           ),
-          const SizedBox(height: 8),
-          const Text(
-            'Imagen no disponible',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: AppColors.onSurfaceVariant,
-            ),
-          ),
+          const SizedBox(height: 6),
+          Text(detail, textAlign: TextAlign.center),
+          ?action,
         ],
       ),
-    );
-  }
+    ),
+  );
+}
+
+String _available(String? value) =>
+    value?.trim().isNotEmpty == true ? value!.trim() : 'No disponible';
+
+String _predictionLabel(String value) {
+  final status = localizedModelOutput(value);
+  return status.tone == StatusTone.neutral
+      ? 'Salida no disponible'
+      : 'Compatible con ${status.label.toLowerCase()}';
+}
+
+String _professional(Analysis analysis) {
+  final name = analysis.professionalName ?? analysis.createdByName;
+  final context = [
+    analysis.professionalProfession,
+    analysis.professionalSpecialty,
+  ].where((value) => value?.trim().isNotEmpty == true).join(' · ');
+  return context.isEmpty ? _available(name) : '${_available(name)}\n$context';
+}
+
+String _date(DateTime value) {
+  final local = value.toLocal();
+  return '${local.day.toString().padLeft(2, '0')}/${local.month.toString().padLeft(2, '0')}/${local.year} ${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
+}
+
+String _dateSummary(HistoryCriteria criteria) =>
+    '${_date(criteria.dateFrom!).split(' ').first} - ${_date(criteria.dateTo ?? criteria.dateFrom!).split(' ').first}';
+
+String _filterSummary(HistoryCriteria criteria) {
+  final values = <String>[
+    if (criteria.search.isNotEmpty) 'Búsqueda: “${criteria.search}”',
+    if (criteria.modelLabel != null)
+      'Modelo: ${_predictionLabel(criteria.modelLabel!)}',
+    if (criteria.priorityCode != null)
+      'Prioridad: ${localizedPriorityStatus(criteria.priorityCode!).label}',
+    if (criteria.dateFrom != null) 'Fechas: ${_dateSummary(criteria)}',
+  ];
+  return values.join(' · ');
 }

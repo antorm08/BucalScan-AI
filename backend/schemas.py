@@ -1,5 +1,5 @@
 from pydantic import BaseModel, ConfigDict
-from typing import Literal, Optional
+from typing import Generic, Literal, Optional, TypeVar
 from datetime import date, datetime
 
 class PredictionResponse(BaseModel):
@@ -12,6 +12,7 @@ class PredictionResponse(BaseModel):
     model_version: Optional[str] = None
     evaluation_id: Optional[int] = None
     notice: str = "AI decision support only; this result is not a diagnosis."
+    priority: Optional["ClinicalPriorityResponse"] = None
 
 class UserCreate(BaseModel):
     full_name: str
@@ -69,6 +70,15 @@ class AnalysisHistory(BaseModel):
     evaluation_id: Optional[int] = None
     patient_record_id: Optional[int] = None
     lesion_id: Optional[int] = None
+    lesion_site: Optional[str] = None
+    evaluated_at: Optional[datetime] = None
+    clinical_observations: Optional[str] = None
+    professional_id: Optional[int] = None
+    professional_name: Optional[str] = None
+    professional_doctor_id: Optional[str] = None
+    professional_profession: Optional[str] = None
+    professional_specialty: Optional[str] = None
+    priority: Optional["ClinicalPriorityResponse"] = None
 
 
 class DailySummary(BaseModel):
@@ -91,6 +101,7 @@ class UserAdminResponse(BaseModel):
     role: str
     profession: Optional[str] = None
     specialty: Optional[str] = None
+    memberships: list["AdminMembershipDetailResponse"] = []
 
 
 class UserStatusUpdate(BaseModel):
@@ -110,9 +121,12 @@ class AdminRequesterResponse(BaseModel):
     full_name: str
     doctor_id: str
     email: str
+    medical_center: Optional[str] = None
+    role: str
     profession: Optional[str] = None
     specialty: Optional[str] = None
     status: str
+    created_at: Optional[datetime] = None
 
 
 class AdminWorkspaceRequestResponse(BaseModel):
@@ -122,7 +136,13 @@ class AdminWorkspaceRequestResponse(BaseModel):
     status: str
     city: Optional[str] = None
     address: Optional[str] = None
+    tax_identifier: Optional[str] = None
+    telephone: Optional[str] = None
+    institutional_email: Optional[str] = None
     created_at: datetime
+    updated_at: Optional[datetime] = None
+    approved_at: Optional[datetime] = None
+    approved_by: Optional[AdminRequesterResponse] = None
     requester: Optional[AdminRequesterResponse] = None
 
 
@@ -168,6 +188,13 @@ class WorkspaceResponse(BaseModel):
     status: str
     city: Optional[str] = None
     address: Optional[str] = None
+    tax_identifier: Optional[str] = None
+    telephone: Optional[str] = None
+    institutional_email: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    approved_at: Optional[datetime] = None
+    approved_by_id: Optional[int] = None
     potential_duplicate: bool = False
 
 
@@ -176,6 +203,9 @@ class AdminMembershipRequestResponse(BaseModel):
     status: str
     role: str
     created_at: datetime
+    updated_at: Optional[datetime] = None
+    approved_at: Optional[datetime] = None
+    approved_by: Optional[AdminRequesterResponse] = None
     requester: AdminRequesterResponse
     workspace: WorkspaceResponse
 
@@ -188,6 +218,13 @@ class MembershipResponse(BaseModel):
     role: str
     status: str
     workspace: Optional[WorkspaceResponse] = None
+
+
+class AdminMembershipDetailResponse(MembershipResponse):
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    approved_at: Optional[datetime] = None
+    approved_by_id: Optional[int] = None
 
 
 class MembershipUpdate(BaseModel):
@@ -207,6 +244,15 @@ class PatientCreate(BaseModel):
     allow_potential_duplicate: bool = False
 
 
+class ClinicalCreatorResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    full_name: str
+    doctor_id: str
+    profession: Optional[str] = None
+    specialty: Optional[str] = None
+
+
 class PatientResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
@@ -220,6 +266,7 @@ class PatientResponse(BaseModel):
     email: Optional[str] = None
     notes: Optional[str] = None
     created_at: datetime
+    created_by: Optional[ClinicalCreatorResponse] = None
 
 
 class LesionCreate(BaseModel):
@@ -237,6 +284,8 @@ class LesionStatusUpdate(BaseModel):
 class LesionUpdate(BaseModel):
     status: Optional[Literal["active", "resolved", "monitoring"]] = None
     clinical_notes: Optional[str] = None
+    observed_at: Optional[date] = None
+    estimated_duration: Optional[str] = None
 
 
 class LesionResponse(BaseModel):
@@ -250,6 +299,7 @@ class LesionResponse(BaseModel):
     status: str
     clinical_notes: Optional[str] = None
     created_at: datetime
+    created_by: Optional[ClinicalCreatorResponse] = None
 
 
 class EvaluationProfessionalResponse(BaseModel):
@@ -289,8 +339,78 @@ class LesionEvaluationResponse(BaseModel):
     image: Optional[LesionImageResponse] = None
     prediction: Optional[EvaluationPredictionResponse] = None
     consent_attested_at: Optional[datetime] = None
+    priority: Optional["ClinicalPriorityResponse"] = None
 
 
 class LesionDetailResponse(BaseModel):
     lesion: LesionResponse
     evaluations: list[LesionEvaluationResponse]
+
+
+T = TypeVar("T")
+
+
+class PaginatedResponse(BaseModel, Generic[T]):
+    items: list[T]
+    page: int
+    page_size: int
+    total: int
+    has_next: bool
+
+
+class HistoryPage(PaginatedResponse[AnalysisHistory]):
+    priority_filter_enabled: bool
+
+
+TriState = Literal["true", "false", "unknown"]
+
+
+class ClinicalAssessmentInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    ulceration: Optional[TriState] = None
+    induration_or_fixation: Optional[TriState] = None
+    unexplained_bleeding: Optional[TriState] = None
+    red_or_white_change: Optional[TriState] = None
+    rapid_growth: Optional[TriState] = None
+    pain: Optional[TriState] = None
+    dysphagia: Optional[TriState] = None
+    altered_sensation: Optional[TriState] = None
+    functional_limitation: Optional[TriState] = None
+    persistence_over_two_weeks: Optional[TriState] = None
+    tobacco_exposure: Optional[TriState] = None
+    heavy_alcohol_exposure: Optional[TriState] = None
+    prior_oral_malignancy: Optional[TriState] = None
+    immunosuppression: Optional[TriState] = None
+    airway_compromise: Optional[TriState] = None
+    uncontrolled_bleeding: Optional[TriState] = None
+    inability_to_swallow: Optional[TriState] = None
+    rapidly_progressing_face_neck_swelling: Optional[TriState] = None
+
+
+class ClinicalPriorityResponse(BaseModel):
+    id: Optional[int] = None
+    assessment_id: Optional[int] = None
+    status: Literal["available", "unavailable"] = "available"
+    priority_code: Literal["incomplete", "standard", "prompt", "urgent", "emergency"]
+    reason_codes: list[str]
+    rendered_reasons: list[str]
+    ruleset_id: str
+    ruleset_version: str
+    engine_version: str
+    evaluated_at: Optional[datetime] = None
+    completion_status: Literal["complete", "incomplete"]
+
+
+class ClinicalPriorityCapability(BaseModel):
+    mode: Literal["disabled", "academic", "enabled"]
+    available: bool
+    active_ruleset: Optional[str] = None
+    assessment_schema_version: str
+    engine_version: str
+    notice: str
+
+
+class AssessmentCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    evaluation_id: int
+    assessment: ClinicalAssessmentInput

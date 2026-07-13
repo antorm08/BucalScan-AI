@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bucalscan_ai/features/auth/di/auth_providers.dart';
 import 'package:bucalscan_ai/features/auth/domain/entities/auth_session.dart';
 import 'package:bucalscan_ai/features/auth/domain/entities/auth_user.dart';
@@ -173,7 +175,7 @@ void main() {
     );
 
     test(
-      'usa el usuario en caché cuando falla por un error no relacionado a auth',
+      'rechaza privilegios en caché cuando falla la revalidación remota',
       () async {
         when(mockHasSessionTokenUseCase.call()).thenAnswer((_) async => true);
         when(
@@ -186,8 +188,10 @@ void main() {
             .tryAutoLogin();
 
         final state = container.read(authViewModelProvider);
-        expect(result, true);
-        expect(state.currentUser?.email, 'doctor@hospital.org');
+        expect(result, false);
+        expect(state.currentUser, isNull);
+        expect(state.error, isNotNull);
+        verifyNever(mockGetCachedUserUseCase.call());
         verifyNever(mockLogoutUseCase.call());
       },
     );
@@ -337,5 +341,29 @@ void main() {
 
     expect(success, false);
     expect(container.read(authViewModelProvider).error, isNotNull);
+  });
+
+  test('late profile response cannot restore a logged-out session', () async {
+    final completion = Completer<UserProfile>();
+    when(mockUpdateProfileUseCase.call(fullName: 'Nombre tardío')).thenAnswer(
+      (_) => completion.future,
+    );
+    when(mockLogoutUseCase.call()).thenAnswer((_) async {});
+    final controller = container.read(authViewModelProvider.notifier);
+
+    final update = controller.updateProfile(fullName: 'Nombre tardío');
+    await controller.logout();
+    completion.complete(
+      const UserProfile(
+        id: 1,
+        fullName: 'Nombre tardío',
+        doctorId: 'DOC-001',
+        email: 'doctor@hospital.org',
+        role: 'doctor',
+      ),
+    );
+
+    expect(await update, isFalse);
+    expect(container.read(authViewModelProvider).currentUser, isNull);
   });
 }

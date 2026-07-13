@@ -15,6 +15,10 @@ final adminRepositoryProvider = Provider<AdminRepository>((ref) {
   return AdminRepositoryImpl(ref.watch(adminRemoteDataSourceProvider));
 });
 
+final adminSummaryProvider = FutureProvider.autoDispose((ref) {
+  return ref.watch(adminRepositoryProvider).getSummary();
+});
+
 final getAdminUsersUseCaseProvider = Provider<GetAdminUsersUseCase>((ref) {
   return GetAdminUsersUseCase(ref.watch(adminRepositoryProvider));
 });

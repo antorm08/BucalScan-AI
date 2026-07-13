@@ -9,8 +9,16 @@ class AuthState {
   final AuthUser? currentUser;
   final bool isLoading;
   final String? error;
+  final int generation;
+  final SessionEndReason? sessionEndReason;
 
-  const AuthState({this.currentUser, this.isLoading = false, this.error});
+  const AuthState({
+    this.currentUser,
+    this.isLoading = false,
+    this.error,
+    this.generation = 0,
+    this.sessionEndReason,
+  });
 
   bool get isAuthenticated => currentUser != null;
 
@@ -20,11 +28,18 @@ class AuthState {
     String? error,
     bool clearUser = false,
     bool clearError = false,
+    int? generation,
+    SessionEndReason? sessionEndReason,
+    bool clearSessionEndReason = false,
   }) {
     return AuthState(
       currentUser: clearUser ? null : currentUser ?? this.currentUser,
       isLoading: isLoading ?? this.isLoading,
       error: clearError ? null : error ?? this.error,
+      generation: generation ?? this.generation,
+      sessionEndReason: clearSessionEndReason
+          ? null
+          : sessionEndReason ?? this.sessionEndReason,
     );
   }
 }
@@ -32,9 +47,14 @@ class AuthState {
 class AuthViewModel extends Notifier<AuthState> {
   @override
   AuthState build() {
-    final sessionSub = SessionEvents().onSessionExpired.listen((_) {
+    final sessionSub = SessionEvents().onSessionExpired.listen((reason) {
       ref.resetUserSensitiveState();
-      state = state.copyWith(clearUser: true, clearError: true);
+      state = state.copyWith(
+        clearUser: true,
+        clearError: true,
+        generation: state.generation + 1,
+        sessionEndReason: reason,
+      );
     });
     ref.onDispose(sessionSub.cancel);
 
@@ -50,7 +70,10 @@ class AuthViewModel extends Notifier<AuthState> {
         password: password,
       );
       ref.resetUserSensitiveState();
-      state = AuthState(currentUser: session.user);
+      state = AuthState(
+        currentUser: session.user,
+        generation: state.generation + 1,
+      );
       return true;
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
@@ -69,21 +92,14 @@ class AuthViewModel extends Notifier<AuthState> {
     try {
       final user = await ref.read(getCurrentUserUseCaseProvider)();
       ref.resetUserSensitiveState();
-      state = AuthState(currentUser: user);
+      state = AuthState(currentUser: user, generation: state.generation + 1);
       return true;
     } catch (e) {
       final message = e.toString();
-      final cachedUser = await ref.read(getCachedUserUseCaseProvider)();
-
       if (_isAuthenticationFailure(message)) {
         await ref.read(logoutUseCaseProvider)();
         state = AuthState(error: message);
         return false;
-      }
-
-      if (cachedUser != null) {
-        state = AuthState(currentUser: cachedUser);
-        return true;
       }
 
       state = state.copyWith(isLoading: false, error: message);
@@ -129,13 +145,14 @@ class AuthViewModel extends Notifier<AuthState> {
   }
 
   Future<void> logout() async {
-    state = state.copyWith(clearUser: true, clearError: true);
+    state = state.copyWith(
+      clearUser: true,
+      clearError: true,
+      clearSessionEndReason: true,
+      generation: state.generation + 1,
+    );
     ref.resetUserSensitiveState();
-    try {
-      await ref.read(logoutUseCaseProvider)();
-    } finally {
-      SessionEvents().emitSessionExpired();
-    }
+    await ref.read(logoutUseCaseProvider)();
   }
 
   Future<bool> updateProfile({
@@ -145,6 +162,7 @@ class AuthViewModel extends Notifier<AuthState> {
     String? profession,
     String? specialty,
   }) async {
+    final generation = state.generation;
     state = state.copyWith(isLoading: true, clearError: true);
 
     try {
@@ -155,6 +173,7 @@ class AuthViewModel extends Notifier<AuthState> {
         profession: profession,
         specialty: specialty,
       );
+      if (generation != state.generation) return false;
 
       state = AuthState(
         currentUser: AuthUser(
@@ -169,9 +188,11 @@ class AuthViewModel extends Notifier<AuthState> {
           profession: profile.profession,
           specialty: profile.specialty,
         ),
+        generation: generation,
       );
       return true;
     } catch (e) {
+      if (generation != state.generation) return false;
       state = state.copyWith(isLoading: false, error: e.toString());
       return false;
     }

@@ -1,9 +1,7 @@
 import 'dart:async';
 
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
-import 'package:bucalscan_ai/core/session/user_sensitive_state.dart';
 import 'package:bucalscan_ai/features/auth/presentation/viewmodels/auth_viewmodel.dart';
-import 'package:bucalscan_ai/features/auth/presentation/views/login_view.dart';
 import 'package:bucalscan_ai/features/clinical/domain/entities/clinical_entities.dart';
 import 'package:bucalscan_ai/features/clinical/presentation/viewmodels/clinical_controller.dart';
 import 'package:flutter/material.dart';
@@ -71,17 +69,9 @@ class _WorkspaceGateViewState extends ConsumerState<WorkspaceGateView>
   Future<void> _logout() async {
     if (_loggingOut) return;
     setState(() => _loggingOut = true);
-    ref.resetUserSensitiveState();
     await ref.read(authViewModelProvider.notifier).logout();
     if (!mounted) return;
-    if (widget.onLoggedOut != null) {
-      widget.onLoggedOut!();
-      return;
-    }
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const LoginView()),
-      (_) => false,
-    );
+    widget.onLoggedOut?.call();
   }
 
   @override

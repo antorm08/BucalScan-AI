@@ -13,6 +13,7 @@ import 'package:bucalscan_ai/features/dashboard/domain/repositories/dashboard_re
 import 'package:bucalscan_ai/features/dashboard/presentation/viewmodels/summary_viewmodel.dart';
 import 'package:bucalscan_ai/features/history/di/history_providers.dart';
 import 'package:bucalscan_ai/features/history/domain/entities/analysis.dart';
+import 'package:bucalscan_ai/features/history/domain/entities/history_query.dart';
 import 'package:bucalscan_ai/features/history/domain/repositories/history_repository.dart';
 import 'package:bucalscan_ai/features/history/presentation/viewmodels/history_viewmodel.dart';
 import 'package:bucalscan_ai/features/prediction/di/prediction_providers.dart';
@@ -70,7 +71,9 @@ void main() {
     addTearDown(container.dispose);
 
     await container.read(historyViewModelProvider.notifier).fetchHistory();
-    container.read(historyViewModelProvider.notifier).setFilter('Maligna');
+    await container
+        .read(historyViewModelProvider.notifier)
+        .setModelLabel('malignant');
 
     final state = container.read(historyViewModelProvider);
     expect(state.history, hasLength(1));
@@ -188,6 +191,28 @@ class _FakeHistoryRepository implements HistoryRepository {
         timestamp: DateTime(2026, 1, 1, 10),
       ),
     ];
+  }
+
+  @override
+  Future<HistoryPage> getHistoryPage(
+    HistoryCriteria criteria, {
+    required int page,
+  }) async {
+    final items = (await getHistory())
+        .where(
+          (item) =>
+              criteria.modelLabel == null ||
+              item.prediction == criteria.modelLabel,
+        )
+        .toList();
+    return HistoryPage(
+      items: items,
+      page: page,
+      pageSize: 25,
+      total: items.length,
+      hasNext: false,
+      priorityFilterEnabled: true,
+    );
   }
 }
 

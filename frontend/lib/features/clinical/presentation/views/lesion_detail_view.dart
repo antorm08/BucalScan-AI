@@ -1,4 +1,5 @@
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
+import 'package:bucalscan_ai/core/presentation/localized_status.dart';
 import 'package:bucalscan_ai/features/clinical/domain/entities/clinical_entities.dart';
 import 'package:bucalscan_ai/features/clinical/presentation/viewmodels/patient_follow_up_controller.dart';
 import 'package:flutter/material.dart';
@@ -34,33 +35,70 @@ class _LesionDetailViewState extends ConsumerState<LesionDetailView> {
   Future<void> _edit(LesionDetail detail) async {
     var status = detail.lesion.status;
     final notes = TextEditingController(text: detail.lesion.notes);
+    final duration = TextEditingController(
+      text: detail.lesion.estimatedDuration,
+    );
+    var observedAt = detail.lesion.observedAt;
     final submit = await showDialog<bool>(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           title: const Text('Estado y notas actuales'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              DropdownButtonFormField<String>(
-                initialValue: status,
-                items: const [
-                  DropdownMenuItem(value: 'active', child: Text('Activa')),
-                  DropdownMenuItem(
-                    value: 'monitoring',
-                    child: Text('En seguimiento'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DropdownButtonFormField<String>(
+                  initialValue: status,
+                  items: const [
+                    DropdownMenuItem(value: 'active', child: Text('Activa')),
+                    DropdownMenuItem(
+                      value: 'monitoring',
+                      child: Text('En seguimiento'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'resolved',
+                      child: Text('Resuelta'),
+                    ),
+                  ],
+                  onChanged: (value) => setDialogState(() => status = value!),
+                  decoration: const InputDecoration(labelText: 'Estado'),
+                ),
+                TextField(
+                  controller: duration,
+                  decoration: const InputDecoration(
+                    labelText: 'Duración estimada',
+                    hintText: 'Ej.: cerca de 3 semanas',
                   ),
-                  DropdownMenuItem(value: 'resolved', child: Text('Resuelta')),
-                ],
-                onChanged: (value) => setDialogState(() => status = value!),
-                decoration: const InputDecoration(labelText: 'Estado'),
-              ),
-              TextField(
-                controller: notes,
-                maxLines: 4,
-                decoration: const InputDecoration(labelText: 'Notas clínicas'),
-              ),
-            ],
+                ),
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    final value = await showDatePicker(
+                      context: context,
+                      firstDate: DateTime(1900),
+                      lastDate: DateTime.now(),
+                      initialDate: observedAt ?? DateTime.now(),
+                    );
+                    if (value != null) setDialogState(() => observedAt = value);
+                  },
+                  icon: const Icon(Icons.calendar_today_outlined),
+                  label: Text(
+                    observedAt == null
+                        ? 'Fecha de primera observación'
+                        : 'Observada el ${observedAt!.day}/${observedAt!.month}/${observedAt!.year}',
+                  ),
+                ),
+                TextField(
+                  controller: notes,
+                  maxLines: 4,
+                  decoration: const InputDecoration(
+                    labelText: 'Notas longitudinales de la lesión',
+                    helperText:
+                        'Resumen de evolución, separado de hallazgos puntuales.',
+                  ),
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -81,6 +119,10 @@ class _LesionDetailViewState extends ConsumerState<LesionDetailView> {
           .updateLesion(
             status: status,
             notes: notes.text.trim().isEmpty ? null : notes.text.trim(),
+            observedAt: observedAt,
+            estimatedDuration: duration.text.trim().isEmpty
+                ? null
+                : duration.text.trim(),
           );
     }
   }
@@ -127,6 +169,10 @@ class _LesionDetailViewState extends ConsumerState<LesionDetailView> {
                         ),
                         if (detail.lesion.notes != null) ...[
                           const SizedBox(height: 10),
+                          const Text(
+                            'Notas longitudinales',
+                            style: TextStyle(fontWeight: FontWeight.w700),
+                          ),
                           Text(detail.lesion.notes!),
                         ],
                         const SizedBox(height: 12),
@@ -179,11 +225,7 @@ class _LesionDetailViewState extends ConsumerState<LesionDetailView> {
   }
 }
 
-String _label(String status) => switch (status) {
-  'resolved' => 'Resuelta',
-  'monitoring' => 'En seguimiento',
-  _ => 'Activa',
-};
+String _label(String status) => localizedLesionStatus(status).label;
 
 class _EvaluationCard extends StatelessWidget {
   final LesionEvaluation evaluation;
@@ -227,7 +269,7 @@ class _EvaluationCard extends StatelessWidget {
             if (evaluation.clinicalObservations != null) ...[
               const SizedBox(height: 12),
               const Text(
-                'Observación clínica',
+                'Hallazgos de esta evaluación',
                 style: TextStyle(fontWeight: FontWeight.w700),
               ),
               Text(evaluation.clinicalObservations!),
@@ -235,11 +277,11 @@ class _EvaluationCard extends StatelessWidget {
             if (prediction != null) ...[
               const Divider(height: 24),
               Text(
-                'Apoyo del modelo: ${prediction.label} · ${(prediction.confidence * 100).toStringAsFixed(1)}%',
+                'Salida del modelo: ${_predictionLabel(prediction.label)} · confianza ${(prediction.confidence * 100).toStringAsFixed(1)}%',
                 style: const TextStyle(fontWeight: FontWeight.w700),
               ),
               Text(
-                'Benigna ${(prediction.probabilities['benign']! * 100).toStringAsFixed(1)}% · Maligna ${(prediction.probabilities['malignant']! * 100).toStringAsFixed(1)}%',
+                'La confianza describe la salida del clasificador; no es diagnóstico ni urgencia.',
               ),
               Text(
                 'Modelo ${prediction.modelVersion}${prediction.processingTimeMs == null ? '' : ' · ${prediction.processingTimeMs!.toStringAsFixed(0)} ms'}',
@@ -251,6 +293,29 @@ class _EvaluationCard extends StatelessWidget {
               const SizedBox(height: 6),
               const Text(
                 'Resultado de apoyo clínico; no constituye un diagnóstico.',
+                style: TextStyle(
+                  color: AppColors.onSurfaceVariant,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+            if (evaluation.priority case final priority?) ...[
+              const Divider(height: 24),
+              const Text(
+                'Prioridad clínica orientativa',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
+              Text(localizedPriorityStatus(priority.priorityCode).label),
+              ...priority.reasons.map(Text.new),
+              Text(
+                'Ruleset ${priority.rulesetVersion} · motor ${priority.engineVersion}',
+                style: const TextStyle(
+                  color: AppColors.onSurfaceVariant,
+                  fontSize: 12,
+                ),
+              ),
+              const Text(
+                'Apoyo no diagnóstico; no reemplaza el juicio profesional ni los servicios de emergencia.',
                 style: TextStyle(
                   color: AppColors.onSurfaceVariant,
                   fontSize: 12,
@@ -276,3 +341,10 @@ class _EvaluationCard extends StatelessWidget {
 
 String _format(DateTime date) =>
     '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+
+String _predictionLabel(String value) {
+  final status = localizedModelOutput(value);
+  return status.tone == StatusTone.neutral
+      ? status.label
+      : 'Compatible con ${status.label.toLowerCase()}';
+}

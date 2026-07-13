@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
+import 'package:bucalscan_ai/core/presentation/localized_status.dart';
 import 'package:bucalscan_ai/features/history/domain/entities/analysis.dart';
+import 'package:flutter/material.dart';
 
 class HistoryCard extends StatelessWidget {
   final Analysis analysis;
@@ -11,248 +12,135 @@ class HistoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final prediction = analysis.prediction.toLowerCase();
-    final hasImage =
-        analysis.imageUrl != null && analysis.imageUrl!.trim().isNotEmpty;
-    Color accentColor, badgeBg, badgeText, badgeIconColor;
-    IconData badgeIcon;
-
-    switch (prediction) {
-      case 'malignant':
-        accentColor = AppColors.error;
-        badgeBg = AppColors.errorContainer;
-        badgeText = AppColors.onErrorContainer;
-        badgeIconColor = AppColors.onErrorContainer;
-        badgeIcon = Icons.warning;
-        break;
-      default:
-        accentColor = const Color(0xFF4CAF50);
-        badgeBg = AppColors.benignBg;
-        badgeText = AppColors.benignText;
-        badgeIconColor = AppColors.benignText;
-        badgeIcon = Icons.check_circle;
-    }
-
-    final displayLabel = prediction == 'malignant' ? 'Maligno' : 'Benigno';
-    final authorLabel = _formatAuthor(analysis);
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.surfaceContainerLowest,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.surfaceContainerHigh),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 4,
-              offset: const Offset(0, 1),
-            ),
-          ],
-        ),
-        child: Stack(
-          children: [
-            Positioned(
-              left: 0,
-              top: 0,
-              bottom: 0,
-              width: 4,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: accentColor,
-                  borderRadius: const BorderRadius.horizontal(
-                    left: Radius.circular(12),
-                  ),
+    final style = switch (prediction) {
+      'malignant' => (
+        AppColors.errorContainer,
+        AppColors.onErrorContainer,
+        Icons.warning_amber_rounded,
+      ),
+      'benign' => (
+        AppColors.benignBg,
+        AppColors.benignText,
+        Icons.check_circle_outline,
+      ),
+      _ => (
+        AppColors.surfaceContainerHighest,
+        AppColors.onSurfaceVariant,
+        Icons.help_outline,
+      ),
+    };
+    return Semantics(
+      button: true,
+      label:
+          'Abrir evaluación de ${analysis.patientName ?? 'paciente no disponible'}, ${_predictionLabel(prediction)}',
+      child: Card(
+        clipBehavior: Clip.antiAlias,
+        margin: EdgeInsets.zero,
+        child: InkWell(
+          key: Key('historyCard-${analysis.id}'),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        _date(analysis.evaluatedAt ?? analysis.timestamp),
+                        style: Theme.of(context).textTheme.labelMedium,
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: style.$1,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(style.$3, size: 15, color: style.$2),
+                          const SizedBox(width: 4),
+                          Text(
+                            _predictionLabel(prediction),
+                            style: TextStyle(
+                              color: style.$2,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 64,
-                    height: 64,
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(8),
+                const SizedBox(height: 10),
+                Text(
+                  analysis.patientName ?? 'Paciente no disponible',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  [
+                        if (analysis.patientId?.trim().isNotEmpty == true)
+                          analysis.patientId!,
+                        if (analysis.lesionSite?.trim().isNotEmpty == true)
+                          analysis.lesionSite!,
+                      ].isEmpty
+                      ? 'Código y sitio no disponibles'
+                      : [
+                          if (analysis.patientId?.trim().isNotEmpty == true)
+                            analysis.patientId!,
+                          if (analysis.lesionSite?.trim().isNotEmpty == true)
+                            analysis.lesionSite!,
+                        ].join(' · '),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const Spacer(),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Confianza del clasificador ${(analysis.confidence.clamp(0, 1) * 100).toStringAsFixed(0)}%',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
                     ),
-                    clipBehavior: Clip.antiAlias,
-                    child: hasImage
-                        ? Image.network(
-                            analysis.imageUrl!,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Icon(
-                                Icons.image,
-                                color: AppColors.onSurfaceVariant.withValues(
-                                  alpha: 0.5,
-                                ),
-                                size: 28,
-                              );
-                            },
-                          )
-                        : Icon(
-                            Icons.image,
-                            color: AppColors.onSurfaceVariant.withValues(
-                              alpha: 0.5,
-                            ),
-                            size: 28,
-                          ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Flexible(
-                              child: Text(
-                                _formatDate(analysis.timestamp),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: 0.5,
-                                  color: AppColors.outline,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: badgeBg,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    badgeIcon,
-                                    size: 14,
-                                    color: badgeIconColor,
-                                  ),
-                                  const SizedBox(width: 2),
-                                  Text(
-                                    displayLabel,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      letterSpacing: 0.5,
-                                      color: badgeText,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          analysis.patientName ??
-                              (analysis.patientId != null
-                                  ? 'ID: ${analysis.patientId}'
-                                  : 'Paciente #ID-${analysis.id}'),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.onSurface,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Confianza: ${(analysis.confidence * 100).toStringAsFixed(0)}%',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.secondary,
-                          ),
-                        ),
-                        if (authorLabel != null) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            'Realizado por: $authorLabel',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: AppColors.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                        if (analysis.processingTimeMs != null) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            'Inferencia: ${_formatProcessingTime(analysis.processingTimeMs!)}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: AppColors.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+                    if (analysis.priority case final priority?)
+                      Text(
+                        localizedPriorityStatus(priority.priorityCode).label,
+                        style: Theme.of(context).textTheme.labelMedium,
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Profesional: ${analysis.professionalName ?? analysis.createdByName ?? 'No disponible'}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
   }
+}
 
-  String? _formatAuthor(Analysis analysis) {
-    final name = analysis.createdByName?.trim();
-    if (name != null && name.isNotEmpty) return name;
+String _predictionLabel(String value) => localizedModelOutput(value).label;
 
-    final doctorId = analysis.createdByDoctorId?.trim();
-    if (doctorId != null && doctorId.isNotEmpty) return doctorId;
-
-    final email = analysis.createdByEmail?.trim();
-    if (email != null && email.isNotEmpty) return email;
-
-    return null;
-  }
-
-  String _formatDate(DateTime date) {
-    final months = [
-      'Ene',
-      'Feb',
-      'Mar',
-      'Abr',
-      'May',
-      'Jun',
-      'Jul',
-      'Ago',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dic',
-    ];
-    final hour = date.hour.toString().padLeft(2, '0');
-    final minute = date.minute.toString().padLeft(2, '0');
-    return '${date.day} ${months[date.month - 1]}, ${date.year} · $hour:$minute';
-  }
-
-  String _formatProcessingTime(double milliseconds) {
-    if (milliseconds >= 1000) {
-      return '${(milliseconds / 1000).toStringAsFixed(2)} s';
-    }
-    return '${milliseconds.toStringAsFixed(1)} ms';
-  }
+String _date(DateTime value) {
+  final local = value.toLocal();
+  return '${local.day.toString().padLeft(2, '0')}/${local.month.toString().padLeft(2, '0')}/${local.year}';
 }

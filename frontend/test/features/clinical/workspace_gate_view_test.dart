@@ -54,7 +54,8 @@ class _FakeClinicalRepository implements ClinicalRepository {
   Future<OralLesion> createLesion({
     required String patientId,
     required String anatomicalSite,
-    required String temporalDescription,
+    DateTime? observedAt,
+    String? estimatedDuration,
     String? notes,
   }) => throw UnimplementedError();
 }
@@ -84,9 +85,10 @@ class _ApprovalClinicalRepository extends _FakeClinicalRepository {
 }
 
 void main() {
-  testWidgets('standalone login fallback always opens workspace gate', (
+  testWidgets('login reports authentication without constructing a root', (
     tester,
   ) async {
+    var authenticated = false;
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -95,7 +97,9 @@ void main() {
             _FakeClinicalRepository(),
           ),
         ],
-        child: const MaterialApp(home: LoginView()),
+        child: MaterialApp(
+          home: LoginView(onAuthenticated: () => authenticated = true),
+        ),
       ),
     );
 
@@ -106,13 +110,9 @@ void main() {
     await tester.pump(const Duration(milliseconds: 700));
     await tester.pumpAndSettle();
 
-    expect(find.text('Tu espacio está en revisión'), findsOneWidget);
-    expect(find.text('Centro pendiente de aprobación'), findsOneWidget);
-    await tester.scrollUntilVisible(
-      find.byKey(const Key('workspaceGateLogoutButton')),
-      200,
-    );
-    expect(find.byKey(const Key('workspaceGateLogoutButton')), findsOneWidget);
+    expect(authenticated, isTrue);
+    expect(find.text('Tu espacio está en revisión'), findsNothing);
+    expect(find.byType(WorkspaceGateView), findsNothing);
   });
 
   testWidgets('pending user can log out through root callback flow', (

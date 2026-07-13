@@ -3,12 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
 import 'package:bucalscan_ai/core/validators/auth_validators.dart';
 import 'package:bucalscan_ai/core/widgets/app_text_field.dart';
+import 'package:bucalscan_ai/core/session/session_events.dart';
 import 'package:bucalscan_ai/features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import 'package:bucalscan_ai/features/auth/presentation/views/register_view.dart';
-import 'package:bucalscan_ai/features/clinical/presentation/viewmodels/clinical_controller.dart';
-import 'package:bucalscan_ai/features/clinical/presentation/views/workspace_gate_view.dart';
-import 'package:bucalscan_ai/features/home/presentation/views/home_view.dart';
-import 'package:bucalscan_ai/features/admin/presentation/views/admin_users_view.dart';
 
 class LoginView extends ConsumerStatefulWidget {
   final VoidCallback? onAuthenticated;
@@ -88,20 +85,7 @@ class _LoginViewState extends ConsumerState<LoginView> {
         }
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
-        if (widget.onAuthenticated != null) {
-          widget.onAuthenticated!();
-        } else {
-          ref.read(clinicalControllerProvider.notifier).clearSession();
-          final user = ref.read(authViewModelProvider).currentUser;
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (_) => user?.isAdmin == true
-                  ? const AdminUsersView()
-                  : const WorkspaceGateView(child: HomeView()),
-            ),
-          );
-        }
+        widget.onAuthenticated?.call();
       }
     }
   }
@@ -109,6 +93,11 @@ class _LoginViewState extends ConsumerState<LoginView> {
   @override
   Widget build(BuildContext context) {
     final authViewModel = ref.watch(authViewModelProvider);
+    final loginMessage =
+        authViewModel.error ??
+        (authViewModel.sessionEndReason == SessionEndReason.expired
+            ? 'Tu sesión expiró. Inicia sesión nuevamente.'
+            : null);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -229,7 +218,7 @@ class _LoginViewState extends ConsumerState<LoginView> {
                               validator: AuthValidators.validateLoginPassword,
                             ),
                             const SizedBox(height: 16),
-                            if (authViewModel.error != null)
+                            if (loginMessage != null)
                               Padding(
                                 padding: const EdgeInsets.only(bottom: 12),
                                 child: Container(
@@ -255,9 +244,7 @@ class _LoginViewState extends ConsumerState<LoginView> {
                                       const SizedBox(width: 10),
                                       Expanded(
                                         child: Text(
-                                          _formatLoginError(
-                                            authViewModel.error!,
-                                          ),
+                                          _formatLoginError(loginMessage),
                                           style: const TextStyle(
                                             color: AppColors.onErrorContainer,
                                             fontSize: 13,

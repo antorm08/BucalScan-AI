@@ -77,7 +77,7 @@ def request_membership(workspace_id: int, current_user: models.User = Depends(ge
 
 @router.post("/{workspace_id}/approve", response_model=WorkspaceResponse)
 def approve_workspace(workspace_id: int, admin: models.User = Depends(require_admin), db: Session = Depends(get_db)):
-    workspace = db.query(models.ClinicalWorkspace).filter_by(id=workspace_id).first()
+    workspace = db.query(models.ClinicalWorkspace).filter_by(id=workspace_id).with_for_update().first()
     if workspace is None:
         raise HTTPException(status_code=404, detail="Workspace not found.")
     if workspace.status != "pending":
@@ -87,13 +87,15 @@ def approve_workspace(workspace_id: int, admin: models.User = Depends(require_ad
     workspace.approved_at = datetime.now(UTC).replace(tzinfo=None)
     initial = db.query(models.WorkspaceMembership).filter_by(
         workspace_id=workspace.id, user_id=workspace.initial_requester_id
-    ).first()
+    ).with_for_update().first()
+    requester = db.query(models.User).filter_by(id=workspace.initial_requester_id).with_for_update().first()
+    if requester is None or requester.status == "suspended":
+        raise HTTPException(status_code=409, detail="Suspended requesters cannot have workspace access approved.")
     if initial:
         initial.status = "active"
         initial.role = "clinic_admin"
         initial.approved_by_id = admin.id
         initial.approved_at = workspace.approved_at
-        requester = db.query(models.User).filter_by(id=initial.user_id).first()
         if requester and requester.status == "pending":
             requester.status = "active"
     db.commit()
@@ -108,7 +110,7 @@ def list_memberships(access: WorkspaceAccess = Depends(require_workspace_admin),
 
 @router.patch("/{workspace_id}/memberships/{membership_id}", response_model=MembershipResponse)
 def manage_membership(membership_id: int, payload: MembershipUpdate, access: WorkspaceAccess = Depends(require_workspace_admin), db: Session = Depends(get_db)):
-    membership = db.query(models.WorkspaceMembership).filter_by(id=membership_id, workspace_id=access.workspace.id).first()
+    membership = db.query(models.WorkspaceMembership).filter_by(id=membership_id, workspace_id=access.workspace.id).with_for_update().first()
     if membership is None:
         raise HTTPException(status_code=404, detail="Membership not found.")
     member = db.query(models.User).filter_by(id=membership.user_id).first()
@@ -137,7 +139,7 @@ def manage_membership(membership_id: int, payload: MembershipUpdate, access: Wor
             raise HTTPException(status_code=409, detail="The workspace must retain an active clinic administrator.")
     membership.status = payload.status
     if payload.status == "active" and payload.role:
-        membership.role = payload.role
+        membership.role = "professional" if access.workspace.workspace_type == "independent" else payload.role
     elif payload.role and payload.role != membership.role:
         raise HTTPException(status_code=409, detail="Roles can only be assigned when activating a membership.")
     if payload.status == "active" and member.status == "pending":

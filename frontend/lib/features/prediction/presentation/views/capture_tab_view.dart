@@ -4,14 +4,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
-import 'package:bucalscan_ai/core/widgets/app_app_bar.dart';
 import 'package:bucalscan_ai/features/prediction/presentation/viewmodels/prediction_viewmodel.dart';
 import 'package:bucalscan_ai/features/prediction/presentation/views/result_view.dart';
 import 'package:bucalscan_ai/features/clinical/presentation/views/patient_lesion_picker.dart';
 import 'package:bucalscan_ai/features/clinical/presentation/viewmodels/clinical_controller.dart';
+import 'package:bucalscan_ai/features/priority/presentation/viewmodels/clinical_priority_controller.dart';
+import 'package:bucalscan_ai/features/priority/presentation/widgets/clinical_assessment_card.dart';
 
 class CaptureTabView extends ConsumerStatefulWidget {
-  const CaptureTabView({super.key});
+  final VoidCallback? onOpenHistory;
+
+  const CaptureTabView({super.key, this.onOpenHistory});
 
   @override
   ConsumerState<CaptureTabView> createState() => _CaptureTabViewState();
@@ -21,15 +24,11 @@ class _CaptureTabViewState extends ConsumerState<CaptureTabView> {
   final ImagePicker _picker = ImagePicker();
   File? _selectedImage;
   bool _hasStorageConsent = false;
-  final TextEditingController _patientIdController = TextEditingController();
-  final TextEditingController _patientNameController = TextEditingController();
   final TextEditingController _clinicalObservationsController =
       TextEditingController();
 
   @override
   void dispose() {
-    _patientIdController.dispose();
-    _patientNameController.dispose();
     _clinicalObservationsController.dispose();
     super.dispose();
   }
@@ -53,8 +52,18 @@ class _CaptureTabViewState extends ConsumerState<CaptureTabView> {
       }
 
       predictionViewModel.clearResult();
-      _patientIdController.clear();
-      _patientNameController.clear();
+      final clinical = ref.read(clinicalControllerProvider);
+      if (clinical.patient != null && clinical.lesion != null) {
+        predictionViewModel
+          ..prepareContext(
+            patientId: clinical.patient!.id,
+            patientName: clinical.patient!.fullName,
+            lesionId: clinical.lesion!.id,
+            clinicalCode: clinical.patient!.clinicalCode,
+            lesionSite: clinical.lesion!.anatomicalSite,
+          )
+          ..prepareImage();
+      }
       setState(() {
         _selectedImage = File(image.path);
         _hasStorageConsent = false;
@@ -83,23 +92,22 @@ class _CaptureTabViewState extends ConsumerState<CaptureTabView> {
     }
 
     final imageFile = _selectedImage!;
-    final patientId = _patientIdController.text.trim();
-    final patientName = _patientNameController.text.trim();
     final clinical = ref.read(clinicalControllerProvider);
+    final priority = ref.read(clinicalPriorityControllerProvider);
 
     unawaited(
       ref
           .read(predictionViewModelProvider.notifier)
           .predictImage(
             imageFile,
-            patientId:
-                clinical.patient?.id ?? (patientId.isEmpty ? null : patientId),
-            patientName:
-                clinical.patient?.fullName ??
-                (patientName.isEmpty ? null : patientName),
+            patientId: clinical.patient?.id,
+            patientName: clinical.patient?.fullName,
             lesionId: clinical.lesion?.id,
             consentToStore: _hasStorageConsent,
             clinicalObservations: _clinicalObservationsController.text.trim(),
+            assessment: priority.payload,
+            clinicalCode: clinical.patient?.clinicalCode,
+            lesionSite: clinical.lesion?.anatomicalSite,
           ),
     );
 
@@ -109,24 +117,110 @@ class _CaptureTabViewState extends ConsumerState<CaptureTabView> {
 
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => ResultView(imageFile: imageFile)),
+      MaterialPageRoute(
+        builder: (_) => ResultView(
+          imageFile: imageFile,
+          onOpenHistory: widget.onOpenHistory,
+          onAnotherImage: _resetForSameLesion,
+          onNewAnalysis: _startClean,
+        ),
+      ),
     );
+  }
+
+  void _resetForSameLesion() {
+    ref.read(predictionViewModelProvider.notifier).clearResult();
+    ref.read(clinicalPriorityControllerProvider.notifier).clearAssessment();
+    setState(() {
+      _selectedImage = null;
+      _hasStorageConsent = false;
+      _clinicalObservationsController.clear();
+    });
+  }
+
+  void _startClean() {
+    _resetForSameLesion();
+    ref.read(clinicalControllerProvider.notifier).clearPatientSelection();
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(clinicalControllerProvider, (previous, next) {
+      if (previous?.patient?.id == next.patient?.id &&
+          previous?.lesion?.id == next.lesion?.id) {
+        return;
+      }
+      ref.read(predictionViewModelProvider.notifier).clearResult();
+      if (next.patient != null && next.lesion != null) {
+        ref
+            .read(predictionViewModelProvider.notifier)
+            .prepareContext(
+              patientId: next.patient!.id,
+              patientName: next.patient!.fullName,
+              lesionId: next.lesion!.id,
+              clinicalCode: next.patient!.clinicalCode,
+              lesionSite: next.lesion!.anatomicalSite,
+            );
+      }
+      ref.read(clinicalPriorityControllerProvider.notifier).clearAssessment();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        setState(() {
+          _selectedImage = null;
+          _hasStorageConsent = false;
+          _clinicalObservationsController.clear();
+        });
+      });
+    });
     final viewModel = ref.watch(predictionViewModelProvider);
     final hasImage = _selectedImage != null;
     final clinical = ref.watch(clinicalControllerProvider);
+    final priority = ref.watch(clinicalPriorityControllerProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: const AppAppBar(title: 'BucalScan AI'),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            const PatientLesionPicker(),
+            const SizedBox(height: 12),
+            if (clinical.patient != null && clinical.lesion != null) ...[
+              Container(
+                key: const Key('selectedClinicalContext'),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryFixed,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.link, color: AppColors.primary),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        '${clinical.patient!.fullName} · ${clinical.patient!.clinicalCode}\nLesión: ${clinical.lesion!.anatomicalSite}',
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Limpiar paciente y lesión',
+                      onPressed: _startClean,
+                      icon: const Icon(Icons.close),
+                    ),
+                  ],
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.only(top: 8),
+                child: Text(
+                  'Una imagen corresponde a una sola lesión y evaluación. Use otro análisis para una lesión o imagen diferente.',
+                  style: TextStyle(color: AppColors.onSurfaceVariant),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
             _CaptureHeroCard(hasImage: hasImage),
             const SizedBox(height: 12),
             _CaptureTipsCard(hasImage: hasImage),
@@ -202,128 +296,21 @@ class _CaptureTabViewState extends ConsumerState<CaptureTabView> {
               ),
             ),
             const SizedBox(height: 12),
-            const PatientLesionPicker(),
-            const SizedBox(height: 12),
-            if (clinical.patient != null && clinical.lesion != null) ...[
-              Container(
-                key: const Key('selectedClinicalContext'),
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryFixed,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.link, color: AppColors.primary),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        '${clinical.patient!.fullName} · ${clinical.patient!.clinicalCode}\nLesión: ${clinical.lesion!.anatomicalSite}',
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-            ],
             TextField(
               key: const Key('clinicalObservationsField'),
               controller: _clinicalObservationsController,
               maxLines: 4,
               decoration: const InputDecoration(
-                labelText: 'Observaciones clínicas (opcional)',
-                hintText: 'Aspecto, bordes, síntomas y cambios observados',
+                labelText: 'Hallazgos de la evaluación actual (opcional)',
+                hintText:
+                    'Ej.: bordes, color, superficie y síntomas observados hoy',
+                helperText:
+                    'Se guardan en esta evaluación, separados de las notas longitudinales de la lesión.',
                 border: OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 12),
-            Card(
-              color: AppColors.surfaceContainerLowest,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: const BorderSide(color: AppColors.outlineVariant),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Referencia complementaria (opcional)',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    const Text(
-                      'El paciente y la lesion se seleccionan arriba. Estos campos solo mantienen compatibilidad con registros anteriores.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    TextField(
-                      controller: _patientIdController,
-                      decoration: InputDecoration(
-                        labelText: 'ID del Paciente',
-                        hintText: 'Ej: PAC-001',
-                        prefixIcon: const Icon(Icons.badge_outlined, size: 20),
-                        filled: true,
-                        fillColor: AppColors.surfaceContainerLow,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(
-                            color: AppColors.outlineVariant,
-                          ),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(
-                            color: AppColors.outlineVariant,
-                          ),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 10,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _patientNameController,
-                      decoration: InputDecoration(
-                        labelText: 'Nombre del Paciente',
-                        hintText: 'Ej: Juan Pérez',
-                        prefixIcon: const Icon(Icons.person_outline, size: 20),
-                        filled: true,
-                        fillColor: AppColors.surfaceContainerLow,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(
-                            color: AppColors.outlineVariant,
-                          ),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(
-                            color: AppColors.outlineVariant,
-                          ),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 10,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            const ClinicalAssessmentCard(),
             const SizedBox(height: 12),
             _ConsentCard(
               isEnabled: hasImage && !viewModel.isLoading,
@@ -339,7 +326,8 @@ class _CaptureTabViewState extends ConsumerState<CaptureTabView> {
                       viewModel.isLoading ||
                       clinical.patient == null ||
                       clinical.lesion == null ||
-                      !_hasStorageConsent
+                      !_hasStorageConsent ||
+                      (priority.available && !priority.complete)
                   ? null
                   : _analyzeImage,
               icon: viewModel.isLoading
@@ -352,6 +340,8 @@ class _CaptureTabViewState extends ConsumerState<CaptureTabView> {
               label: Text(
                 viewModel.isLoading
                     ? 'Preparando análisis...'
+                    : priority.available && !priority.complete
+                    ? 'Complete la evaluación estructurada'
                     : hasImage
                     ? _hasStorageConsent
                           ? 'Confirmar y analizar imagen'

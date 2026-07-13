@@ -1,4 +1,5 @@
 import io
+import json
 import logging
 import time
 import uuid
@@ -7,6 +8,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from PIL import Image, UnidentifiedImageError
+from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
 from auth.workspace import WorkspaceAccess, require_clinical_professional
@@ -14,7 +16,9 @@ from config import settings
 from database import get_db
 from models import models
 from models.inference import OralLesionClassifier
-from schemas import PredictionResponse
+from schemas import ClinicalAssessmentInput, PredictionResponse
+from routers.priority import persist_priority, require_priority_available
+from services.clinical_priority import result_dict
 from services.cloudinary_storage import upload_image
 
 logger = logging.getLogger(__name__)
@@ -30,8 +34,8 @@ _MODEL_VERSION = settings.model_version
 
 def _build_recommendation(prediction: str) -> str:
     if prediction == "malignant":
-        return "Consult a specialist immediately for further evaluation."
-    return "No immediate concern. Regular check-ups recommended."
+        return "This model output supports timely professional review and does not establish a diagnosis."
+    return "Continue professional evaluation; this model output cannot rule out clinical concern."
 
 
 @router.post("/predict", response_model=PredictionResponse)
@@ -40,8 +44,8 @@ async def predict(
     consent_to_store: bool = Form(False),
     patient_id: int = Form(...),
     lesion_id: int = Form(...),
-    patient_name: Optional[str] = Form(None),
     clinical_observations: Optional[str] = Form(None),
+    assessment: Optional[str] = Form(None),
     access: WorkspaceAccess = Depends(require_clinical_professional),
     db: Session = Depends(get_db),
 ):
@@ -50,6 +54,14 @@ async def predict(
             status_code=400,
             detail="Professional attestation that patient authorization was obtained is required.",
         )
+
+    assessment_input = None
+    if assessment is not None:
+        try:
+            assessment_input = ClinicalAssessmentInput.model_validate(json.loads(assessment))
+        except (json.JSONDecodeError, ValidationError) as exc:
+            raise HTTPException(status_code=422, detail="Invalid structured clinical assessment.") from exc
+        require_priority_available()
 
     patient = db.query(models.Patient).filter_by(
         id=patient_id, workspace_id=access.workspace.id
@@ -156,6 +168,12 @@ async def predict(
         processing_time_ms=processing_time_ms,
         evaluation_id=evaluation.id,
     ))
+    priority_result = None
+    priority_snapshot = None
+    if assessment_input is not None:
+        priority_result, priority_snapshot = persist_priority(
+            db, evaluation, access.user.id, assessment_input
+        )
     db.commit()
 
     return PredictionResponse(
@@ -166,4 +184,8 @@ async def predict(
         processing_time_ms=processing_time_ms,
         model_version=_MODEL_VERSION,
         evaluation_id=evaluation.id,
+        priority=(
+            result_dict(priority_result, priority_snapshot.completion_status)
+            if priority_result is not None else None
+        ),
     )

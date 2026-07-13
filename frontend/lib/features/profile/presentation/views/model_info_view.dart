@@ -50,7 +50,7 @@ class ModelInfoView extends StatelessWidget {
                     ),
                     SizedBox(height: 8),
                     Text(
-                      'El sistema distingue únicamente entre lesión benigna y lesión maligna. No reemplaza el diagnóstico clínico profesional.',
+                      'El clasificador produce una salida compatible con patrón benigno o maligno. No establece diagnóstico ni urgencia.',
                       style: TextStyle(
                         color: AppColors.primaryFixed,
                         fontSize: 15,
@@ -122,7 +122,7 @@ class ModelInfoView extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Text(
-                        'ResNet50 fue seleccionado por ClinicalScore = 0.50 * Recall + 0.30 * F1 + 0.20 * AUC. Este criterio prioriza sensibilidad clínica; su recall de 0.9583 reduce el riesgo de omitir lesiones malignas en el conjunto evaluado.',
+                        'Estas métricas describen el conjunto académico evaluado y no convierten la confianza de una imagen en probabilidad de cáncer ni garantizan desempeño clínico individual.',
                         style: TextStyle(
                           fontSize: 14,
                           height: 1.35,
@@ -161,11 +161,11 @@ class ModelInfoView extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             const _InfoCard(
-              title: 'Interpretación clínica',
+              title: 'Separación de apoyos',
               icon: Icons.health_and_safety_outlined,
               children: [
                 Text(
-                  'El resultado funciona como apoyo para detección temprana y priorización de derivación médica. Una clasificación maligna debe considerarse sospechosa y requiere evaluación por especialista.',
+                  'La salida ResNet50 permanece separada de la prioridad clínica orientativa. La prioridad, cuando el servidor la habilita, usa respuestas estructuradas y un ruleset versionado; no utiliza la confianza del modelo ni se calcula en el dispositivo. En modo académico no debe presentarse como triaje clínico validado.',
                   style: TextStyle(
                     fontSize: 14,
                     height: 1.4,

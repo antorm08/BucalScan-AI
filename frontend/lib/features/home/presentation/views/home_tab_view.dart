@@ -1,19 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
-import 'package:bucalscan_ai/core/widgets/app_app_bar.dart';
-import 'package:bucalscan_ai/features/admin/presentation/views/admin_users_view.dart';
-import 'package:bucalscan_ai/features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import 'package:bucalscan_ai/features/dashboard/presentation/viewmodels/summary_viewmodel.dart';
 
 class HomeTabView extends ConsumerStatefulWidget {
   final VoidCallback onStartCapture;
   final VoidCallback onOpenHistory;
+  final VoidCallback onOpenPatients;
 
   const HomeTabView({
     super.key,
     required this.onStartCapture,
     required this.onOpenHistory,
+    required this.onOpenPatients,
   });
 
   @override
@@ -35,11 +34,8 @@ class _HomeTabViewState extends ConsumerState<HomeTabView> {
 
   @override
   Widget build(BuildContext context) {
-    final currentUser = ref.watch(authViewModelProvider).currentUser;
-
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: const AppAppBar(),
       body: LayoutBuilder(
         builder: (context, constraints) {
           final isCompact = constraints.maxWidth < 720;
@@ -55,7 +51,7 @@ class _HomeTabViewState extends ConsumerState<HomeTabView> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Panel de análisis clínico',
+                        'Actividad del centro',
                         style: TextStyle(
                           fontSize: isCompact ? 28 : 32,
                           fontWeight: FontWeight.w600,
@@ -65,7 +61,7 @@ class _HomeTabViewState extends ConsumerState<HomeTabView> {
                       ),
                       const SizedBox(height: 8),
                       const Text(
-                        'Revise el resumen del día e inicie una captura guiada antes de enviar la imagen al modelo.',
+                        'Continúe el seguimiento de pacientes o registre una nueva evaluación.',
                         style: TextStyle(
                           fontSize: 16,
                           color: AppColors.onSurfaceVariant,
@@ -77,25 +73,29 @@ class _HomeTabViewState extends ConsumerState<HomeTabView> {
                 if (isCompact) ...[
                   _PrimaryActionCard(
                     icon: Icons.add_a_photo,
-                    title: 'Iniciar análisis guiado',
+                    title: 'Nuevo análisis',
                     subtitle:
-                        'Seleccione cámara o galería, revise la vista previa y confirme antes de analizar',
+                        'Paciente, lesión, imagen y evaluación actual en un flujo guiado',
                     onTap: widget.onStartCapture,
                   ),
                   const SizedBox(height: 12),
                   _SecondaryActionCard(
                     icon: Icons.history_edu_outlined,
-                    title: 'Revisar historial clínico',
+                    title: 'Últimos análisis',
                     subtitle:
                         'Consulte análisis previos, pacientes registrados y resultados recientes',
                     onTap: widget.onOpenHistory,
                   ),
                   const SizedBox(height: 12),
+                  _SecondaryActionCard(
+                    icon: Icons.people_outline,
+                    title: 'Seguimiento de pacientes',
+                    subtitle:
+                        'Consulte lesiones y evaluaciones longitudinales del centro',
+                    onTap: widget.onOpenPatients,
+                  ),
+                  const SizedBox(height: 12),
                   const _SummaryCard(),
-                  if (currentUser?.isAdmin ?? false) ...[
-                    const SizedBox(height: 12),
-                    const _AdminEntryCard(),
-                  ],
                 ] else ...[
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -106,23 +106,27 @@ class _HomeTabViewState extends ConsumerState<HomeTabView> {
                           children: [
                             _PrimaryActionCard(
                               icon: Icons.add_a_photo,
-                              title: 'Iniciar análisis guiado',
+                              title: 'Nuevo análisis',
                               subtitle:
-                                  'Seleccione cámara o galería, revise la vista previa y confirme antes de analizar',
+                                  'Paciente, lesión, imagen y evaluación actual en un flujo guiado',
                               onTap: widget.onStartCapture,
                             ),
                             const SizedBox(height: 12),
                             _SecondaryActionCard(
                               icon: Icons.history_edu_outlined,
-                              title: 'Revisar historial clínico',
+                              title: 'Últimos análisis',
                               subtitle:
                                   'Consulte análisis previos, pacientes registrados y resultados recientes',
                               onTap: widget.onOpenHistory,
                             ),
-                            if (currentUser?.isAdmin ?? false) ...[
-                              const SizedBox(height: 12),
-                              const _AdminEntryCard(),
-                            ],
+                            const SizedBox(height: 12),
+                            _SecondaryActionCard(
+                              icon: Icons.people_outline,
+                              title: 'Seguimiento de pacientes',
+                              subtitle:
+                                  'Consulte lesiones y evaluaciones longitudinales',
+                              onTap: widget.onOpenPatients,
+                            ),
                           ],
                         ),
                       ),
@@ -182,7 +186,7 @@ class _PrimaryActionCard extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -201,6 +205,7 @@ class _PrimaryActionCard extends StatelessWidget {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 24),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -261,7 +266,7 @@ class _SecondaryActionCard extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -281,6 +286,7 @@ class _SecondaryActionCard extends StatelessWidget {
                   const Icon(Icons.arrow_forward, color: AppColors.outline),
                 ],
               ),
+              const SizedBox(height: 24),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -325,14 +331,6 @@ class _SummaryCard extends ConsumerWidget {
     return 'Último análisis: $day/$month $hour:$minute';
   }
 
-  double _ratio(int value, int total) {
-    if (total <= 0) {
-      return 0;
-    }
-
-    return (value / total).clamp(0.0, 1.0).toDouble();
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final viewModel = ref.watch(summaryViewModelProvider);
@@ -344,17 +342,17 @@ class _SummaryCard extends ConsumerWidget {
           borderRadius: BorderRadius.circular(12),
           side: const BorderSide(color: AppColors.surfaceContainerHighest),
         ),
-        child: const Padding(
-          padding: EdgeInsets.all(16),
-          child: SizedBox(
-            height: 220,
-            child: Column(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 220),
+            child: const Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 CircularProgressIndicator(),
                 SizedBox(height: 16),
                 Text(
-                  'Cargando resumen real del día...',
+                  'Cargando actividad del centro...',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: AppColors.onSurfaceVariant),
                 ),
@@ -411,10 +409,6 @@ class _SummaryCard extends ConsumerWidget {
 
     final summary = viewModel.summary;
     final total = summary?.total ?? 0;
-    final benign = summary?.benign ?? 0;
-    final malignant = summary?.malignant ?? 0;
-    final benignRatio = _ratio(benign, total);
-    final malignantRatio = _ratio(malignant, total);
     final latestAnalysisLabel = _formatLatestAnalysis(
       summary?.latestAnalysisAt,
     );
@@ -427,15 +421,16 @@ class _SummaryCard extends ConsumerWidget {
           borderRadius: BorderRadius.circular(12),
           side: const BorderSide(color: AppColors.surfaceContainerHighest),
         ),
-        child: const Padding(
-          padding: EdgeInsets.all(16),
-          child: SizedBox(
-            height: 220,
-            child: Column(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 220),
+            child: const Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _SummaryHeader(),
-                Spacer(),
+                SizedBox(height: 32),
                 Icon(
                   Icons.analytics_outlined,
                   color: AppColors.onSurfaceVariant,
@@ -449,7 +444,7 @@ class _SummaryCard extends ConsumerWidget {
                     color: AppColors.onSurfaceVariant,
                   ),
                 ),
-                Spacer(),
+                SizedBox(height: 24),
               ],
             ),
           ),
@@ -500,33 +495,9 @@ class _SummaryCard extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 18),
-            _SummaryDistributionBar(
-              benignRatio: benignRatio,
-              malignantRatio: malignantRatio,
-            ),
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                Expanded(
-                  child: _SummaryMetricCard(
-                    label: 'Benignos',
-                    value: benign,
-                    ratio: benignRatio,
-                    color: AppColors.benignText,
-                    backgroundColor: AppColors.benignBg,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _SummaryMetricCard(
-                    label: 'Malignos',
-                    value: malignant,
-                    ratio: malignantRatio,
-                    color: AppColors.error,
-                    backgroundColor: AppColors.errorContainer,
-                  ),
-                ),
-              ],
+            const Text(
+              'Consulte Historial para revisar cada salida del modelo con su contexto clínico.',
+              style: TextStyle(color: AppColors.onSurfaceVariant),
             ),
           ],
         ),
@@ -559,7 +530,7 @@ class _SummaryHeader extends StatelessWidget {
               ),
               SizedBox(height: 2),
               Text(
-                'Datos desde /summary/today',
+                'Actividad guardada en el centro activo',
                 style: TextStyle(
                   fontSize: 11,
                   color: AppColors.onSurfaceVariant,
@@ -576,154 +547,6 @@ class _SummaryHeader extends StatelessWidget {
             visualDensity: VisualDensity.compact,
           ),
       ],
-    );
-  }
-}
-
-class _SummaryDistributionBar extends StatelessWidget {
-  final double benignRatio;
-  final double malignantRatio;
-
-  const _SummaryDistributionBar({
-    required this.benignRatio,
-    required this.malignantRatio,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(999),
-      child: SizedBox(
-        height: 10,
-        child: Row(
-          children: [
-            if (benignRatio > 0)
-              Expanded(
-                flex: (benignRatio * 1000).round().clamp(1, 1000),
-                child: Container(color: AppColors.benignText),
-              ),
-            if (malignantRatio > 0)
-              Expanded(
-                flex: (malignantRatio * 1000).round().clamp(1, 1000),
-                child: Container(color: AppColors.error),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SummaryMetricCard extends StatelessWidget {
-  final String label;
-  final int value;
-  final double ratio;
-  final Color color;
-  final Color backgroundColor;
-
-  const _SummaryMetricCard({
-    required this.label,
-    required this.value,
-    required this.ratio,
-    required this.color,
-    required this.backgroundColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: backgroundColor.withValues(alpha: 0.62),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: AppColors.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            '$value',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              color: color,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            '${(ratio * 100).toStringAsFixed(0)}% del día',
-            style: const TextStyle(
-              fontSize: 11,
-              color: AppColors.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AdminEntryCard extends StatelessWidget {
-  const _AdminEntryCard();
-
-  void _openAdminUsers(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const AdminUsersView()),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => _openAdminUsers(context),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceContainerLowest,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.primary.withValues(alpha: 0.28)),
-        ),
-        child: const Row(
-          children: [
-            Icon(Icons.admin_panel_settings_outlined, color: AppColors.primary),
-            SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Gestión administrativa',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.onSurface,
-                    ),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    'Revise usuarios registrados y suspenda o reactive accesos.',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: AppColors.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(Icons.chevron_right, color: AppColors.outline),
-          ],
-        ),
-      ),
     );
   }
 }

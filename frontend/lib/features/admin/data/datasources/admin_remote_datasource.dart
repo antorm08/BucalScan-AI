@@ -1,6 +1,7 @@
 import 'package:bucalscan_ai/data/services/api_service.dart';
 import 'package:bucalscan_ai/features/admin/data/models/admin_user_model.dart';
 import 'package:bucalscan_ai/features/admin/data/models/admin_request_models.dart';
+import 'package:bucalscan_ai/features/admin/domain/entities/admin_query.dart';
 
 class AdminRemoteDataSource {
   final ApiService _apiService;
@@ -11,6 +12,47 @@ class AdminRemoteDataSource {
     final data = await _apiService.getAdminUsers();
     return data.map(AdminUserModel.fromJson).toList();
   }
+
+  Future<AdminPage<AdminUserModel>> getUsersPage(AdminQuery query) async {
+    final json = await _apiService.getAdminPage(
+      'users',
+      query.toQuery(typeKey: 'workspace_type'),
+    );
+    return _page(json, AdminUserModel.fromJson);
+  }
+
+  Future<AdminPage<AdminWorkspaceRequestModel>> getCentersPage(
+    AdminQuery query,
+  ) async {
+    final json = await _apiService.getAdminPage(
+      'centers',
+      query.toQuery(typeKey: 'workspace_type'),
+    );
+    return _page(json, AdminWorkspaceRequestModel.fromJson);
+  }
+
+  Future<AdminPage<AdminMembershipRequestModel>> getAccessPage(
+    AdminQuery query,
+  ) async {
+    final json = await _apiService.getAdminPage(
+      'access',
+      query.toQuery(typeKey: 'workspace_type'),
+    );
+    return _page(json, AdminMembershipRequestModel.fromJson);
+  }
+
+  AdminPage<T> _page<T>(
+    Map<String, dynamic> json,
+    T Function(Map<String, dynamic>) parse,
+  ) => AdminPage(
+    items: (json['items'] as List? ?? const [])
+        .map((item) => parse(Map<String, dynamic>.from(item as Map)))
+        .toList(),
+    page: json['page'] as int? ?? 1,
+    pageSize: json['page_size'] as int? ?? 25,
+    total: json['total'] as int? ?? 0,
+    hasNext: json['has_next'] as bool? ?? false,
+  );
 
   Future<AdminUserModel> updateUserStatus({
     required int userId,

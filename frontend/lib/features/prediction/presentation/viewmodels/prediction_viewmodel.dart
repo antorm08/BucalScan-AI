@@ -5,6 +5,39 @@ import 'package:bucalscan_ai/features/prediction/di/prediction_providers.dart';
 import 'package:bucalscan_ai/features/prediction/domain/entities/prediction_image_input.dart';
 import 'package:bucalscan_ai/features/prediction/domain/entities/prediction_result.dart';
 
+enum AnalysisAttemptStatus {
+  idle,
+  contextReady,
+  imageReady,
+  submitting,
+  succeeded,
+  failed,
+}
+
+class AnalysisAttemptSnapshot {
+  final String imagePath;
+  final String patientId;
+  final String patientName;
+  final String lesionId;
+  final String clinicalCode;
+  final String lesionSite;
+  final String? clinicalObservations;
+  final Map<String, String>? assessment;
+  final bool consentToStore;
+
+  const AnalysisAttemptSnapshot({
+    required this.imagePath,
+    required this.patientId,
+    required this.patientName,
+    required this.lesionId,
+    required this.clinicalCode,
+    required this.lesionSite,
+    required this.consentToStore,
+    this.clinicalObservations,
+    this.assessment,
+  });
+}
+
 class PredictionState {
   final PredictionResult? result;
   final bool isLoading;
@@ -13,6 +46,10 @@ class PredictionState {
   final String? patientId;
   final String? patientName;
   final String? lesionId;
+  final AnalysisAttemptStatus status;
+  final AnalysisAttemptSnapshot? attempt;
+  final String? clinicalCode;
+  final String? lesionSite;
 
   const PredictionState({
     this.result,
@@ -22,6 +59,10 @@ class PredictionState {
     this.patientId,
     this.patientName,
     this.lesionId,
+    this.status = AnalysisAttemptStatus.idle,
+    this.attempt,
+    this.clinicalCode,
+    this.lesionSite,
   });
 
   PredictionState copyWith({
@@ -32,6 +73,8 @@ class PredictionState {
     String? patientId,
     String? patientName,
     String? lesionId,
+    String? clinicalCode,
+    String? lesionSite,
     bool clearResult = false,
     bool clearError = false,
     bool clearStatus = false,
@@ -47,6 +90,16 @@ class PredictionState {
       patientId: clearPatient ? null : patientId ?? this.patientId,
       patientName: clearPatient ? null : patientName ?? this.patientName,
       lesionId: clearPatient ? null : lesionId ?? this.lesionId,
+      status: result != null
+          ? AnalysisAttemptStatus.succeeded
+          : error != null
+          ? AnalysisAttemptStatus.failed
+          : isLoading == true
+          ? AnalysisAttemptStatus.submitting
+          : status,
+      attempt: attempt,
+      clinicalCode: clearPatient ? null : clinicalCode ?? this.clinicalCode,
+      lesionSite: clearPatient ? null : lesionSite ?? this.lesionSite,
     );
   }
 }
@@ -66,16 +119,35 @@ class PredictionViewModel extends Notifier<PredictionState> {
     required bool consentToStore,
     String? lesionId,
     String? clinicalObservations,
+    Map<String, String>? assessment,
+    String? clinicalCode,
+    String? lesionSite,
   }) async {
+    if (state.status == AnalysisAttemptStatus.submitting) return;
     final generation = ++_generation;
     final stopwatch = Stopwatch()..start();
 
+    final attempt = AnalysisAttemptSnapshot(
+      imagePath: image.path,
+      patientId: patientId ?? '',
+      patientName: patientName ?? '',
+      lesionId: lesionId ?? '',
+      consentToStore: consentToStore,
+      clinicalObservations: clinicalObservations,
+      assessment: assessment == null ? null : Map.unmodifiable(assessment),
+      clinicalCode: clinicalCode ?? '',
+      lesionSite: lesionSite ?? '',
+    );
     state = PredictionState(
       isLoading: true,
       patientId: patientId,
       patientName: patientName,
       lesionId: lesionId,
       analysisStatusMessage: 'Enviando imagen para analisis...',
+      status: AnalysisAttemptStatus.submitting,
+      attempt: attempt,
+      clinicalCode: clinicalCode,
+      lesionSite: lesionSite,
     );
 
     try {
@@ -87,6 +159,7 @@ class PredictionViewModel extends Notifier<PredictionState> {
           patientName: patientName,
           lesionId: lesionId,
           clinicalObservations: clinicalObservations,
+          assessment: assessment,
         ),
       );
       if (generation != _generation) return;
@@ -117,6 +190,55 @@ class PredictionViewModel extends Notifier<PredictionState> {
   void clearResult() {
     _generation++;
     state = const PredictionState();
+  }
+
+  void prepareContext({
+    required String patientId,
+    required String patientName,
+    required String lesionId,
+    String? clinicalCode,
+    String? lesionSite,
+  }) {
+    _generation++;
+    state = PredictionState(
+      patientId: patientId,
+      patientName: patientName,
+      lesionId: lesionId,
+      clinicalCode: clinicalCode,
+      lesionSite: lesionSite,
+      status: AnalysisAttemptStatus.contextReady,
+    );
+  }
+
+  void prepareImage() {
+    if (state.status != AnalysisAttemptStatus.contextReady &&
+        state.status != AnalysisAttemptStatus.imageReady) {
+      return;
+    }
+    state = PredictionState(
+      patientId: state.patientId,
+      patientName: state.patientName,
+      lesionId: state.lesionId,
+      clinicalCode: state.clinicalCode,
+      lesionSite: state.lesionSite,
+      status: AnalysisAttemptStatus.imageReady,
+    );
+  }
+
+  Future<void> retry() async {
+    final attempt = state.attempt;
+    if (attempt == null) return;
+    await predictImage(
+      File(attempt.imagePath),
+      patientId: attempt.patientId,
+      patientName: attempt.patientName,
+      lesionId: attempt.lesionId,
+      consentToStore: attempt.consentToStore,
+      clinicalObservations: attempt.clinicalObservations,
+      assessment: attempt.assessment,
+      clinicalCode: attempt.clinicalCode,
+      lesionSite: attempt.lesionSite,
+    );
   }
 }
 

@@ -75,12 +75,16 @@ class ClinicalRepositoryImpl implements ClinicalRepository {
   Future<OralLesion> createLesion({
     required String patientId,
     required String anatomicalSite,
-    required String temporalDescription,
+    DateTime? observedAt,
+    String? estimatedDuration,
     String? notes,
   }) async => OralLesionModel.fromJson(
     await _api.postJson(ClinicalEndpoints.patientLesions(patientId), {
       'anatomical_site': anatomicalSite,
-      'estimated_duration': temporalDescription,
+      if (observedAt != null)
+        'observed_at': observedAt.toIso8601String().split('T').first,
+      if (estimatedDuration?.isNotEmpty == true)
+        'estimated_duration': estimatedDuration,
       'status': 'active',
       if (notes?.isNotEmpty ?? false) 'clinical_notes': notes,
     }, workspaceScoped: true),
@@ -91,10 +95,15 @@ class ClinicalRepositoryImpl implements ClinicalRepository {
     required String lesionId,
     required String status,
     String? notes,
+    DateTime? observedAt,
+    String? estimatedDuration,
   }) async => OralLesionModel.fromJson(
     await _api.patchJson(ClinicalEndpoints.lesion(lesionId), {
       'status': status,
       'clinical_notes': notes,
+      if (observedAt != null)
+        'observed_at': observedAt.toIso8601String().split('T').first,
+      'estimated_duration': estimatedDuration,
     }, workspaceScoped: true),
   ).toEntity();
 

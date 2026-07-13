@@ -11,6 +11,7 @@ class AdminUserModel {
   final String role;
   final String? profession;
   final String? specialty;
+  final List<AdminUserMembership> memberships;
 
   const AdminUserModel({
     required this.id,
@@ -23,6 +24,7 @@ class AdminUserModel {
     this.createdAt,
     this.profession,
     this.specialty,
+    this.memberships = const [],
   });
 
   factory AdminUserModel.fromJson(Map<String, dynamic> json) {
@@ -39,6 +41,28 @@ class AdminUserModel {
       role: json['role'] as String? ?? 'doctor',
       profession: json['profession'] as String?,
       specialty: json['specialty'] as String?,
+      memberships: (json['memberships'] as List? ?? const [])
+          .whereType<Map>()
+          .map((raw) {
+            final item = Map<String, dynamic>.from(raw);
+            final workspace = item['workspace'] is Map
+                ? Map<String, dynamic>.from(item['workspace'] as Map)
+                : const <String, dynamic>{};
+            return AdminUserMembership(
+              id: item['id'] as int,
+              workspaceId: item['workspace_id'] as int,
+              workspaceName: workspace['name'] as String? ?? 'No disponible',
+              workspaceType: workspace['workspace_type'] as String? ?? '',
+              role: item['role'] as String? ?? '',
+              status: item['status'] as String? ?? '',
+              createdAt: DateTime.tryParse(item['created_at'] as String? ?? ''),
+              updatedAt: DateTime.tryParse(item['updated_at'] as String? ?? ''),
+              approvedAt: DateTime.tryParse(
+                item['approved_at'] as String? ?? '',
+              ),
+            );
+          })
+          .toList(),
     );
   }
 
@@ -54,6 +78,7 @@ class AdminUserModel {
       role: role,
       profession: profession,
       specialty: specialty,
+      memberships: memberships,
     );
   }
 }

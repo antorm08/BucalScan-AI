@@ -18,3 +18,7 @@ final historyRepositoryProvider = Provider<HistoryRepository>((ref) {
 final getHistoryUseCaseProvider = Provider<GetHistoryUseCase>((ref) {
   return GetHistoryUseCase(ref.watch(historyRepositoryProvider));
 });
+
+final getHistoryPageUseCaseProvider = Provider<GetHistoryPageUseCase>((ref) {
+  return GetHistoryPageUseCase(ref.watch(historyRepositoryProvider));
+});

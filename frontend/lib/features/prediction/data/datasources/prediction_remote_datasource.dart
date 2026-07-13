@@ -13,10 +13,10 @@ class PredictionRemoteDataSource {
     final json = await _apiService.predictImage(
       File(input.imagePath),
       patientId: input.patientId,
-      patientName: input.patientName,
       consentToStore: input.consentToStore,
       lesionId: input.lesionId,
       clinicalObservations: input.clinicalObservations,
+      assessment: input.assessment,
     );
     return PredictionResultModel.fromJson(json);
   }

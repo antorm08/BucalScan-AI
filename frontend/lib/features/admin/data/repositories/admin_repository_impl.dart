@@ -2,6 +2,7 @@ import 'package:bucalscan_ai/features/admin/data/datasources/admin_remote_dataso
 import 'package:bucalscan_ai/features/admin/domain/entities/admin_user.dart';
 import 'package:bucalscan_ai/features/admin/domain/entities/admin_request.dart';
 import 'package:bucalscan_ai/features/admin/domain/repositories/admin_repository.dart';
+import 'package:bucalscan_ai/features/admin/domain/entities/admin_query.dart';
 
 class AdminRepositoryImpl implements AdminRepository {
   final AdminRemoteDataSource _remoteDataSource;
@@ -12,6 +13,46 @@ class AdminRepositoryImpl implements AdminRepository {
   Future<List<AdminUser>> getUsers() async {
     final models = await _remoteDataSource.getUsers();
     return models.map((model) => model.toEntity()).toList();
+  }
+
+  @override
+  Future<AdminPage<AdminUser>> getUsersPage(AdminQuery query) async {
+    final page = await _remoteDataSource.getUsersPage(query);
+    return AdminPage(
+      items: page.items.map((item) => item.toEntity()).toList(),
+      page: page.page,
+      pageSize: page.pageSize,
+      total: page.total,
+      hasNext: page.hasNext,
+    );
+  }
+
+  @override
+  Future<AdminPage<AdminWorkspaceRequest>> getCentersPage(
+    AdminQuery query,
+  ) async {
+    final page = await _remoteDataSource.getCentersPage(query);
+    return AdminPage(
+      items: page.items.map((item) => item.value).toList(),
+      page: page.page,
+      pageSize: page.pageSize,
+      total: page.total,
+      hasNext: page.hasNext,
+    );
+  }
+
+  @override
+  Future<AdminPage<AdminMembershipRequest>> getAccessPage(
+    AdminQuery query,
+  ) async {
+    final page = await _remoteDataSource.getAccessPage(query);
+    return AdminPage(
+      items: page.items.map((item) => item.value).toList(),
+      page: page.page,
+      pageSize: page.pageSize,
+      total: page.total,
+      hasNext: page.hasNext,
+    );
   }
 
   @override

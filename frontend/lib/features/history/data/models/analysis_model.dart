@@ -1,4 +1,6 @@
 import 'package:bucalscan_ai/features/history/domain/entities/analysis.dart';
+import 'package:bucalscan_ai/features/priority/data/models/clinical_priority_models.dart';
+import 'package:bucalscan_ai/features/priority/domain/entities/clinical_priority.dart';
 
 class AnalysisModel {
   final int id;
@@ -17,6 +19,15 @@ class AnalysisModel {
   final int? evaluationId;
   final int? patientRecordId;
   final int? lesionId;
+  final String? lesionSite;
+  final String? evaluatedAt;
+  final String? clinicalObservations;
+  final int? professionalId;
+  final String? professionalName;
+  final String? professionalDoctorId;
+  final String? professionalProfession;
+  final String? professionalSpecialty;
+  final ClinicalPriorityResult? priority;
 
   const AnalysisModel({
     required this.id,
@@ -35,6 +46,15 @@ class AnalysisModel {
     this.evaluationId,
     this.patientRecordId,
     this.lesionId,
+    this.lesionSite,
+    this.evaluatedAt,
+    this.clinicalObservations,
+    this.professionalId,
+    this.professionalName,
+    this.professionalDoctorId,
+    this.professionalProfession,
+    this.professionalSpecialty,
+    this.priority,
   });
 
   factory AnalysisModel.fromJson(Map<String, dynamic> json) {
@@ -57,6 +77,15 @@ class AnalysisModel {
       evaluationId: json['evaluation_id'] as int?,
       patientRecordId: json['patient_record_id'] as int?,
       lesionId: json['lesion_id'] as int?,
+      lesionSite: json['lesion_site'] as String?,
+      evaluatedAt: json['evaluated_at'] as String?,
+      clinicalObservations: json['clinical_observations'] as String?,
+      professionalId: json['professional_id'] as int?,
+      professionalName: json['professional_name'] as String?,
+      professionalDoctorId: json['professional_doctor_id'] as String?,
+      professionalProfession: json['professional_profession'] as String?,
+      professionalSpecialty: json['professional_specialty'] as String?,
+      priority: ClinicalPriorityResultModel.fromJson(json['priority']),
     );
   }
 
@@ -79,6 +108,15 @@ class AnalysisModel {
       evaluationId: evaluationId,
       patientRecordId: patientRecordId,
       lesionId: lesionId,
+      lesionSite: lesionSite,
+      evaluatedAt: evaluatedAt == null ? null : DateTime.tryParse(evaluatedAt!),
+      clinicalObservations: clinicalObservations,
+      professionalId: professionalId,
+      professionalName: professionalName,
+      professionalDoctorId: professionalDoctorId,
+      professionalProfession: professionalProfession,
+      professionalSpecialty: professionalSpecialty,
+      priority: priority,
     );
   }
 }

@@ -32,7 +32,14 @@ def test_migrations_initialize_empty_sqlite(tmp_path):
     url = f"sqlite:///{(tmp_path / 'empty.db').as_posix()}"
     command.upgrade(_config(url), "head")
     tables = set(inspect(create_engine(url)).get_table_names())
-    assert {"users", "analyses", "patients", "model_predictions"} <= tables
+    assert {"users", "analyses", "patients", "model_predictions", "clinical_assessment_snapshots", "clinical_priority_results"} <= tables
+    inspector = inspect(create_engine(url))
+    assert {index["name"] for index in inspector.get_indexes("clinical_priority_results")} >= {
+        "ix_priority_code", "ix_priority_workspace_evaluated"
+    }
+    assert {constraint["name"] for constraint in inspector.get_unique_constraints("clinical_priority_results")} >= {
+        "uq_priority_assessment", "uq_priority_evaluation"
+    }
 
 
 def test_migrations_preserve_and_backfill_legacy_rows(tmp_path):
@@ -49,3 +56,16 @@ def test_migrations_preserve_and_backfill_legacy_rows(tmp_path):
         assert connection.execute(text("SELECT COUNT(*) FROM analyses")).scalar_one() == 1
         assert connection.execute(text("SELECT COUNT(*) FROM model_predictions")).scalar_one() == 1
         assert connection.execute(text("SELECT evaluation_id FROM analyses WHERE id=1")).scalar_one() is not None
+        assert connection.execute(text("SELECT COUNT(*) FROM clinical_assessment_snapshots")).scalar_one() == 0
+        assert connection.execute(text("SELECT COUNT(*) FROM clinical_priority_results")).scalar_one() == 0
+        assert connection.execute(text("SELECT prediction, confidence FROM analyses WHERE id=1")).one() == ("benign", 0.9)
+
+
+def test_empty_priority_revision_can_downgrade_and_upgrade(tmp_path):
+    url = f"sqlite:///{(tmp_path / 'rollback.db').as_posix()}"
+    config = _config(url)
+    command.upgrade(config, "head")
+    command.downgrade(config, "0003_legacy_backfill")
+    assert "clinical_priority_results" not in inspect(create_engine(url)).get_table_names()
+    command.upgrade(config, "head")
+    assert "clinical_priority_results" in inspect(create_engine(url)).get_table_names()

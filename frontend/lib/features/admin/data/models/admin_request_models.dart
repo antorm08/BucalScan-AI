@@ -10,6 +10,8 @@ class AdminSummaryModel {
         pendingWorkspaces: json['pending_workspaces'] as int? ?? 0,
         pendingMemberships: json['pending_memberships'] as int? ?? 0,
         totalUsers: json['total_users'] as int? ?? 0,
+        activeUsers: json['active_users'] as int? ?? 0,
+        suspendedUsers: json['suspended_users'] as int? ?? 0,
       ),
     );
   }
@@ -23,6 +25,9 @@ AdminRequester _requester(Map<String, dynamic> json) => AdminRequester(
   profession: json['profession'] as String?,
   specialty: json['specialty'] as String?,
   status: json['status'] as String? ?? 'active',
+  medicalCenter: json['medical_center'] as String?,
+  role: json['role'] as String? ?? 'professional',
+  createdAt: DateTime.tryParse(json['created_at'] as String? ?? ''),
 );
 
 class AdminWorkspaceRequestModel {
@@ -38,7 +43,16 @@ class AdminWorkspaceRequestModel {
         workspaceType: json['workspace_type'] as String? ?? '',
         status: json['status'] as String? ?? '',
         city: json['city'] as String?,
+        address: json['address'] as String?,
+        taxIdentifier: json['tax_identifier'] as String?,
+        telephone: json['telephone'] as String?,
+        institutionalEmail: json['institutional_email'] as String?,
         createdAt: DateTime.tryParse(json['created_at'] as String? ?? ''),
+        updatedAt: DateTime.tryParse(json['updated_at'] as String? ?? ''),
+        approvedAt: DateTime.tryParse(json['approved_at'] as String? ?? ''),
+        approvedBy: json['approved_by'] is Map
+            ? _requester(Map<String, dynamic>.from(json['approved_by'] as Map))
+            : null,
         requester: requester is Map
             ? _requester(Map<String, dynamic>.from(requester))
             : null,
@@ -60,10 +74,16 @@ class AdminMembershipRequestModel {
         status: json['status'] as String? ?? '',
         role: json['role'] as String? ?? 'professional',
         createdAt: DateTime.tryParse(json['created_at'] as String? ?? ''),
+        updatedAt: DateTime.tryParse(json['updated_at'] as String? ?? ''),
+        approvedAt: DateTime.tryParse(json['approved_at'] as String? ?? ''),
+        approvedBy: json['approved_by'] is Map
+            ? _requester(Map<String, dynamic>.from(json['approved_by'] as Map))
+            : null,
         requester: _requester(requester),
         workspaceId: workspace['id'] as int,
         workspaceName: workspace['name'] as String? ?? '',
         workspaceType: workspace['workspace_type'] as String? ?? '',
+        workspaceCity: workspace['city'] as String?,
       ),
     );
   }

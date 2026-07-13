@@ -5,6 +5,8 @@ import 'package:bucalscan_ai/core/widgets/app_app_bar.dart';
 import 'package:bucalscan_ai/features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import 'package:bucalscan_ai/features/profile/presentation/views/edit_profile_view.dart';
 import 'package:bucalscan_ai/features/profile/presentation/views/model_info_view.dart';
+import 'package:bucalscan_ai/features/profile/presentation/views/help_center_view.dart';
+import 'package:bucalscan_ai/features/clinical/presentation/viewmodels/clinical_controller.dart';
 
 class ProfileTabView extends ConsumerWidget {
   const ProfileTabView({super.key});
@@ -57,6 +59,7 @@ class ProfileTabView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authViewModelProvider).currentUser;
+    final workspace = ref.watch(clinicalControllerProvider).activeWorkspace;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -109,6 +112,24 @@ class ProfileTabView extends ConsumerWidget {
                     title: 'Registro profesional',
                     subtitle: user?.doctorId ?? '—',
                   ),
+                  if (workspace != null) ...[
+                    const Divider(height: 1, color: AppColors.surfaceVariant),
+                    _ProfileTile(
+                      icon: Icons.domain_outlined,
+                      title: 'Centro actual',
+                      subtitle: workspace.name,
+                    ),
+                    const Divider(height: 1, color: AppColors.surfaceVariant),
+                    _ProfileTile(
+                      icon: Icons.key_outlined,
+                      title: 'Rol de membresía',
+                      subtitle: switch (workspace.role) {
+                        'clinic_admin' => 'Administración clínica',
+                        'assistant' => 'Asistente',
+                        _ => 'Profesional',
+                      },
+                    ),
+                  ],
                   const Divider(height: 1, color: AppColors.surfaceVariant),
                   _ProfileTile(
                     icon: Icons.medical_services_outlined,
@@ -191,7 +212,10 @@ class ProfileTabView extends ConsumerWidget {
                     ),
                     title: const Text('Ayuda y soporte'),
                     trailing: const Icon(Icons.chevron_right),
-                    onTap: () {},
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const HelpCenterView()),
+                    ),
                   ),
                   const Divider(height: 1, color: AppColors.surfaceVariant),
                   ListTile(

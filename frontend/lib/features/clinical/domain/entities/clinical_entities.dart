@@ -1,3 +1,5 @@
+import 'package:bucalscan_ai/features/priority/domain/entities/clinical_priority.dart';
+
 enum MembershipStatus { pending, active, rejected, inactive }
 
 class ClinicalWorkspace {
@@ -54,7 +56,7 @@ class OralLesion {
   final String? patientId;
   final String anatomicalSite;
   final String status;
-  final String temporalDescription;
+  final String? estimatedDuration;
   final String? notes;
   final DateTime? observedAt;
   final DateTime? createdAt;
@@ -63,12 +65,23 @@ class OralLesion {
     required this.id,
     required this.anatomicalSite,
     required this.status,
-    required this.temporalDescription,
+    String? estimatedDuration,
+    String? temporalDescription,
     this.patientId,
     this.notes,
     this.observedAt,
     this.createdAt,
-  });
+  }) : estimatedDuration = estimatedDuration ?? temporalDescription;
+
+  String get temporalDescription {
+    final values = <String>[
+      if (observedAt != null)
+        'Observada: ${observedAt!.day.toString().padLeft(2, '0')}/${observedAt!.month.toString().padLeft(2, '0')}/${observedAt!.year}',
+      if (estimatedDuration?.trim().isNotEmpty == true)
+        'Duración estimada: ${estimatedDuration!.trim()}',
+    ];
+    return values.isEmpty ? 'Temporalidad no registrada' : values.join(' · ');
+  }
 }
 
 class ClinicalProfessional {
@@ -132,6 +145,7 @@ class LesionEvaluation {
   final EvaluationImage? image;
   final EvaluationPrediction? prediction;
   final DateTime? consentAttestedAt;
+  final ClinicalPriorityResult? priority;
 
   const LesionEvaluation({
     required this.id,
@@ -142,6 +156,7 @@ class LesionEvaluation {
     this.image,
     this.prediction,
     this.consentAttestedAt,
+    this.priority,
   });
 }
 

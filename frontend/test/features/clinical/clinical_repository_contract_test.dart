@@ -67,7 +67,7 @@ void main() {
     await repository.createLesion(
       patientId: 'patient-1',
       anatomicalSite: 'lengua',
-      temporalDescription: 'dos semanas',
+      estimatedDuration: 'dos semanas',
     );
 
     expect(api.lastPath, '/api/v1/patients/patient-1/lesions');

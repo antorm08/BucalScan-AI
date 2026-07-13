@@ -67,12 +67,14 @@ class CreateLesionUseCase {
   Future<OralLesion> call({
     required String patientId,
     required String anatomicalSite,
-    required String temporalDescription,
+    DateTime? observedAt,
+    String? estimatedDuration,
     String? notes,
   }) => _repository.createLesion(
     patientId: patientId,
     anatomicalSite: anatomicalSite,
-    temporalDescription: temporalDescription,
+    observedAt: observedAt,
+    estimatedDuration: estimatedDuration,
     notes: notes,
   );
 }
@@ -93,9 +95,13 @@ class UpdateLesionUseCase {
     required String lesionId,
     required String status,
     String? notes,
+    DateTime? observedAt,
+    String? estimatedDuration,
   }) => _repository.updateLesion(
     lesionId: lesionId,
     status: status,
     notes: notes,
+    observedAt: observedAt,
+    estimatedDuration: estimatedDuration,
   );
 }

@@ -4,6 +4,7 @@ import 'package:bucalscan_ai/features/auth/domain/repositories/auth_repository.d
 import 'package:bucalscan_ai/features/dashboard/domain/entities/daily_summary.dart';
 import 'package:bucalscan_ai/features/dashboard/domain/repositories/dashboard_repository.dart';
 import 'package:bucalscan_ai/features/history/domain/entities/analysis.dart';
+import 'package:bucalscan_ai/features/history/domain/entities/history_query.dart';
 import 'package:bucalscan_ai/features/history/domain/repositories/history_repository.dart';
 import 'package:bucalscan_ai/features/prediction/domain/entities/prediction_image_input.dart';
 import 'package:bucalscan_ai/features/prediction/domain/entities/prediction_result.dart';
@@ -96,6 +97,28 @@ class FakeHistoryRepository implements HistoryRepository {
         patientName: 'Paciente Maligno',
       ),
     ];
+  }
+
+  @override
+  Future<HistoryPage> getHistoryPage(
+    HistoryCriteria criteria, {
+    required int page,
+  }) async {
+    final items = (await getHistory())
+        .where(
+          (item) =>
+              criteria.modelLabel == null ||
+              item.prediction == criteria.modelLabel,
+        )
+        .toList();
+    return HistoryPage(
+      items: items,
+      page: page,
+      pageSize: 25,
+      total: items.length,
+      hasNext: false,
+      priorityFilterEnabled: true,
+    );
   }
 }
 

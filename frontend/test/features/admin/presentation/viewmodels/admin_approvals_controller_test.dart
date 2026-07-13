@@ -10,6 +10,9 @@ class _Repository implements AdminRepository {
   var fail = false;
 
   @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+
+  @override
   Future<AdminSummary> getSummary() async => const AdminSummary(
     pendingWorkspaces: 1,
     pendingMemberships: 0,

@@ -1,3 +1,5 @@
+import 'package:bucalscan_ai/features/priority/domain/entities/clinical_priority.dart';
+
 class Analysis {
   final int id;
   final String prediction;
@@ -15,6 +17,15 @@ class Analysis {
   final int? evaluationId;
   final int? patientRecordId;
   final int? lesionId;
+  final String? lesionSite;
+  final DateTime? evaluatedAt;
+  final String? clinicalObservations;
+  final int? professionalId;
+  final String? professionalName;
+  final String? professionalDoctorId;
+  final String? professionalProfession;
+  final String? professionalSpecialty;
+  final ClinicalPriorityResult? priority;
 
   const Analysis({
     required this.id,
@@ -33,5 +44,14 @@ class Analysis {
     this.evaluationId,
     this.patientRecordId,
     this.lesionId,
+    this.lesionSite,
+    this.evaluatedAt,
+    this.clinicalObservations,
+    this.professionalId,
+    this.professionalName,
+    this.professionalDoctorId,
+    this.professionalProfession,
+    this.professionalSpecialty,
+    this.priority,
   });
 }

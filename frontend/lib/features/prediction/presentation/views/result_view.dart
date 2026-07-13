@@ -1,19 +1,28 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:bucalscan_ai/core/presentation/localized_status.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
 import 'package:bucalscan_ai/core/widgets/app_app_bar.dart';
 import 'package:bucalscan_ai/features/dashboard/presentation/viewmodels/summary_viewmodel.dart';
 import 'package:bucalscan_ai/features/history/presentation/viewmodels/history_viewmodel.dart';
-import 'package:bucalscan_ai/features/home/presentation/views/home_view.dart';
-import 'package:bucalscan_ai/features/clinical/presentation/views/workspace_gate_view.dart';
 import 'package:bucalscan_ai/features/prediction/presentation/viewmodels/prediction_viewmodel.dart';
+import 'package:bucalscan_ai/features/priority/domain/entities/clinical_priority.dart';
 
 class ResultView extends ConsumerStatefulWidget {
   final File imageFile;
+  final VoidCallback? onOpenHistory;
+  final VoidCallback? onAnotherImage;
+  final VoidCallback? onNewAnalysis;
 
-  const ResultView({super.key, required this.imageFile});
+  const ResultView({
+    super.key,
+    required this.imageFile,
+    this.onOpenHistory,
+    this.onAnotherImage,
+    this.onNewAnalysis,
+  });
 
   @override
   ConsumerState<ResultView> createState() => _ResultViewState();
@@ -113,7 +122,7 @@ class _ResultViewState extends ConsumerState<ResultView> {
       case 'maligno':
         return 'Maligno';
       default:
-        return prediction;
+        return 'No disponible';
     }
   }
 
@@ -126,7 +135,7 @@ class _ResultViewState extends ConsumerState<ResultView> {
       case 'maligno':
         return 'Hallazgos compatibles con posible lesion maligna';
       default:
-        return 'Clasificacion estimada por IA';
+        return 'Salida del modelo no disponible';
     }
   }
 
@@ -154,12 +163,12 @@ class _ResultViewState extends ConsumerState<ResultView> {
     final label = _getDisplayLabel(prediction).toLowerCase();
 
     if (confidence >= 0.8) {
-      return 'El modelo muestra una inclinacion clara hacia $label.';
+      return 'Confianza del clasificador para la salida $label. No expresa diagnóstico ni urgencia.';
     }
     if (confidence >= 0.65) {
-      return 'La prediccion se inclina a $label, pero conviene interpretarla con cautela.';
+      return 'Confianza intermedia del clasificador para $label; requiere interpretación profesional.';
     }
-    return 'La prediccion se inclina a $label, pero el margen es reducido y requiere mayor cautela.';
+    return 'Confianza limitada del clasificador para $label; no permite descartar hallazgos clínicos.';
   }
 
   String _formatProcessingTime(double milliseconds) {
@@ -174,7 +183,7 @@ class _ResultViewState extends ConsumerState<ResultView> {
 
     if (normalized.contains('no immediate concern') ||
         normalized.contains('regular check-ups recommended')) {
-      return 'No se observan signos de alarma inmediatos. Se recomiendan controles periodicos.';
+      return 'Continúe la evaluación profesional; la salida del modelo no descarta preocupación clínica.';
     }
 
     if (normalized.contains('malignant lesion suspected') ||
@@ -201,32 +210,23 @@ class _ResultViewState extends ConsumerState<ResultView> {
   }
 
   Future<void> _retryAnalysis(PredictionState state) async {
-    await ref
-        .read(predictionViewModelProvider.notifier)
-        .predictImage(
-          widget.imageFile,
-          patientId: state.patientId,
-          patientName: state.patientName,
-          consentToStore: true,
-          lesionId: state.lesionId,
-        );
+    await ref.read(predictionViewModelProvider.notifier).retry();
   }
 
   void _goToNewAnalysis() {
-    ref.read(predictionViewModelProvider.notifier).clearResult();
+    widget.onNewAnalysis?.call();
+    Navigator.pop(context);
+  }
+
+  void _goToAnotherImage() {
+    widget.onAnotherImage?.call();
     Navigator.pop(context);
   }
 
   void _goToHistory() {
     ref.read(predictionViewModelProvider.notifier).clearResult();
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(
-        builder: (_) =>
-            const WorkspaceGateView(child: HomeView(initialIndex: 2)),
-      ),
-      (route) => false,
-    );
+    Navigator.pop(context);
+    widget.onOpenHistory?.call();
   }
 
   @override
@@ -311,9 +311,9 @@ class _ResultViewState extends ConsumerState<ResultView> {
                   children: [
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: _goToNewAnalysis,
+                        onPressed: _goToAnotherImage,
                         icon: const Icon(Icons.add_a_photo_outlined),
-                        label: const Text('Otra imagen'),
+                        label: const Text('Otra imagen para esta lesión'),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -412,8 +412,7 @@ class _ResultViewState extends ConsumerState<ResultView> {
                   children: [
                     Icon(icon, size: 64, color: color),
                     const SizedBox(height: 16),
-                    if (viewModel.patientName != null ||
-                        viewModel.patientId != null) ...[
+                    if (viewModel.patientName != null) ...[
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,
@@ -436,8 +435,8 @@ class _ResultViewState extends ConsumerState<ResultView> {
                               [
                                 if (viewModel.patientName != null)
                                   viewModel.patientName!,
-                                if (viewModel.patientId != null)
-                                  'ID: ${viewModel.patientId!}',
+                                if (viewModel.clinicalCode != null)
+                                  'Código: ${viewModel.clinicalCode!}',
                               ].join(' · '),
                               style: const TextStyle(
                                 fontSize: 13,
@@ -445,6 +444,15 @@ class _ResultViewState extends ConsumerState<ResultView> {
                               ),
                             ),
                           ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                    if (viewModel.lesionSite != null) ...[
+                      Text(
+                        'Lesión: ${viewModel.lesionSite}',
+                        style: const TextStyle(
+                          color: AppColors.onSurfaceVariant,
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -478,7 +486,7 @@ class _ResultViewState extends ConsumerState<ResultView> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Confianza: ${(result.confidence * 100).toStringAsFixed(1)}%',
+                      'Confianza del modelo: ${(result.confidence * 100).toStringAsFixed(1)}%',
                       style: const TextStyle(fontSize: 18),
                     ),
                     if (result.processingTimeMs != null) ...[
@@ -532,6 +540,10 @@ class _ResultViewState extends ConsumerState<ResultView> {
               ),
             ),
             const SizedBox(height: 16),
+            if (result.priority case final priority?) ...[
+              _PriorityResultCard(priority: priority),
+              const SizedBox(height: 16),
+            ],
             Card(
               color: AppColors.surfaceContainerLowest,
               child: Padding(
@@ -540,7 +552,7 @@ class _ResultViewState extends ConsumerState<ResultView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Recomendación clínica inicial',
+                      'Orientación de la salida del modelo',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
@@ -564,7 +576,7 @@ class _ResultViewState extends ConsumerState<ResultView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Probabilidades detalladas',
+                      'Distribución de la salida del modelo',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
@@ -626,7 +638,7 @@ class _ResultViewState extends ConsumerState<ResultView> {
                     SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Este resultado es una estimacion asistida por IA y no reemplaza una evaluacion clinica profesional.',
+                        'La salida del modelo y la prioridad clínica orientativa son apoyos independientes. No constituyen diagnóstico, probabilidad de cáncer ni reemplazan la evaluación profesional.',
                         style: TextStyle(
                           fontSize: 14,
                           color: AppColors.onSurfaceVariant,
@@ -640,6 +652,7 @@ class _ResultViewState extends ConsumerState<ResultView> {
             const SizedBox(height: 24),
             _ResultActions(
               onNewAnalysis: _goToNewAnalysis,
+              onAnotherImage: _goToAnotherImage,
               onRetry: () => _retryAnalysis(viewModel),
               onHistory: _goToHistory,
             ),
@@ -654,11 +667,13 @@ class _ResultActions extends StatelessWidget {
   final VoidCallback onNewAnalysis;
   final VoidCallback onHistory;
   final Future<void> Function() onRetry;
+  final VoidCallback onAnotherImage;
 
   const _ResultActions({
     required this.onNewAnalysis,
     required this.onRetry,
     required this.onHistory,
+    required this.onAnotherImage,
   });
 
   @override
@@ -670,6 +685,12 @@ class _ResultActions extends StatelessWidget {
           onPressed: onNewAnalysis,
           icon: const Icon(Icons.add_a_photo_outlined),
           label: const Text('Nuevo analisis'),
+        ),
+        const SizedBox(height: 10),
+        OutlinedButton.icon(
+          onPressed: onAnotherImage,
+          icon: const Icon(Icons.photo_camera_back_outlined),
+          label: const Text('Otra imagen para esta lesión'),
         ),
         const SizedBox(height: 10),
         Row(
@@ -692,6 +713,68 @@ class _ResultActions extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+class _PriorityResultCard extends StatelessWidget {
+  final ClinicalPriorityResult priority;
+
+  const _PriorityResultCard({required this.priority});
+
+  @override
+  Widget build(BuildContext context) {
+    final emergency = priority.priorityCode == 'emergency';
+    return Card(
+      key: const Key('priorityResultCard'),
+      color: emergency
+          ? AppColors.errorContainer
+          : AppColors.surfaceContainerLowest,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Prioridad clínica orientativa',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              localizedPriorityStatus(priority.priorityCode).label,
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: emergency ? AppColors.error : AppColors.primary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            ...priority.reasons.map(
+              (reason) => Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text('• $reason'),
+              ),
+            ),
+            if (emergency)
+              const Text(
+                'Busque atención de emergencia según el contexto. Esta herramienta no reemplaza los servicios de emergencia ni el juicio profesional.',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              )
+            else
+              const Text(
+                'Orienta el tiempo de atención a partir de datos estructurados; no establece diagnóstico.',
+              ),
+            const SizedBox(height: 8),
+            Text(
+              'Ruleset ${priority.rulesetVersion} · motor ${priority.engineVersion}${priority.evaluatedAt == null ? '' : ' · resultado guardado'}',
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

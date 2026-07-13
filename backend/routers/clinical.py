@@ -99,6 +99,9 @@ def lesion_detail(lesion_id: int, request: Request, access: WorkspaceAccess = De
         joinedload(models.OralLesion.evaluations).joinedload(models.ClinicalEvaluation.image),
         joinedload(models.OralLesion.evaluations).joinedload(models.ClinicalEvaluation.prediction),
         joinedload(models.OralLesion.evaluations).joinedload(models.ClinicalEvaluation.consent_attestation),
+        joinedload(models.OralLesion.evaluations)
+        .joinedload(models.ClinicalEvaluation.assessment_snapshot)
+        .joinedload(models.ClinicalAssessmentSnapshot.priority_result),
     ).filter_by(id=lesion_id, workspace_id=access.workspace.id).first()
     if lesion is None:
         raise HTTPException(status_code=404, detail="Lesion not found.")
@@ -153,6 +156,21 @@ def lesion_detail(lesion_id: int, request: Request, access: WorkspaceAccess = De
             "image": image,
             "prediction": prediction,
             "consent_attested_at": item.consent_attestation.attested_at if item.consent_attestation else None,
+            "priority": (
+                {
+                    "id": item.assessment_snapshot.priority_result.id,
+                    "assessment_id": item.assessment_snapshot.id,
+                    "priority_code": item.assessment_snapshot.priority_result.priority_code,
+                    "reason_codes": item.assessment_snapshot.priority_result.reason_codes,
+                    "rendered_reasons": item.assessment_snapshot.priority_result.rendered_reasons,
+                    "ruleset_id": item.assessment_snapshot.priority_result.ruleset_id,
+                    "ruleset_version": item.assessment_snapshot.priority_result.ruleset_version,
+                    "engine_version": item.assessment_snapshot.priority_result.engine_version,
+                    "evaluated_at": item.assessment_snapshot.priority_result.evaluated_at,
+                    "completion_status": item.assessment_snapshot.completion_status,
+                }
+                if item.assessment_snapshot and item.assessment_snapshot.priority_result else None
+            ),
         })
     return {"lesion": lesion, "evaluations": evaluations}
 
@@ -163,13 +181,19 @@ def _update_lesion(lesion_id: int, payload: LesionUpdate, access: WorkspaceAcces
         raise HTTPException(status_code=404, detail="Lesion not found.")
     supplied = payload.model_fields_set
     if not supplied:
-        raise HTTPException(status_code=422, detail="status or clinical_notes is required.")
+        raise HTTPException(status_code=422, detail="At least one lesion field is required.")
     if "status" in supplied:
         if payload.status is None:
             raise HTTPException(status_code=422, detail="status cannot be null.")
         lesion.status = payload.status
     if "clinical_notes" in supplied:
         lesion.clinical_notes = payload.clinical_notes
+    if "observed_at" in supplied:
+        lesion.observed_at = payload.observed_at
+    if "estimated_duration" in supplied:
+        lesion.estimated_duration = payload.estimated_duration
+    if lesion.observed_at is None and not lesion.estimated_duration:
+        raise HTTPException(status_code=422, detail="observed_at or estimated_duration is required.")
     db.commit()
     db.refresh(lesion)
     return lesion

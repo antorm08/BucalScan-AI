@@ -3,6 +3,7 @@ import 'package:bucalscan_ai/features/clinical/domain/entities/clinical_entities
 import 'package:bucalscan_ai/features/clinical/presentation/viewmodels/patient_follow_up_controller.dart';
 import 'package:bucalscan_ai/features/clinical/presentation/views/lesion_detail_view.dart';
 import 'package:flutter/material.dart';
+import 'package:bucalscan_ai/core/presentation/localized_status.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class PatientDetailView extends ConsumerStatefulWidget {
@@ -34,56 +35,100 @@ class _PatientDetailViewState extends ConsumerState<PatientDetailView> {
     final site = TextEditingController();
     final duration = TextEditingController();
     final notes = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    DateTime? observedAt;
     final submit = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Registrar lesión'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: site,
-                decoration: const InputDecoration(
-                  labelText: 'Sitio anatómico *',
-                ),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Registrar lesión'),
+          content: Form(
+            key: formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: site,
+                    decoration: const InputDecoration(
+                      labelText: 'Sitio anatómico *',
+                      hintText: 'Ej.: mucosa yugal derecha',
+                    ),
+                    validator: (value) => value?.trim().isEmpty == true
+                        ? 'Ingrese el sitio anatómico.'
+                        : null,
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      final value = await showDatePicker(
+                        context: context,
+                        firstDate: DateTime(1900),
+                        lastDate: DateTime.now(),
+                        initialDate: observedAt ?? DateTime.now(),
+                      );
+                      if (value != null) {
+                        setDialogState(() => observedAt = value);
+                      }
+                    },
+                    icon: const Icon(Icons.calendar_today_outlined),
+                    label: Text(
+                      observedAt == null
+                          ? 'Fecha de primera observación'
+                          : 'Observada el ${observedAt!.day}/${observedAt!.month}/${observedAt!.year}',
+                    ),
+                  ),
+                  TextFormField(
+                    controller: duration,
+                    decoration: const InputDecoration(
+                      labelText: 'Duración estimada',
+                      hintText: 'Ej.: cerca de 2 semanas',
+                      helperText: 'Puede registrar fecha, duración o ambas.',
+                    ),
+                    validator: (value) =>
+                        observedAt == null && value!.trim().isEmpty
+                        ? 'Indique una fecha o una duración.'
+                        : null,
+                  ),
+                  TextField(
+                    controller: notes,
+                    maxLines: 3,
+                    decoration: const InputDecoration(
+                      labelText: 'Notas longitudinales de la lesión',
+                      helperText:
+                          'Evolución general; los hallazgos actuales se registran al analizar.',
+                    ),
+                  ),
+                ],
               ),
-              TextField(
-                controller: duration,
-                decoration: const InputDecoration(
-                  labelText: 'Duración estimada *',
-                ),
-              ),
-              TextField(
-                controller: notes,
-                maxLines: 3,
-                decoration: const InputDecoration(labelText: 'Notas clínicas'),
-              ),
-            ],
+            ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () {
+                if (formKey.currentState!.validate()) {
+                  Navigator.pop(context, true);
+                }
+              },
+              child: const Text('Registrar'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Registrar'),
-          ),
-        ],
       ),
     );
-    if (submit != true ||
-        site.text.trim().isEmpty ||
-        duration.text.trim().isEmpty) {
-      return;
-    }
+    if (submit != true) return;
     await ref
         .read(patientFollowUpControllerProvider.notifier)
         .addLesion(
           anatomicalSite: site.text.trim(),
-          temporalDescription: duration.text.trim(),
+          observedAt: observedAt,
+          estimatedDuration: duration.text.trim().isEmpty
+              ? null
+              : duration.text.trim(),
           notes: notes.text.trim().isEmpty ? null : notes.text.trim(),
         );
   }
@@ -174,11 +219,7 @@ class _PatientDetailViewState extends ConsumerState<PatientDetailView> {
   }
 }
 
-String _status(String value) => switch (value) {
-  'resolved' => 'Resuelta',
-  'monitoring' => 'En seguimiento',
-  _ => 'Activa',
-};
+String _status(String value) => localizedLesionStatus(value).label;
 
 class _Profile extends StatelessWidget {
   final Patient patient;

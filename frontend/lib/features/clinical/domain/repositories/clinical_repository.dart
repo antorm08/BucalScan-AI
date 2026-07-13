@@ -18,12 +18,15 @@ abstract class ClinicalRepository {
   Future<OralLesion> createLesion({
     required String patientId,
     required String anatomicalSite,
-    required String temporalDescription,
+    DateTime? observedAt,
+    String? estimatedDuration,
     String? notes,
   });
   Future<OralLesion> updateLesion({
     required String lesionId,
     required String status,
     String? notes,
+    DateTime? observedAt,
+    String? estimatedDuration,
   }) => throw UnimplementedError('Lesion update is not implemented.');
 }

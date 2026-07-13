@@ -1,5 +1,29 @@
 enum AdminUserStatus { pending, active, suspended, unknown }
 
+class AdminUserMembership {
+  final int id;
+  final int workspaceId;
+  final String workspaceName;
+  final String workspaceType;
+  final String role;
+  final String status;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  final DateTime? approvedAt;
+
+  const AdminUserMembership({
+    required this.id,
+    required this.workspaceId,
+    required this.workspaceName,
+    required this.workspaceType,
+    required this.role,
+    required this.status,
+    this.createdAt,
+    this.updatedAt,
+    this.approvedAt,
+  });
+}
+
 class AdminUser {
   final int id;
   final String fullName;
@@ -11,6 +35,7 @@ class AdminUser {
   final String role;
   final String? profession;
   final String? specialty;
+  final List<AdminUserMembership> memberships;
 
   const AdminUser({
     required this.id,
@@ -23,6 +48,7 @@ class AdminUser {
     required this.role,
     this.profession,
     this.specialty,
+    this.memberships = const [],
   });
 
   bool get isActive => status.toLowerCase() == 'active';

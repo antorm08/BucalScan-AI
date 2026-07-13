@@ -1,0 +1,19 @@
+{
+  "ruleset_id": "clinical-priority",
+  "version": "clinical-priority-v1-draft",
+  "status": "draft_not_clinically_approved",
+  "assessment_schema_version": "clinical-assessment-v1",
+  "engine_version": "priority-engine-1.0",
+  "required_fields": ["ulceration", "induration_or_fixation", "unexplained_bleeding", "red_or_white_change", "rapid_growth", "pain", "dysphagia", "altered_sensation", "functional_limitation", "persistence_over_two_weeks", "tobacco_exposure", "heavy_alcohol_exposure", "prior_oral_malignancy", "immunosuppression", "airway_compromise", "uncontrolled_bleeding", "inability_to_swallow", "rapidly_progressing_face_neck_swelling"],
+  "emergency_fields": ["airway_compromise", "uncontrolled_bleeding", "inability_to_swallow", "rapidly_progressing_face_neck_swelling"],
+  "weights": {"ulceration": 2, "induration_or_fixation": 3, "unexplained_bleeding": 2, "red_or_white_change": 2, "rapid_growth": 3, "pain": 1, "dysphagia": 3, "altered_sensation": 2, "functional_limitation": 2, "persistence_over_two_weeks": 2, "tobacco_exposure": 2, "heavy_alcohol_exposure": 1, "prior_oral_malignancy": 3, "immunosuppression": 2},
+  "thresholds": {"prompt": 4, "urgent": 8},
+  "combinations": {"urgent": [["induration_or_fixation", "rapid_growth"]], "prompt_persistence_signs": ["ulceration", "induration_or_fixation", "unexplained_bleeding", "red_or_white_change"]},
+  "reason_text": {
+    "priority.standard.complete": "The structured assessment is complete and no higher timing rule matched.",
+    "priority.prompt.score": "The versioned structured concern score reached the prompt-attention threshold.",
+    "priority.prompt.persistence_sign": "Persistence and a configured concerning sign were both reported.",
+    "priority.urgent.score": "The versioned structured concern score reached the urgent-attention threshold.",
+    "priority.urgent.high_concern_combination": "A configured high-concern sign combination was reported."
+  }
+}

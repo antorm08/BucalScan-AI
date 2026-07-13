@@ -1,4 +1,6 @@
 import 'package:bucalscan_ai/features/prediction/domain/entities/prediction_result.dart';
+import 'package:bucalscan_ai/features/priority/data/models/clinical_priority_models.dart';
+import 'package:bucalscan_ai/features/priority/domain/entities/clinical_priority.dart';
 
 class PredictionResultModel {
   final String prediction;
@@ -6,6 +8,9 @@ class PredictionResultModel {
   final String recommendation;
   final Map<String, double>? probabilities;
   final double? processingTimeMs;
+  final String? modelVersion;
+  final String? evaluationId;
+  final ClinicalPriorityResult? priority;
 
   const PredictionResultModel({
     required this.prediction,
@@ -13,6 +18,9 @@ class PredictionResultModel {
     required this.recommendation,
     this.probabilities,
     this.processingTimeMs,
+    this.modelVersion,
+    this.evaluationId,
+    this.priority,
   });
 
   factory PredictionResultModel.fromJson(Map<String, dynamic> json) {
@@ -46,6 +54,9 @@ class PredictionResultModel {
       processingTimeMs: rawProcessingTime is num
           ? rawProcessingTime.toDouble()
           : null,
+      modelVersion: json['model_version']?.toString(),
+      evaluationId: json['evaluation_id']?.toString(),
+      priority: ClinicalPriorityResultModel.fromJson(json['priority']),
     );
   }
 
@@ -56,6 +67,9 @@ class PredictionResultModel {
       recommendation: recommendation,
       probabilities: probabilities,
       processingTimeMs: processingTimeMs,
+      modelVersion: modelVersion,
+      evaluationId: evaluationId,
+      priority: priority,
     );
   }
 }

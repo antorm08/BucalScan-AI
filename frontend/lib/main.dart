@@ -1,9 +1,6 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bucalscan_ai/core/constants/app_constants.dart';
-import 'package:bucalscan_ai/core/session/session_events.dart';
-import 'package:bucalscan_ai/core/session/user_sensitive_state.dart';
 import 'package:bucalscan_ai/core/startup/startup_view.dart';
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
 import 'package:bucalscan_ai/features/auth/di/auth_providers.dart';
@@ -27,11 +24,7 @@ class BucalScanAiApp extends ConsumerStatefulWidget {
 }
 
 class _BucalScanAiAppState extends ConsumerState<BucalScanAiApp> {
-  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
   bool _isReadyToEnter = false;
-  bool _isAuthenticated = false;
-  bool _wasAuthenticated = false;
-  StreamSubscription<void>? _sessionSub;
 
   @override
   void initState() {
@@ -41,19 +34,13 @@ class _BucalScanAiAppState extends ConsumerState<BucalScanAiApp> {
     }
   }
 
-  @override
-  void dispose() {
-    _sessionSub?.cancel();
-    super.dispose();
-  }
-
   Future<void> _enterApp() async {
     if (_isReadyToEnter) {
       return;
     }
 
     final authViewModel = ref.read(authViewModelProvider.notifier);
-    final isLoggedIn = await authViewModel.tryAutoLogin();
+    await authViewModel.tryAutoLogin();
 
     if (!mounted) {
       return;
@@ -61,79 +48,14 @@ class _BucalScanAiAppState extends ConsumerState<BucalScanAiApp> {
 
     setState(() {
       _isReadyToEnter = true;
-      _isAuthenticated = isLoggedIn;
-      _wasAuthenticated = isLoggedIn;
     });
-
-    if (isLoggedIn) {
-      _subscribeToSessionExpiry();
-    }
-  }
-
-  void _subscribeToSessionExpiry() {
-    _sessionSub?.cancel();
-    _sessionSub = SessionEvents().onSessionExpired.listen((_) {
-      if (!_wasAuthenticated) {
-        return;
-      }
-      _wasAuthenticated = false;
-      ref.resetUserSensitiveState();
-      if (mounted) {
-        setState(() {
-          _isAuthenticated = false;
-        });
-        _navigatorKey.currentState?.pushAndRemoveUntil(
-          MaterialPageRoute(
-            builder: (_) => LoginView(onAuthenticated: _markAuthenticated),
-          ),
-          (route) => false,
-        );
-      }
-    });
-  }
-
-  void _markAuthenticated() {
-    if (!mounted) {
-      return;
-    }
-
-    ref.resetUserSensitiveState();
-    setState(() {
-      _isReadyToEnter = true;
-      _isAuthenticated = true;
-      _wasAuthenticated = true;
-    });
-    _subscribeToSessionExpiry();
-    _navigatorKey.currentState?.pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => _authenticatedHome()),
-      (route) => false,
-    );
-  }
-
-  Widget _authenticatedHome() {
-    final user = ref.read(authViewModelProvider).currentUser;
-    if (user?.isAdmin == true) {
-      return AdminUsersView(onLoggedOut: _markLoggedOut);
-    }
-    return WorkspaceGateView(
-      onLoggedOut: _markLoggedOut,
-      child: const HomeView(),
-    );
-  }
-
-  void _markLoggedOut() {
-    if (!mounted) return;
-    ref.resetUserSensitiveState();
-    _wasAuthenticated = false;
-    setState(() => _isAuthenticated = false);
   }
 
   @override
   Widget build(BuildContext context) {
-    final currentUser = ref.watch(authViewModelProvider).currentUser;
+    final auth = ref.watch(authViewModelProvider);
 
     return MaterialApp(
-      navigatorKey: _navigatorKey,
       title: AppConstants.appName,
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
@@ -145,19 +67,19 @@ class _BucalScanAiAppState extends ConsumerState<BucalScanAiApp> {
         appBarTheme: const AppBarTheme(centerTitle: true, elevation: 0),
       ),
 
-      home: !_isReadyToEnter
-          ? StartupView(
-              apiService: ref.read(authApiServiceProvider),
-              onReady: _enterApp,
-            )
-          : _isAuthenticated
-          ? currentUser?.isAdmin == true
-                ? AdminUsersView(onLoggedOut: _markLoggedOut)
-                : WorkspaceGateView(
-                    onLoggedOut: _markLoggedOut,
-                    child: const HomeView(),
-                  )
-          : LoginView(onAuthenticated: _markAuthenticated),
+      home: KeyedSubtree(
+        key: ValueKey(auth.generation),
+        child: !_isReadyToEnter
+            ? StartupView(
+                apiService: ref.read(authApiServiceProvider),
+                onReady: _enterApp,
+              )
+            : auth.currentUser == null
+            ? const LoginView()
+            : auth.currentUser!.isAdmin
+            ? const AdminUsersView()
+            : const WorkspaceGateView(child: HomeView()),
+      ),
     );
   }
 }

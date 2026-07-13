@@ -1,5 +1,4 @@
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
-import 'package:bucalscan_ai/core/widgets/app_app_bar.dart';
 import 'package:bucalscan_ai/features/clinical/domain/entities/clinical_entities.dart';
 import 'package:bucalscan_ai/features/clinical/presentation/viewmodels/patient_follow_up_controller.dart';
 import 'package:bucalscan_ai/features/clinical/presentation/views/patient_detail_view.dart';
@@ -49,7 +48,6 @@ class _PatientsViewState extends ConsumerState<PatientsView> {
     final state = ref.watch(patientFollowUpControllerProvider);
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: const AppAppBar(title: 'Pacientes'),
       body: RefreshIndicator(
         onRefresh: () => ref
             .read(patientFollowUpControllerProvider.notifier)
@@ -63,7 +61,7 @@ class _PatientsViewState extends ConsumerState<PatientsView> {
             ),
             const SizedBox(height: 6),
             const Text(
-              'Busca por código clínico, documento o nombre.',
+              'Pacientes compartidos por profesionales autorizados del centro. Busca por código clínico, documento o nombre.',
               style: TextStyle(color: AppColors.onSurfaceVariant),
             ),
             const SizedBox(height: 16),

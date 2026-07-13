@@ -17,6 +17,7 @@ from routers.predict import router as predict_router
 from routers.summary import router as summary_router
 from routers.workspaces import router as workspaces_router
 from routers.clinical import router as clinical_router
+from routers.priority import router as priority_router
 
 logger = logging.getLogger(__name__)
 from routers.predict import classifier
@@ -78,3 +79,4 @@ app.include_router(summary_router)
 app.include_router(admin_router)
 app.include_router(workspaces_router)
 app.include_router(clinical_router)
+app.include_router(priority_router)

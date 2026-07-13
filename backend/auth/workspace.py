@@ -38,7 +38,7 @@ def get_workspace_access(
         models.WorkspaceMembership.user_id == current_user.id,
         models.WorkspaceMembership.status == "active",
     ).first()
-    if membership is None and not is_platform_admin(current_user):
+    if membership is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Active workspace membership required.")
     return WorkspaceAccess(workspace, membership, current_user)
 
@@ -46,8 +46,6 @@ def get_workspace_access(
 def require_clinical_professional(
     access: WorkspaceAccess = Depends(get_workspace_access),
 ) -> WorkspaceAccess:
-    if is_platform_admin(access.user):
-        return access
     if access.membership is None or access.membership.role not in {"clinic_admin", "professional"}:
         raise HTTPException(status_code=403, detail="Professional permission required.")
     return access
@@ -56,8 +54,6 @@ def require_clinical_professional(
 def require_workspace_admin(
     access: WorkspaceAccess = Depends(get_workspace_access),
 ) -> WorkspaceAccess:
-    if is_platform_admin(access.user):
-        return access
     if access.membership is None or access.membership.role != "clinic_admin":
         raise HTTPException(status_code=403, detail="Clinic administrator permission required.")
     return access

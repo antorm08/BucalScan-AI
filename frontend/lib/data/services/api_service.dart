@@ -1,6 +1,7 @@
 // ignore_for_file: use_null_aware_elements
 
 import 'dart:io';
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:bucalscan_ai/core/constants/app_constants.dart';
 
@@ -53,10 +54,10 @@ class ApiService {
   Future<Map<String, dynamic>> predictImage(
     File image, {
     String? patientId,
-    String? patientName,
     required bool consentToStore,
     String? lesionId,
     String? clinicalObservations,
+    Map<String, String>? assessment,
   }) async {
     try {
       final formData = FormData.fromMap({
@@ -64,10 +65,9 @@ class ApiService {
         'consent_to_store': consentToStore.toString(),
         if (lesionId != null) 'lesion_id': lesionId,
         if (patientId != null && patientId.isNotEmpty) 'patient_id': patientId,
-        if (patientName != null && patientName.isNotEmpty)
-          'patient_name': patientName,
         if (clinicalObservations != null && clinicalObservations.isNotEmpty)
           'clinical_observations': clinicalObservations,
+        if (assessment != null) 'assessment': jsonEncode(assessment),
       });
 
       final response = await _dio.post(
@@ -178,11 +178,13 @@ class ApiService {
 
   Future<Map<String, dynamic>> getJson(
     String path, {
+    Map<String, dynamic>? query,
     bool workspaceScoped = false,
   }) async {
     try {
       final response = await _dio.get(
         path,
+        queryParameters: query,
         options: workspaceScoped ? _workspaceOptions() : null,
       );
       return Map<String, dynamic>.from(response.data as Map);
@@ -273,22 +275,33 @@ class ApiService {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getHistory() async {
+  Future<Object?> getHistoryPage(Map<String, dynamic> query) async {
     try {
       final response = await _dio.get(
         '${AppConstants.apiVersion}/history',
+        queryParameters: query,
         options: _workspaceOptions(),
       );
-      final List<dynamic> data = response.data;
-      return data
-          .map((json) => Map<String, dynamic>.from(json as Map))
-          .toList();
+      return response.data;
     } on DioException catch (e) {
       throw Exception(
         _buildApiErrorMessage(e, fallback: 'No se pudo cargar el historial.'),
       );
     }
   }
+
+  Future<List<Map<String, dynamic>>> getHistory() async {
+    final data = await getHistoryPage(const {'page': 1, 'page_size': 100});
+    final raw = data is Map ? data['items'] : data;
+    return (raw as List? ?? const [])
+        .map((json) => Map<String, dynamic>.from(json as Map))
+        .toList();
+  }
+
+  Future<Map<String, dynamic>> getClinicalPriorityCapability() => getJson(
+    '${AppConstants.apiVersion}/clinical-priority/capabilities',
+    workspaceScoped: true,
+  );
 
   Future<Map<String, dynamic>> getTodaySummary() async {
     try {
@@ -323,6 +336,14 @@ class ApiService {
       );
     }
   }
+
+  Future<Map<String, dynamic>> getAdminPage(
+    String resource,
+    Map<String, dynamic> query,
+  ) => getJson('${AppConstants.apiVersion}/admin/$resource', query: query);
+
+  Future<Map<String, dynamic>> getAdminDetail(String resource, int id) =>
+      getJson('${AppConstants.apiVersion}/admin/$resource/$id');
 
   Future<Map<String, dynamic>> updateAdminUserStatus({
     required int userId,

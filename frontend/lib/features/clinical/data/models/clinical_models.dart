@@ -1,4 +1,5 @@
 import 'package:bucalscan_ai/features/clinical/domain/entities/clinical_entities.dart';
+import 'package:bucalscan_ai/features/priority/data/models/clinical_priority_models.dart';
 
 DateTime? _date(Object? value) =>
     value == null ? null : DateTime.tryParse(value.toString());
@@ -40,8 +41,9 @@ class OralLesionModel {
         patientId: json['patient_id']?.toString(),
         anatomicalSite: '${json['anatomical_site'] ?? json['site'] ?? ''}',
         status: '${json['status'] ?? 'active'}',
-        temporalDescription:
-            '${json['estimated_duration'] ?? json['temporal_description'] ?? json['observed_at'] ?? ''}',
+        estimatedDuration:
+            (json['estimated_duration'] ?? json['temporal_description'])
+                ?.toString(),
         notes: json['clinical_notes']?.toString(),
         observedAt: observedAt,
         createdAt: _date(json['created_at']),
@@ -116,6 +118,7 @@ class LesionDetailModel {
               createdAt: _date(predictionJson['created_at'])!,
             ),
       consentAttestedAt: _date(json['consent_attested_at']),
+      priority: ClinicalPriorityResultModel.fromJson(json['priority']),
     );
   }
 
