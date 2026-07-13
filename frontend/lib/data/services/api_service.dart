@@ -35,12 +35,10 @@ class ApiService {
     try {
       final options = Options(
         sendTimeout: const Duration(seconds: 10),
-        receiveTimeout: const Duration(seconds: 12),
+        receiveTimeout: const Duration(seconds: 45),
       );
 
-      await _dio
-          .get(AppConstants.livenessEndpoint, options: options)
-          .timeout(const Duration(seconds: 12));
+      await _dio.get(AppConstants.readinessEndpoint, options: options);
     } on DioException catch (e) {
       throw Exception(
         _buildApiErrorMessage(

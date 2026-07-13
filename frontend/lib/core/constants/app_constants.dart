@@ -11,7 +11,6 @@ class AppConstants {
   static const String loginEndpoint = '$apiBaseUrl$apiVersion/auth/login';
   static const String historyEndpoint = '$apiBaseUrl$apiVersion/history';
   static const String readinessEndpoint = '/ready';
-  static const String livenessEndpoint = '/live';
 
   static const List<String> lesionClasses = ['benign', 'malignant'];
 
