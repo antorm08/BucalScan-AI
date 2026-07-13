@@ -7,6 +7,7 @@ import 'package:bucalscan_ai/core/widgets/app_app_bar.dart';
 import 'package:bucalscan_ai/features/dashboard/presentation/viewmodels/summary_viewmodel.dart';
 import 'package:bucalscan_ai/features/history/presentation/viewmodels/history_viewmodel.dart';
 import 'package:bucalscan_ai/features/home/presentation/views/home_view.dart';
+import 'package:bucalscan_ai/features/clinical/presentation/views/workspace_gate_view.dart';
 import 'package:bucalscan_ai/features/prediction/presentation/viewmodels/prediction_viewmodel.dart';
 
 class ResultView extends ConsumerStatefulWidget {
@@ -207,6 +208,7 @@ class _ResultViewState extends ConsumerState<ResultView> {
           patientId: state.patientId,
           patientName: state.patientName,
           consentToStore: true,
+          lesionId: state.lesionId,
         );
   }
 
@@ -219,7 +221,10 @@ class _ResultViewState extends ConsumerState<ResultView> {
     ref.read(predictionViewModelProvider.notifier).clearResult();
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (_) => const HomeView(initialIndex: 2)),
+      MaterialPageRoute(
+        builder: (_) =>
+            const WorkspaceGateView(child: HomeView(initialIndex: 2)),
+      ),
       (route) => false,
     );
   }

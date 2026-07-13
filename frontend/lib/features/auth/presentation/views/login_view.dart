@@ -8,6 +8,7 @@ import 'package:bucalscan_ai/features/auth/presentation/views/register_view.dart
 import 'package:bucalscan_ai/features/clinical/presentation/viewmodels/clinical_controller.dart';
 import 'package:bucalscan_ai/features/clinical/presentation/views/workspace_gate_view.dart';
 import 'package:bucalscan_ai/features/home/presentation/views/home_view.dart';
+import 'package:bucalscan_ai/features/admin/presentation/views/admin_users_view.dart';
 
 class LoginView extends ConsumerStatefulWidget {
   final VoidCallback? onAuthenticated;
@@ -91,10 +92,13 @@ class _LoginViewState extends ConsumerState<LoginView> {
           widget.onAuthenticated!();
         } else {
           ref.read(clinicalControllerProvider.notifier).clearSession();
+          final user = ref.read(authViewModelProvider).currentUser;
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (_) => const WorkspaceGateView(child: HomeView()),
+              builder: (_) => user?.isAdmin == true
+                  ? const AdminUsersView()
+                  : const WorkspaceGateView(child: HomeView()),
             ),
           );
         }

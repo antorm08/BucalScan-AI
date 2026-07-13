@@ -53,11 +53,13 @@ void main() {
             patientId: 'P-001',
             patientName: 'Paciente Prueba',
             consentToStore: true,
+            lesionId: 'L-001',
           );
 
       final state = container.read(predictionViewModelProvider);
       expect(state.result?.prediction, 'benign');
       expect(state.patientId, 'P-001');
+      expect(state.lesionId, 'L-001');
       expect(state.isLoading, false);
       expect(state.error, isNull);
 
@@ -68,6 +70,7 @@ void main() {
       expect(captured.patientId, 'P-001');
       expect(captured.patientName, 'Paciente Prueba');
       expect(captured.consentToStore, true);
+      expect(captured.lesionId, 'L-001');
     },
   );
 

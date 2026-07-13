@@ -9,6 +9,7 @@ import 'package:bucalscan_ai/core/theme/app_colors.dart';
 import 'package:bucalscan_ai/features/auth/di/auth_providers.dart';
 import 'package:bucalscan_ai/features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import 'package:bucalscan_ai/features/auth/presentation/views/login_view.dart';
+import 'package:bucalscan_ai/features/admin/presentation/views/admin_users_view.dart';
 import 'package:bucalscan_ai/features/home/presentation/views/home_view.dart';
 import 'package:bucalscan_ai/features/clinical/presentation/views/workspace_gate_view.dart';
 
@@ -103,6 +104,21 @@ class _BucalScanAiAppState extends ConsumerState<BucalScanAiApp> {
       _wasAuthenticated = true;
     });
     _subscribeToSessionExpiry();
+    _navigatorKey.currentState?.pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => _authenticatedHome()),
+      (route) => false,
+    );
+  }
+
+  Widget _authenticatedHome() {
+    final user = ref.read(authViewModelProvider).currentUser;
+    if (user?.isAdmin == true) {
+      return AdminUsersView(onLoggedOut: _markLoggedOut);
+    }
+    return WorkspaceGateView(
+      onLoggedOut: _markLoggedOut,
+      child: const HomeView(),
+    );
   }
 
   void _markLoggedOut() {
@@ -114,6 +130,8 @@ class _BucalScanAiAppState extends ConsumerState<BucalScanAiApp> {
 
   @override
   Widget build(BuildContext context) {
+    final currentUser = ref.watch(authViewModelProvider).currentUser;
+
     return MaterialApp(
       navigatorKey: _navigatorKey,
       title: AppConstants.appName,
@@ -133,10 +151,12 @@ class _BucalScanAiAppState extends ConsumerState<BucalScanAiApp> {
               onReady: _enterApp,
             )
           : _isAuthenticated
-          ? WorkspaceGateView(
-              onLoggedOut: _markLoggedOut,
-              child: const HomeView(),
-            )
+          ? currentUser?.isAdmin == true
+                ? AdminUsersView(onLoggedOut: _markLoggedOut)
+                : WorkspaceGateView(
+                    onLoggedOut: _markLoggedOut,
+                    child: const HomeView(),
+                  )
           : LoginView(onAuthenticated: _markAuthenticated),
     );
   }

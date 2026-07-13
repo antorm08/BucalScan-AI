@@ -1,3 +1,5 @@
+enum AdminUserStatus { pending, active, suspended, unknown }
+
 class AdminUser {
   final int id;
   final String fullName;
@@ -24,6 +26,13 @@ class AdminUser {
   });
 
   bool get isActive => status.toLowerCase() == 'active';
+  AdminUserStatus get lifecycleStatus => AdminUserStatus.values.firstWhere(
+    (value) => value.name == status.toLowerCase(),
+    orElse: () => AdminUserStatus.unknown,
+  );
+  bool get isPending => lifecycleStatus == AdminUserStatus.pending;
+  bool get isSuspended => lifecycleStatus == AdminUserStatus.suspended;
+  bool get canToggleStatus => isActive || isSuspended;
   bool get isAdmin =>
       const {'admin', 'platform_admin'}.contains(role.toLowerCase());
 }

@@ -274,7 +274,11 @@ async def update_user_status(
 ):
     if user_id == current_user.id and payload.status == "suspended":
         raise HTTPException(status_code=409, detail="Administrators cannot suspend their own account.")
-    user = crud.update_user_status(db, user_id=user_id, status=payload.status)
+    user = crud.get_user(db, user_id=user_id)
     if user is None:
         raise HTTPException(status_code=404, detail="User not found.")
+    allowed = {("active", "suspended"), ("suspended", "active")}
+    if (user.status, payload.status) not in allowed:
+        raise HTTPException(status_code=409, detail="Invalid user status transition.")
+    user = crud.update_user_status(db, user_id=user_id, status=payload.status)
     return user

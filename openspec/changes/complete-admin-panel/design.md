@@ -1,43 +1,81 @@
 ## Context
 
-FastAPI ya dispone de autorización para `platform_admin`, aprobación básica de workspaces y gestión de membresías por administradores de clínica. Flutter solo expone una lista de usuarios. El panel debe reunir esas operaciones sin introducir tablas nuevas ni confundir aprobación de acceso con acreditación profesional.
+FastAPI dispone de autorización `platform_admin`, workspaces, membresías y usuarios con estados persistidos. Flutter necesita consolidar esas operaciones en una raíz administrativa móvil sin mezclar aprobación de acceso con acreditación profesional y sin permitir que respuestas asíncronas de una sesión anterior contaminen la actual.
+
+El panel comparte las reglas de sesión y arquitectura de la base clínica, pero no requiere un workspace clínico. El modelo ResNet50, captura y predicción quedan fuera de este cambio.
 
 ## Goals / Non-Goals
 
 **Goals:**
-- Proveer una cola administrativa única para centros y membresías pendientes.
-- Ejecutar transiciones explícitas y auditables de aprobación o rechazo.
-- Mantener las capas limpias existentes en Flutter.
-- Dar estados vacíos, errores, recarga y confirmación claros en móvil.
+
+- Proveer una raíz `platform_admin` pulida con conteos y pestañas para centros, membresías y usuarios.
+- Aplicar transiciones explícitas, atómicas y auditables para acceso y estado de cuenta.
+- Definir política de rol, solicitante suspendido, autosuspensión y último `clinic_admin`.
+- Mantener Flutter Clean Architecture + Riverpod y descartar respuestas obsoletas.
+- Cubrir carga, vacío, error, reintento, confirmación y acción en curso sin filtrar detalles técnicos.
+- Permitir cierre de sesión desde la raíz administrativa sin depender de workspace.
 
 **Non-Goals:**
-- Verificar títulos, licencias o documentos profesionales.
-- Crear un sistema web separado o notificaciones externas.
-- Cambiar el modelo ResNet50 o el flujo clínico.
+
+- Verificar títulos, licencias, documentos o la veracidad de profesión/especialidad declarada.
+- Introducir un panel web, notificaciones, tablas nuevas o auditoría documental.
+- Cambiar ResNet50, el flujo clínico o permitir acceso clínico implícito al administrador de plataforma.
+- Considerar pruebas automatizadas como evidencia de despliegue, APK o dispositivo real.
 
 ## Decisions
 
-- Los endpoints globales vivirán bajo `/api/v1/admin`, protegidos con `require_admin`; esto evita otorgar capacidades globales a `clinic_admin`.
-- Se expondrán DTO administrativos agregados con datos del solicitante y workspace para evitar múltiples llamadas desde móvil.
-- Aprobar un centro nuevo activará también la membresía inicial como `clinic_admin`; rechazarlo rechazará esa membresía en la misma transacción.
-- La práctica independiente se presentará como una aprobación profesional. Su aprobación activa el workspace y la membresía inicial, conservando el modelo de aislamiento existente.
-- Las membresías de centros ya activos se gestionarán por separado y podrán recibir los roles permitidos.
-- Flutter extenderá el feature `admin` con entidades, repositorio, casos de uso y un controlador dedicado a aprobaciones; la vista será un panel con pestañas de pendientes y usuarios.
+### 1. Raíz administrativa protegida
+
+La navegación validada dirige `platform_admin` al panel como raíz independiente. No se infiere un workspace ni se entra al resumen clínico. Toda ruta y endpoint administrativo vuelve a comprobar el rol actual; un estado privilegiado en caché no autoriza después de una validación fallida. El botón Atrás no evita el guard y el cierre de sesión funciona desde la raíz.
+
+### 2. Arquitectura Flutter por capas
+
+Cada operación sigue vista -> controlador -> caso de uso -> contrato de repositorio -> implementación -> datasource -> `ApiService`. Las vistas solo expresan intención y renderizan estado; nunca llaman HTTP directamente. El controlador mantiene estados tipados de carga, datos, vacío, error, reintento y acción por elemento.
+
+Cada solicitud captura sesión/token y generación del controlador. Su resultado se aplica solo si siguen vigentes. Cambio de autenticación, cierre de sesión o recarga reemplazante invalida resultados anteriores para que datos administrativos no aparezcan en otro usuario.
+
+### 3. Ciclos de vida y semántica de pendiente
+
+Se respetan los ciclos compartidos:
+
+```text
+Usuario:    pending -> active; active <-> suspended
+Workspace:  pending -> active | rejected (terminal)
+Membresía:  pending -> active | rejected; active -> inactive; inactive -> active; rejected terminal
+```
+
+“Pendiente de verificación” significa verificar/aprobar ACCESO, no títulos ni documentos. `pending -> active` de usuario solo ocurre al aprobar acceso. Un solicitante suspendido no puede aprobarse. No se ofrecen acciones suspender/reactivar para pendientes. Rechazos son terminales.
+
+### 4. Resolución atómica y política de roles
+
+Los endpoints globales viven bajo `/api/v1/admin` y exigen `platform_admin`. Aprobar un centro institucional activa workspace y membresía inicial como `clinic_admin` en una transacción. Rechazarlo rechaza ambos. Aprobar una práctica independiente activa usuario, workspace y membresía con rol fijo `professional`.
+
+Para una membresía pendiente en centro activo, el administrador selecciona únicamente un rol permitido por la política del endpoint. La operación no modifica otros workspaces. Suspender/reactivar usuario no se ofrece para pendientes; se impide autosuspensión y cualquier desactivación que deje un centro activo sin `clinic_admin`.
+
+### 5. Experiencia y errores seguros
+
+El panel muestra conteos pendientes y pestañas de centros, membresías y usuarios. Etiquetas y acciones distinguen pending/active/suspended para usuario, pending/active/rejected para workspace y pending/active/inactive/rejected para membresía. Cada acción sensible exige confirmación y bloquea repetición mientras está en curso; al éxito se refrescan conteos y listas de manera coherente.
+
+FastAPI puede devolver `detail` como string, mapa o lista. La capa de datos lo normaliza y la UI presenta texto seguro; nunca muestra salida Dio, stack traces, rutas internas, nombres de providers ni detalles de implementación.
 
 ## Risks / Trade-offs
 
-- [Rechazos sin motivo estructurado] → Se conserva un estado simple en esta versión y se deja auditoría avanzada fuera de alcance.
-- [Dos administradores actúan simultáneamente] → Los endpoints validan el estado actual y responden conflicto si ya fue resuelto.
-- [Solicitudes antiguas inconsistentes] → Las respuestas se construyen con relaciones opcionales y la acción actualiza workspace y membresía de forma atómica.
-- [Panel móvil con listas grandes] → Los endpoints aceptan filtro de estado y límites; la primera versión prioriza pendientes.
+- [Dos administradores resuelven a la vez] -> Validar estado dentro de la transacción y responder conflicto sanitizado.
+- [Solicitante cambia a suspendido durante aprobación] -> Releer usuario y estados relacionados antes de confirmar la transición.
+- [Se elimina el último administrador de clínica] -> Rechazar suspensión/desactivación que viole el invariante.
+- [Respuesta antigua reemplaza datos nuevos] -> Comparar sesión/generación y descartar completaciones obsoletas.
+- [Listas grandes] -> Filtrar por estado, aplicar límites y priorizar pendientes.
+- [APK verde pero no verificado] -> Mantener despliegue y dispositivo como tareas manuales abiertas.
 
 ## Migration Plan
 
-1. Desplegar endpoints backend compatibles con los clientes actuales.
-2. Publicar el APK con el panel extendido.
-3. Verificar una aprobación de cada modalidad en Neon.
-4. En rollback, retirar el cliente nuevo; los estados persistidos continúan siendo válidos.
+1. Desplegar endpoints compatibles y sus guards de estado.
+2. Ejecutar pruebas backend y Flutter y análisis estático.
+3. Desplegar explícitamente la versión backend más reciente.
+4. Generar APK versionado, registrar hash/tiempo/identidad y realizar instalación limpia.
+5. Verificar en dispositivo los flujos institucional e independiente y la ruta correcta después del login aprobado.
+6. En rollback, retirar el cliente nuevo; las transiciones ya confirmadas permanecen válidas.
 
 ## Open Questions
 
-- La evidencia documental y los motivos obligatorios de rechazo se abordarán en cambios posteriores.
+No quedan decisiones funcionales. Despliegue, APK, dispositivo y flujos manuales siguen siendo evidencia pendiente.

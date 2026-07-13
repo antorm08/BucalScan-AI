@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bucalscan_ai/features/clinical/di/clinical_providers.dart';
 import 'package:bucalscan_ai/features/clinical/domain/entities/clinical_entities.dart';
+import 'package:bucalscan_ai/core/session/session_events.dart';
 
 class ClinicalState {
   final bool loading;
@@ -24,7 +25,20 @@ class ClinicalController extends Notifier<ClinicalState> {
   int _generation = 0;
 
   @override
-  ClinicalState build() => const ClinicalState();
+  ClinicalState build() {
+    final subscription = SessionEvents().onWorkspaceAccessRevoked.listen((_) {
+      _clearWorkspaceAccess();
+    });
+    ref.onDispose(subscription.cancel);
+    return const ClinicalState();
+  }
+
+  void _clearWorkspaceAccess() {
+    _generation++;
+    ref.read(selectWorkspaceUseCaseProvider)(null);
+    state = ClinicalState(workspaces: state.workspaces);
+    loadWorkspaces();
+  }
 
   Future<void> loadWorkspaces() async {
     final generation = ++_generation;
@@ -101,6 +115,13 @@ class ClinicalController extends Notifier<ClinicalState> {
       activeWorkspace: state.activeWorkspace,
       patient: state.patient,
       lesion: lesion,
+    );
+  }
+
+  void clearPatientSelection() {
+    state = ClinicalState(
+      workspaces: state.workspaces,
+      activeWorkspace: state.activeWorkspace,
     );
   }
 

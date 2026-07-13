@@ -98,4 +98,29 @@ void main() {
     expect(controller.state.users, hasLength(1));
     expect(controller.state.error, isNotNull);
   });
+
+  test(
+    'toggleStatus rechaza usuarios pendientes sin llamar al caso de uso',
+    () async {
+      const pending = AdminUser(
+        id: 2,
+        fullName: 'Pending User',
+        doctorId: 'MD-002',
+        email: 'pending@hospital.org',
+        status: 'pending',
+        role: 'doctor',
+      );
+
+      final result = await controller.toggleStatus(pending);
+
+      expect(result, isNull);
+      expect(controller.state.error, contains('aprobación'));
+      verifyNever(
+        mockUpdateAdminUserStatusUseCase.call(
+          userId: anyNamed('userId'),
+          status: anyNamed('status'),
+        ),
+      );
+    },
+  );
 }

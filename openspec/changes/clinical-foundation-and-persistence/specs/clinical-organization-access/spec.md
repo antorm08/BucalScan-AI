@@ -1,91 +1,179 @@
 ## ADDED Requirements
 
-### Requirement: Clinical workspaces
-The system SHALL represent clinics, consultorios, hospitals, universities, campaigns, and independent professional practices as clinical workspaces rather than free-text user attributes.
+### Requirement: Registration profile and work mode
+The system SHALL require profession, SHALL accept specialty as optional declared profile information without documentary verification, and SHALL offer Center and Independent work-mode choices.
 
-#### Scenario: Professional selects an existing workspace
-- **WHEN** a registering professional searches for and selects a registered workspace
-- **THEN** the system creates a pending membership request for that workspace
+#### Scenario: Professional declares profile
+- **WHEN** a registrant supplies a profession and optionally a specialty
+- **THEN** the system records the declarations for access review without representing them as verified credentials
 
-#### Scenario: Professional registers a new workspace
-- **WHEN** a registering professional cannot find their clinic or consultorio and provides the required workspace information
-- **THEN** the system creates a pending workspace request and records that professional as its initial requester
+#### Scenario: Registrant selects center mode
+- **WHEN** the registrant chooses the Center card
+- **THEN** the system offers center discovery and, for a new center, requires clinic, consultorio, hospital, university, or campaign type
 
-#### Scenario: Pending workspace remains discoverable
-- **WHEN** another professional searches for a clinic whose creation request is pending
-- **THEN** the system displays the clinic with its pending status and does not allow a duplicate creation or membership request until approval
+#### Scenario: Registrant selects independent mode
+- **WHEN** the registrant chooses the Independent card
+- **THEN** the system creates or requests a private independent workspace that is not publicly discoverable
 
-#### Scenario: Similar workspace already exists
-- **WHEN** a professional attempts to register a workspace whose normalized name and available identifying data resemble an existing or pending workspace
-- **THEN** the system displays the potential match and requires the professional to use or review it instead of silently creating a duplicate
+#### Scenario: Password visibility is controlled
+- **WHEN** the registrant uses the visibility action for password or confirmation
+- **THEN** only that field changes visibility, its accessible action describes the conventional resulting action, and the other field remains unchanged
 
-#### Scenario: Clinic is approved
-- **WHEN** a platform administrator approves a pending clinic
-- **THEN** the clinic becomes active and its initial requester receives an active `clinic_admin` membership
+### Requirement: Center discovery
+The system SHALL describe institutional workspaces as “centro de atención” and SHALL search all institutional types by normalized name regardless of selected or stored type.
 
-#### Scenario: Professional works independently
-- **WHEN** a registering professional selects independent practice
-- **THEN** the system creates a personal clinical workspace while keeping the professional unable to analyze until platform approval
+#### Scenario: Active center is found
+- **WHEN** a registrant searches a name matching an active clinic, consultorio, hospital, university, or campaign
+- **THEN** the system displays the center as selectable and permits a pending membership request
+
+#### Scenario: Pending center is found
+- **WHEN** a registrant searches a name matching a pending institutional workspace
+- **THEN** the system displays it with pending access-verification wording but disables selection and duplicate creation
+
+#### Scenario: Non-public workspace exists
+- **WHEN** a workspace is rejected or is an independent practice
+- **THEN** public center discovery does not return it
+
+#### Scenario: New center is requested
+- **WHEN** no active or pending center matches and the registrant submits the required data and institutional type
+- **THEN** the system creates one pending workspace and records the registrant as initial requester
+
+### Requirement: Explicit access lifecycles
+The system SHALL enforce user `pending -> active` only through access approval and `active <-> suspended`; workspace `pending -> active | rejected` with rejection terminal; and membership `pending -> active | rejected`, `active -> inactive`, `inactive -> active`, with rejection terminal.
+
+#### Scenario: Pending access is displayed
+- **WHEN** an account, workspace, or membership awaits action
+- **THEN** the UI states that access is pending verification or approval and does not imply title or document verification
+
+#### Scenario: Suspended requester is considered
+- **WHEN** an administrator attempts to approve access for a suspended user
+- **THEN** the system rejects the transition and leaves related access inactive or pending
+
+#### Scenario: Rejected resource is reconsidered
+- **WHEN** an administrator attempts to activate a rejected workspace or membership
+- **THEN** the system rejects the transition because rejection is terminal
+
+#### Scenario: Active membership is deactivated and restored
+- **WHEN** an authorized administrator deactivates and later reactivates a non-terminal membership
+- **THEN** history remains intact while workspace access follows inactive then active state
+
+#### Scenario: Last clinic administrator is targeted
+- **WHEN** an action would remove, suspend, or deactivate the last active `clinic_admin` of an active institutional workspace
+- **THEN** the system denies the action until another active clinic administrator exists
 
 ### Requirement: Initial role model
-The system SHALL support `platform_admin`, `clinic_admin`, `professional`, and `assistant` permissions, and SHALL represent a specialist as a `professional` with specialty information rather than as a separate role.
+The system SHALL support `platform_admin`, `clinic_admin`, `professional`, and `assistant`, and SHALL represent specialty as profile metadata rather than a separate role.
 
 #### Scenario: Specialist profile is represented
-- **WHEN** a professional records a specialty such as oral pathology or maxillofacial surgery
-- **THEN** the account retains the `professional` role and exposes the specialty as profile information
+- **WHEN** a professional declares a specialty
+- **THEN** the account retains the `professional` role and exposes specialty as unverified profile information
 
-#### Scenario: Assistant attempts clinical interpretation
-- **WHEN** an assistant attempts to finalize a prediction interpretation or clinical assessment
-- **THEN** the system denies the action without invalidating the assistant's authenticated session
+#### Scenario: Assistant attempts a restricted action
+- **WHEN** an assistant attempts clinical interpretation or another professional-only action
+- **THEN** the system denies permission without invalidating authentication
 
-### Requirement: Professional approval
-The system SHALL prevent a newly self-registered professional from performing clinical analyses until an authorized administrator approves the account or membership.
+### Requirement: Access approval
+The system SHALL prevent newly self-registered professionals from clinical access until authorized approval and SHALL activate a pending user only as part of an eligible access approval.
 
-#### Scenario: Pending professional attempts analysis
-- **WHEN** a professional whose approval status is pending submits an analysis request
-- **THEN** the system rejects the action with an authorization response and preserves the login session
+#### Scenario: Institutional access is approved
+- **WHEN** an eligible pending institutional workspace is approved
+- **THEN** the workspace and requester become active and the initial membership becomes active `clinic_admin`
 
-#### Scenario: Administrator approves professional
-- **WHEN** a platform administrator or authorized clinic administrator approves a professional membership
-- **THEN** the professional can perform the actions permitted in that workspace
+#### Scenario: Independent access is approved
+- **WHEN** an eligible pending independent request is approved
+- **THEN** the user, private workspace, and membership become active with membership role `professional`
+
+#### Scenario: Active-center membership is approved
+- **WHEN** an eligible pending membership to an active center is approved with an allowed role
+- **THEN** the user and membership receive the access permitted in that center without changing other workspaces
 
 #### Scenario: Demonstration account is provisioned
-- **WHEN** an authorized administrator creates or marks a demonstration professional as pre-approved
-- **THEN** the account can be used immediately for an academic demonstration
+- **WHEN** an authorized administrator provisions pre-approved academic demonstration access
+- **THEN** the account and required access records are active through the same valid lifecycle invariants
 
 ### Requirement: Initial platform administrator provisioning
 The system SHALL provide a versioned, idempotent SQL script that promotes exactly one existing registered user to active `platform_admin` without inserting or modifying password credentials.
 
 #### Scenario: Registered user is promoted
-- **WHEN** the project owner executes the script with the unique email of an existing user
-- **THEN** exactly that user becomes an active `platform_admin` and can approve clinics and professionals after signing in again
+- **WHEN** the project owner executes the script with one uniquely matching email
+- **THEN** that user becomes active `platform_admin` and can administer after signing in again
 
 #### Scenario: Promotion target is invalid
-- **WHEN** the supplied email matches zero or more than one user
-- **THEN** the script aborts without promoting any account
+- **WHEN** the email matches zero or more than one user
+- **THEN** the script aborts without promoting an account
+
+### Requirement: Authenticated root and workspace gate
+The Flutter application SHALL route only from freshly validated identity and access state, SHALL use the admin panel as the `platform_admin` root, and SHALL require professionals to complete a non-bypassable workspace gate before clinical navigation.
+
+#### Scenario: Platform administrator signs in
+- **WHEN** validated identity has role `platform_admin` and no active clinical workspace
+- **THEN** login transitions to the standalone admin root rather than clinical summary
+
+#### Scenario: Professional has one active workspace
+- **WHEN** validated identity has exactly one approved active membership
+- **THEN** the gate auto-selects that workspace and enters the professional flow
+
+#### Scenario: Professional has multiple active workspaces
+- **WHEN** validated identity has more than one approved active membership
+- **THEN** the gate presents a selection and enters only after one is selected
+
+#### Scenario: Professional has no usable workspace
+- **WHEN** memberships are pending, rejected, inactive, empty, unavailable, or fail to load
+- **THEN** the gate shows a polished typed state with refresh, error/retry where applicable, and logout
+
+#### Scenario: Back navigation is attempted at gate
+- **WHEN** a professional presses back before selecting an active workspace
+- **THEN** navigation does not bypass the gate into cached clinical content
+
+#### Scenario: Root user logs out
+- **WHEN** a user logs out from admin or another root without a workspace
+- **THEN** authentication and sensitive state are cleared and login is reachable
 
 ### Requirement: Workspace-scoped clinical access
-The system SHALL scope patient and clinical records to a workspace and SHALL only expose them to authenticated members with the required permission.
+Every clinical summary, history, patient, lesion, evaluation, image, and prediction request SHALL include an active `X-Workspace-ID` and SHALL be authorized against current active membership and resource ownership.
 
-#### Scenario: Professional searches patients in active workspace
-- **WHEN** a professional searches for a patient
-- **THEN** results contain only patients accessible within the professional's active workspace
+#### Scenario: Clinical request lacks workspace
+- **WHEN** an authenticated user requests a clinical resource without an active `X-Workspace-ID`
+- **THEN** the system rejects the request without exposing clinical data
 
-#### Scenario: User requests another workspace record
-- **WHEN** a user requests a clinical record outside every workspace accessible to that user
-- **THEN** the system denies access without revealing the record contents
+#### Scenario: Cross-workspace identifier is supplied
+- **WHEN** a valid identifier belongs to another workspace
+- **THEN** the system denies or safely reports absence without revealing record contents
+
+#### Scenario: Membership is inactive
+- **WHEN** a request includes a workspace whose membership is no longer active
+- **THEN** the system returns a machine-identifiable workspace-access failure and no clinical data
+
+### Requirement: Session and workspace boundary safety
+The Flutter application SHALL clear user-sensitive Riverpod providers at authentication boundaries, SHALL clear workspace-scoped providers at workspace boundaries, and SHALL ignore asynchronous completion whose token, session generation, or workspace no longer matches.
+
+#### Scenario: User changes during workspace load
+- **WHEN** an old user's workspace response completes after logout or a new login
+- **THEN** the response is discarded and cannot select, display, or route the new user
+
+#### Scenario: Workspace changes during clinical load
+- **WHEN** a response for the previous workspace completes after selection changed
+- **THEN** the response is discarded and cannot repopulate workspace caches
+
+#### Scenario: Application resumes
+- **WHEN** the app resumes with an authenticated workspace session
+- **THEN** it revalidates current membership before allowing continued privileged clinical access
+
+#### Scenario: Validation fails
+- **WHEN** identity or membership validation fails
+- **THEN** cached privileged routing is not used and the appropriate auth or workspace boundary is cleared
 
 ### Requirement: Membership management
-An authorized clinic administrator SHALL be able to review, approve, reject, and deactivate memberships within their workspace.
+Authorized administrators SHALL review, approve, reject, deactivate, and reactivate memberships only through legal lifecycle transitions and last-administrator protections.
 
-#### Scenario: Clinic administrator reviews pending request
-- **WHEN** a clinic administrator opens pending membership requests
-- **THEN** the system lists only requests for workspaces administered by that user
+#### Scenario: Clinic administrator reviews requests
+- **WHEN** a clinic administrator opens membership requests
+- **THEN** the system lists only workspaces administered by that user
 
 #### Scenario: Membership is deactivated
-- **WHEN** a clinic administrator deactivates a membership
-- **THEN** the affected user loses workspace access without deleting historical records authored by that user
+- **WHEN** an authorized administrator deactivates an eligible active membership
+- **THEN** access ends without deleting historical records
 
-#### Scenario: Professional requests membership after clinic approval
-- **WHEN** a professional selects an active clinic and requests access
-- **THEN** the clinic administrator can approve or reject that pending membership
+#### Scenario: Rejected membership is targeted
+- **WHEN** any actor attempts to approve or reactivate a rejected membership
+- **THEN** the system rejects the terminal transition

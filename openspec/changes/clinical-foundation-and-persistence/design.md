@@ -1,175 +1,122 @@
 ## Context
 
-BucalScan AI is a Flutter/Riverpod mobile client backed by FastAPI, SQLAlchemy, and a CPU-hosted ResNet50 ONNX classifier on Render. Production data is stored in PostgreSQL on Neon through `DATABASE_URL`; SQLite is used locally and in tests. Images are uploaded to Cloudinary in production, with a filesystem fallback used during local development. The Flutter startup screen already polls the backend to mitigate Render free-tier cold starts.
+BucalScan AI is a Flutter/Riverpod client backed by FastAPI, SQLAlchemy, Neon PostgreSQL, Cloudinary, and a CPU-hosted ResNet50 ONNX classifier on Render. SQLite remains useful for local development and tests. The foundation spans registration, authentication, workspace authorization, longitudinal records, inference persistence, cold-start readiness, mobile permissions, error safety, and release evidence.
 
-The current database consists primarily of users and analyses. A medical center is free text on the user, patient data is duplicated on analyses, and each prediction is treated as an isolated event. Schema creation relies on `create_all` plus SQLite-only patches, which cannot safely evolve an existing Neon schema. Current roles are `doctor` and `admin`, public registration immediately creates a doctor, and the mobile client incorrectly treats both `401` and `403` as session expiration.
-
-This change crosses persistence, identity, API, inference, and mobile modules. Existing records and the current prediction endpoint behavior must remain usable while the data model is normalized. The trained model is an immutable input to this work.
+Existing users and analyses must survive schema evolution. The approved model is immutable: no retraining, replacement, preprocessing, class-order, threshold, or output-semantic change belongs in this work. The current reverted Flutter startup behavior polls `/ready` on cold start and then restores or requests authentication; that behavior is retained rather than redesigned.
 
 ## Goals / Non-Goals
 
 **Goals:**
 
-- Establish a repeatable migration path for existing SQLite and Neon PostgreSQL databases.
-- Model clinical workspaces, memberships, patients, lesions, evaluations, predictions, and consent attestations with explicit relationships.
-- Introduce the minimum role and approval rules needed for clinic use without creating a separate specialist role.
-- Preserve current users, analyses, image references, and ResNet50 inference behavior.
-- Separate model output from professional clinical information.
-- Make backend readiness meaningful during Render cold starts.
-- Correct mobile authorization handling, permissions, and product identity.
-- Keep the primary mobile action focused on selecting a patient and analyzing an oral-lesion image.
+- Evolve Neon safely with Alembic and deterministic compatibility records.
+- Make user, workspace, and membership lifecycles explicit and enforce them server-side.
+- Preserve a strict Flutter flow of view -> controller -> use case -> repository contract -> implementation -> datasource -> `ApiService`.
+- Prevent stale requests, old tokens, and cached providers from crossing auth or workspace boundaries.
+- Isolate every clinical query by active `X-Workspace-ID` and current membership.
+- Support reusable patient profiles, multiple lesions, repeated evaluations/images, immutable predictions, and separate clinical observations.
+- Keep capture and prediction non-diagnostic, context-bound, permission-aware, and safely retryable.
+- Produce sanitized user errors and auditable deployment/release checkpoints.
 
 **Non-Goals:**
 
-- Retraining, fine-tuning, replacing, recalibrating, or changing the threshold of the current model.
-- Implementing a complete clinical risk score, guided image-quality model, longitudinal comparison UI, referrals, PDF reports, or notifications.
-- Creating a separate `specialist` role; specialty remains profile metadata on a professional.
-- Adding patient accounts or requiring patients to operate the application.
-- Implementing digital patient signatures, legal-document management, or advanced consent withdrawal workflows.
-- Making Cloudinary assets private, issuing signed URLs, or implementing retention/deletion policies in this academic phase.
-- Adding billing, subscriptions, multiple branches per clinic, or external professional-license verification.
-- Eliminating Render free-tier cold starts.
+- Retraining, replacing, recalibrating, changing preprocessing/class order, or changing the threshold of ResNet50.
+- Documentary verification of profession, title, license, or declared specialty.
+- Patient accounts, legal-document workflows, digital signatures, referrals, reports, notifications, billing, or advanced Cloudinary privacy/retention.
+- A new startup/navigation design beyond preserving the current reverted `/ready` cold-start flow.
+- Claiming production, migration, real-device, or APK evidence that has not actually been collected.
 
 ## Decisions
 
-### 1. Adopt Alembic as the only schema-evolution mechanism
+### 1. Alembic and environment authority
 
-Alembic will be added to the backend and configured from the same `DATABASE_URL` resolution used by the application. `Base.metadata.create_all()` may remain temporarily for isolated tests but will not be the production migration mechanism. The SQLite-only runtime patch will be retired once the baseline migration covers supported upgrade paths.
+Alembic is the schema-evolution mechanism. Production resolves `DATABASE_URL` to Neon PostgreSQL; SQLite is limited to local development and automated tests. Production requires Cloudinary for durable images and explicit environment configuration for database, storage, model artifacts, CORS/host behavior, and secrets. `create_all` may remain only for isolated tests.
 
-Alternatives considered:
+Migration remains additive: legacy users and analyses are mapped deterministically, legacy columns remain during the compatibility release, and approved ResNet50/model-data SHA-256 checksums are verified. Reviewable migration, verification, and rollback SQL contains no credentials.
 
-- Continue `create_all`: rejected because it cannot alter existing PostgreSQL tables safely.
-- Hand-written SQL scripts: rejected because they lack consistent revision ordering, downgrade support, and SQLAlchemy model integration.
+### 2. Explicit domain lifecycles
 
-### 2. Normalize around a clinical workspace boundary
-
-A `clinical_workspaces` table will represent clinics, consultorios, hospitals, universities, campaigns, and independent practices. A `workspace_memberships` table will relate users to workspaces with role, approval status, approver, and timestamps. A user can eventually belong to multiple workspaces, while requests use an explicit active workspace context.
-
-New clinics remain discoverable with `pending` status while awaiting `platform_admin` approval. Searches normalize names and compare available city, address, tax identifier, telephone, and institutional email data to warn about active or pending duplicates. Other professionals cannot request membership until the clinic is active. On approval, the initial requester becomes `clinic_admin`; subsequent membership requests are managed by that clinic administrator.
-
-The initial roles are `platform_admin`, `clinic_admin`, `professional`, and `assistant`. Profession and specialty remain separate attributes. Authorization will resolve current membership state from the database rather than trusting a stale role claim alone.
-
-Alternatives considered:
-
-- Keep one clinic foreign key on users: rejected because it prevents future multi-clinic membership and mixes identity with authorization.
-- Create `specialist` as a role: rejected because specialist describes clinical qualification, not a distinct permission set in this phase.
-
-### 3. Migrate legacy role and medical-center data deterministically
-
-Existing `admin` users will map to `platform_admin`; existing `doctor` users will map to `professional`. Each distinct non-empty `medical_center` value will produce a compatibility workspace after normalized matching, and the user will receive an active membership. Users without a medical center will receive an independent workspace. The migration will not attempt automatic fuzzy merging of differently spelled clinic names because an incorrect merge is harder to reverse than separate compatibility workspaces.
-
-Existing users are treated as approved so the deployment does not lock out current accounts. Approval is required for newly self-registered professionals after the migration.
-
-An independent workspace is created when requested, but its professional remains pending until a `platform_admin` approves the professional. The first `platform_admin` is bootstrapped by registering normally and then running a versioned, idempotent SQL promotion script keyed by unique email. The script never inserts or modifies password material and aborts unless exactly one user matches.
-
-### 4. Introduce patient, lesion, evaluation, and prediction boundaries
-
-The target relationship is:
+The server owns legal transitions:
 
 ```text
-ClinicalWorkspace
-  ├── Memberships ── Users
-  └── Patients
-        └── OralLesions
-              └── ClinicalEvaluations
-                    ├── LesionImage
-                    ├── ModelPrediction
-                    └── ConsentAttestation
+User:       pending -> active; active <-> suspended
+Workspace:  pending -> active | rejected (terminal)
+Membership: pending -> active | rejected; active -> inactive; inactive -> active; rejected terminal
 ```
 
-`patients` stores reusable identity/demographic information scoped to a workspace. Every patient has a required clinical code unique within that workspace and may have an identity document that is also unique within that workspace. Professionals can search by clinical code, identity document, or name; patients do not receive application accounts. `oral_lesions` stores anatomical and lifecycle information. `clinical_evaluations` represents a dated professional encounter. `model_predictions` stores immutable inference output and provenance. Consent fields can be stored one-to-one with the evaluation in this phase while preserving a boundary that can later become a richer consent entity.
+`pending -> active` for a user occurs only through access approval. “Pendiente de verificación” means verification/approval of access, never documentary validation of titles or credentials. A suspended requester cannot be approved. Deactivation preserves history, and last-`clinic_admin` protections prevent an active clinic from becoming unmanaged.
 
-Alternative considered:
+### 3. Registration and center discovery
 
-- Add more columns to `analyses`: rejected because it continues duplication and cannot represent multiple lesions or repeated evaluations cleanly.
+Registration requires profession and accepts optional declared specialty. Password and confirmation fields have independent accessible show/hide controls with conventional semantics: the action describes the resulting visibility. Work mode uses Center and Independent cards. Center supports clinic, consultorio, hospital, university, and campaign; Independent creates a private independent workspace.
 
-### 5. Preserve compatibility through phased analysis migration
+The user-facing term is “centro de atención.” Discovery searches all institutional types by normalized name regardless of type. Active centers are selectable; pending centers are visible but disabled to prevent duplicate requests; rejected and independent workspaces are not public. Creating a missing center requires selecting its institutional type.
 
-The existing `analyses` table will not be destructively rewritten in the first deployment. New normalized tables and nullable compatibility foreign keys will be introduced, then a data migration will create patients, lesions, evaluations, and model predictions from existing rows. Application reads will switch only after migration verification. Legacy columns remain during this change and can be removed in a later, separately approved cleanup.
+### 4. Workspace is the tenant boundary
 
-For an analysis with patient metadata, patient matching will prioritize the legacy patient identifier within the compatibility workspace. Records without patient metadata will be attached to a clearly marked legacy anonymous patient. Each legacy analysis initially receives its own legacy lesion unless deterministic evidence links analyses; this avoids falsely grouping distinct lesions.
+All summary, history, patient, lesion, evaluation, image, and prediction operations require an active `X-Workspace-ID`. A central dependency validates current membership and resource ownership; identifiers alone never cross tenant boundaries. Registration/discovery and platform administration are the only intentional exceptions and use separate authorization.
 
-### 6. Keep the inference service and artifact immutable
+Patients have a workspace-unique clinical code and optional workspace-unique document. A patient can own multiple lesions; a lesion records anatomical site, onset/estimated duration, status, and notes and owns a chronological sequence of evaluations and images. Model predictions are immutable provenance records; professional observations are separate.
 
-The current model files, preprocessing, class order, and response semantics will not be edited. A model-integrity test will target the configured ResNet50 artifact rather than MobileNetV2. Readiness will validate that the ONNX session can load and exposes the expected contract. Prediction persistence will copy the returned values into `model_predictions`; clinical observations never overwrite those values.
+### 5. Clean Architecture and asynchronous ownership
 
-SHA-256 checksums for the approved ResNet50 ONNX file and its external `.onnx.data` file will be recorded and verified by regression tests or deployment checks. This change will not introduce a remote model registry.
+Flutter features follow view -> controller -> use case -> repository contract -> implementation -> datasource -> `ApiService`; views do not invoke HTTP directly. Controllers capture the auth token/session generation and workspace identity that started an operation. Completion is accepted only if that context is still current. This rule applies to workspace gates, clinical pickers, prediction, history, and administration.
 
-### 7. Use explicit workspace context in clinical APIs
+Auth transitions invalidate user-sensitive providers. Workspace transitions invalidate workspace caches plus patient, lesion, evaluation, history, and prediction state. Changing patient keeps the workspace but clears lesion and downstream state. Late responses are discarded rather than repopulating invalidated state.
 
-Clinical requests will identify the active workspace through a stable API mechanism selected consistently for Flutter and backend, preferably an `X-Workspace-ID` header validated against active membership. Resource-level queries will also enforce workspace ownership to prevent identifier-based cross-workspace access.
+### 6. Authentication, routing, and workspace gate
 
-After authentication, a user with multiple active memberships selects the active workspace before entering the normal application flow. Flutter persists the selected workspace for the session and always displays enough workspace context to change it deliberately.
+Cold start retains the current `/ready` polling and retry flow. The login route always completes a routing transition, including validation failures; it never remains stuck on a loading route or reuses cached privileged routing.
 
-Registration and workspace discovery endpoints remain outside active-workspace enforcement where necessary. Platform administration uses explicit elevated authorization rather than a synthetic workspace.
+After validated authentication, `platform_admin` enters the standalone admin root and does not enter clinical summary without a workspace. A professional enters an unavoidable workspace gate. One approved active workspace auto-selects; multiple are selectable. Pending, rejected, inactive, loading, empty, and error/retry states are explicit, with refresh and logout. Back navigation cannot bypass the gate. Logout works from root/admin even when no workspace exists.
 
-Alternative considered:
+### 7. Session failure semantics
 
-- Infer workspace from the user: rejected because it becomes ambiguous once a professional belongs to multiple clinics.
+Only a `401` associated with the currently installed token expires the current session. A stale `401` from an old token is ignored. Ordinary permission `403` preserves authentication. A machine-identifiable workspace-revoked response clears workspace and workspace-scoped state only; a suspended-account response clears authentication. Membership is revalidated on app resume, and failed validation cannot route from cached privilege.
 
-### 8. Treat consent as professional attestation
+FastAPI `detail` values may be strings, maps, or lists. The client normalizes those contracts into safe product language and never shows Dio output, stack traces, internal paths, provider names, or implementation details.
 
-The existing consent gate will be retained but renamed and presented as the professional confirming that patient authorization was obtained. The record stores who attested and when. No patient login, signature, or legal-document upload is required.
+### 8. Patient and lesion interaction state
 
-This is intentionally an academic, lightweight workflow and must not be described as direct in-app patient consent.
+The picker is typed and explicit for loading, search/results, empty, create, error, and retry. Search and creation enforce deduplication. Selection of a patient clears any prior lesion while retaining workspace. A workspace switch clears both selections and all workspace caches. Request generation/context guards prevent a stale search or creation response from selecting an entity in a newer context.
 
-### 9. Separate liveness from readiness
+### 9. Capture, prediction, and retry invariants
 
-`/live` will perform no dependency checks. `/ready` will verify database connectivity and validated model availability with bounded execution time and sanitized failure responses. Existing `/health` can temporarily remain as a compatibility alias while Flutter moves to `/ready`.
+Camera and gallery paths expose platform permission request, denial, retry/settings guidance, cancellation, and image-ready states. Analysis is disabled unless active workspace, patient, lesion, image, and professional authorization attestation are all present.
 
-Flutter will retain retry behavior but replace provider-specific wording with product language. Readiness failure will not be confused with invalid credentials or inference failure.
+An analysis attempt snapshots workspace, patient, lesion, image, and attestation. Retry uses that original snapshot even if visible selection later changes, creates a new attempt, and never overwrites the immutable prior prediction. Result/history navigation is guarded against missing or stale context. All wording describes decision support, not diagnosis.
 
-Alternative considered:
+### 10. Readiness and unchanged inference
 
-- Expand `/health` only: rejected because deployment liveness probes must not restart a healthy process merely because an external dependency is temporarily unavailable.
+`/live` checks only the FastAPI process. `/ready` performs bounded database and model-contract checks with sanitized responses. Flutter preserves provider-neutral cold-start polling. The inference service and approved ONNX/external-data bytes, 224x224 RGB ImageNet normalization, benign/malignant ordering, threshold, and response fields remain unchanged.
 
-### 10. Keep Cloudinary behavior simple but environment-aware
+### 11. Release evidence is separate from implementation evidence
 
-Advanced Cloudinary privacy is explicitly deferred. Production configuration will expect Cloudinary and will not rely on Render's ephemeral filesystem for durable clinical images. Local development can continue using filesystem fallback. This can be enforced through an environment designation or a startup/configuration check without exposing credentials.
-
-### 11. Deliver backward-compatible API evolution
-
-The existing `/api/v1/predict` response fields used by Flutter will remain available. Request evolution will be additive where possible, introducing patient, lesion, workspace, and attestation identifiers. During a short compatibility window, migrated legacy clients can still consume existing result fields, but new persisted analyses must satisfy normalized relationships.
-
-If additive compatibility makes validation ambiguous, richer clinical endpoints will be introduced under `/api/v2` rather than silently changing `/api/v1` semantics.
-
-### 12. Correct mobile platform and session behavior independently of model flow
-
-The Dio interceptor will clear credentials only for `401`; a `403` will propagate as an authorization error. iOS camera and photo-library usage descriptions, applicable Android declarations, and product display names will be aligned to BucalScan AI. Permission denial will be represented as a recoverable UI state.
+Automated backend and Flutter suites can establish regression evidence. They do not prove production deployment, migrated production data, or real-device behavior. A release APK record includes version/build identity, filename, SHA-256 hash, build timestamp, source revision when available, and clean-install guidance. Institutional and independent approval flows, root/gate routing, full Render-to-Neon clinical flow, migrated history, latest backend deployment, and APK installation remain unchecked until directly observed.
 
 ## Risks / Trade-offs
 
-- [Large cross-cutting schema change] → Implement migrations and application cutover in phases, verify row counts and relationships, and retain legacy columns until a later cleanup.
-- [Legacy clinic names produce duplicates] → Prefer separate compatibility workspaces and allow later administrator consolidation rather than risky automatic fuzzy merges.
-- [Legacy analyses cannot be reliably grouped by lesion] → Create one legacy lesion per analysis unless deterministic linkage exists.
-- [New approval workflow locks out existing users] → Mark migrated users and memberships active; apply pending approval only to new self-registration.
-- [Multi-workspace context complicates APIs] → Use one explicit, consistently validated workspace identifier and central authorization dependencies.
-- [Readiness checks increase startup traffic during Render wake-up] → Keep checks lightweight, bounded, and safe under polling.
-- [ResNet50 test increases test time or repository resource use] → Use a minimal representative image and session reuse while still testing the deployed artifact.
-- [Cloudinary assets remain accessible by URL] → Accept as an academic-phase limitation and retain privacy hardening as a future change.
-- [Production depends on free-tier sleeping infrastructure] → Preserve clear retry/failure UX; a non-sleeping hosting plan remains a future operational decision.
-- [SQLite and PostgreSQL differ] → Add migration tests for SQLite and PostgreSQL-compatible integration coverage where feasible, with Neon staging verification before production migration.
+- [Cross-cutting state can leak between users or workspaces] -> Invalidate providers at boundaries and reject stale completion by token/session/workspace generation.
+- [Ambiguous `403` handling can either leak access or log users out] -> Use machine-identifiable auth, suspension, and workspace-revocation contracts; preserve session for ordinary permission denial.
+- [Concurrent lifecycle actions conflict] -> Validate current state transactionally and return sanitized conflicts.
+- [Legacy records cannot be reliably grouped] -> Use deterministic compatibility patients/lesions and retain mappings rather than fuzzy merges.
+- [Production differs from SQLite] -> Test migrations locally and keep Neon execution and post-migration checks as explicit gates.
+- [Render sleeps] -> Retain bounded `/ready` polling, retry, and provider-neutral UI.
+- [Retry duplicates inference] -> Preserve immutable attempts and provenance; never mutate a prior prediction.
+- [Automated green status is mistaken for release evidence] -> Keep deployment/device/migration checkboxes open until evidence is recorded.
 
 ## Migration Plan
 
-1. The project owner captures a backup of the Neon database and records baseline counts for users and analyses.
-2. Add Alembic configuration and create a baseline revision representing the current deployed schema without dropping data.
-3. Generate ordered PostgreSQL migration, verification, and rollback SQL scripts; the project owner reviews and executes approved production scripts manually in the Neon console.
-4. Add workspace, membership, patient, lesion, evaluation, image/prediction, and consent-compatible structures through forward migrations.
-5. Backfill legacy users into roles, workspaces, and active memberships using deterministic rules.
-6. Backfill analyses into patient, lesion, evaluation, and prediction records while preserving every original field and identifier mapping.
-7. Run migration verification for row counts, orphan checks, unique constraints, model provenance, and image references.
-8. Deploy backend code capable of reading the normalized model while preserving the current prediction response contract.
-9. Deploy Flutter changes for workspace context, patient/lesion selection, readiness, permission declarations, and corrected `401`/`403` behavior.
-10. Monitor readiness, authentication failures, migration-related errors, and prediction persistence after deployment.
-11. Retain legacy columns and tables through this release; propose destructive cleanup only after production verification.
+1. Back up Neon and record baseline schema and counts.
+2. Apply ordered Alembic/SQL revisions that add workspace, membership, patient, lesion, evaluation, image, prediction, and attestation structures without deleting legacy records.
+3. Backfill roles, active compatibility access, patients, lesions, evaluations, predictions, image references, and model provenance deterministically.
+4. Verify counts, orphans, uniqueness, lifecycle values, checksums, timestamps, and legacy mappings.
+5. Deploy the latest backend configuration for Neon, Cloudinary, Render readiness, and the retained model.
+6. Publish a versioned APK and record identity/hash/time/source information and clean-install instructions.
+7. Perform the institutional and independent approval, routing, full clinical production flow, migrated-history, and device checks listed as open tasks.
+8. Retain legacy structures through this release; prefer forward-fix migrations after normalized writes begin.
 
-Rollback strategy:
-
-- Before application cutover, downgrade the latest Alembic revisions or restore the Neon backup if a data migration cannot be corrected safely.
-- After normalized writes begin, prefer a forward-fix migration. Restoring a backup would discard new records and therefore requires an explicit maintenance decision.
-- Flutter can temporarily continue using compatible `/api/v1` response fields while backend issues are corrected.
+Rollback before cutover uses Alembic downgrade or the verified backup. After normalized writes, rollback requires an explicit maintenance decision because restoring a backup would discard new records.
 
 ## Open Questions
 
-No blocking product decisions remain for this change. Production database scripts will be supplied for manual execution by the project owner in Neon, and their actual execution will remain an explicit deployment checkpoint.
+No product decisions remain. Production execution, current deployment, migrated-history verification, and physical-device/APK evidence remain release gates rather than assumptions.

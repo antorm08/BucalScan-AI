@@ -83,4 +83,19 @@ void main() {
       expect(user.isAdmin, false);
     });
   });
+
+  test('modela pending sin permitir alternar su estado', () {
+    const user = AdminUser(
+      id: 3,
+      fullName: 'Pending',
+      doctorId: 'MD-003',
+      email: 'pending@example.test',
+      status: 'pending',
+      role: 'doctor',
+    );
+
+    expect(user.lifecycleStatus, AdminUserStatus.pending);
+    expect(user.isPending, isTrue);
+    expect(user.canToggleStatus, isFalse);
+  });
 }

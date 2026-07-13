@@ -21,7 +21,9 @@ def normalize(value: str) -> str:
 
 @router.get("", response_model=list[WorkspaceResponse])
 def discover_workspaces(q: str = Query("", max_length=100), db: Session = Depends(get_db)):
-    query = db.query(models.ClinicalWorkspace).filter(models.ClinicalWorkspace.status == "active")
+    query = db.query(models.ClinicalWorkspace).filter(
+        models.ClinicalWorkspace.status.in_(("active", "pending"))
+    )
     if q.strip():
         query = query.filter(models.ClinicalWorkspace.normalized_name.contains(normalize(q)))
     return query.order_by(models.ClinicalWorkspace.name).limit(50).all()
@@ -118,6 +120,7 @@ def manage_membership(membership_id: int, payload: MembershipUpdate, access: Wor
         ("pending", "active"),
         ("pending", "rejected"),
         ("active", "inactive"),
+        ("inactive", "active"),
     }
     if (membership.status, payload.status) not in allowed:
         raise HTTPException(status_code=409, detail="Invalid membership status transition.")
@@ -136,7 +139,7 @@ def manage_membership(membership_id: int, payload: MembershipUpdate, access: Wor
     if payload.status == "active" and payload.role:
         membership.role = payload.role
     elif payload.role and payload.role != membership.role:
-        raise HTTPException(status_code=409, detail="Roles can only be assigned when approving a pending membership.")
+        raise HTTPException(status_code=409, detail="Roles can only be assigned when activating a membership.")
     if payload.status == "active" and member.status == "pending":
         member.status = "active"
     membership.approved_by_id = access.user.id

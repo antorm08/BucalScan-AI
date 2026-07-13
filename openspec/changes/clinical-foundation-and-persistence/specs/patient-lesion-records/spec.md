@@ -1,67 +1,83 @@
 ## ADDED Requirements
 
-### Requirement: Reusable patient records
-The system SHALL allow an authorized professional to search for an existing patient in the active workspace or register a new patient before creating a clinical evaluation.
+### Requirement: Reusable workspace patient profiles
+The system SHALL let authorized professionals search, deduplicate, select, or create a patient in the active workspace using a required workspace-unique clinical code, an optional workspace-unique identity document, and patient name/profile data.
 
 #### Scenario: Existing patient is selected
-- **WHEN** a professional searches by supported patient identifier or name and selects a result
-- **THEN** the new evaluation uses the existing patient record and its prior clinical history remains available
+- **WHEN** a professional finds a patient by clinical code, document, or name
+- **THEN** the existing profile and longitudinal history are reused only within the active workspace
 
-#### Scenario: New patient is registered
-- **WHEN** no matching patient exists and the professional submits a clinic-unique clinical code and valid minimum patient information
-- **THEN** the system creates a patient in the active workspace and makes that patient available for evaluation without creating a patient login
+#### Scenario: New patient is created
+- **WHEN** no matching patient is selected and valid minimum data and unique clinical code are submitted
+- **THEN** one patient profile is created in the active workspace without a patient login
 
-#### Scenario: Professional records identity document
-- **WHEN** the patient's clinical record contains an identity document
-- **THEN** the professional can store it as an optional value that is unique within the active workspace
+#### Scenario: Exact identifier already exists
+- **WHEN** clinical code or identity document duplicates an active-workspace patient
+- **THEN** creation is prevented and the existing patient is offered
 
-#### Scenario: Professional searches patient
-- **WHEN** the professional searches by clinical code, identity document, or patient name
-- **THEN** the system returns matching patients from the active workspace only
+#### Scenario: Demographic data is similar
+- **WHEN** name or available demographics resemble another patient without an exact unique-key conflict
+- **THEN** potential matches are shown without automatic merging
 
-### Requirement: Potential duplicate warning
-The system SHALL warn the professional when a new patient resembles an existing patient in the active workspace, without automatically merging records.
+### Requirement: Typed patient and lesion picker
+The Flutter picker SHALL expose typed loading, search/results, empty, create, error, and retry states for patients and lesions and SHALL reject stale completions.
 
-#### Scenario: Matching identifier exists
-- **WHEN** a professional enters a clinical code or identity document already registered in the active workspace
-- **THEN** the system prevents an accidental duplicate and offers the existing patient for selection
+#### Scenario: Search has no result
+- **WHEN** a current patient or lesion search completes successfully without matches
+- **THEN** the picker shows a distinct empty state and an eligible create action
 
-#### Scenario: Similar demographic data exists
-- **WHEN** a patient name and available demographic data resemble an existing record but the identifier is different or absent
-- **THEN** the system displays potential matches and allows the professional to decide whether to select an existing record or continue
+#### Scenario: Picker request fails
+- **WHEN** a current request fails
+- **THEN** the picker shows a sanitized error and retry without losing valid workspace context
 
-### Requirement: Distinct oral-lesion cases
-The system SHALL represent each oral lesion independently so one patient can have multiple lesions and one lesion can have multiple evaluations over time.
+#### Scenario: Older search completes late
+- **WHEN** an older query or prior-workspace response completes after a newer request or context change
+- **THEN** the picker ignores it and preserves the current typed state
+
+### Requirement: Distinct longitudinal lesions
+The system SHALL allow multiple lesions per patient, SHALL record anatomical site, onset or estimated duration, status, and optional notes, and SHALL append repeated evaluations and images to a chronological lesion timeline.
 
 #### Scenario: Patient has multiple lesions
-- **WHEN** a professional records lesions at two distinct anatomical locations for one patient
-- **THEN** the system maintains separate lesion histories under the same patient
+- **WHEN** lesions at distinct sites are recorded for one patient
+- **THEN** each has an independent lifecycle and timeline under the reusable patient
 
 #### Scenario: Existing lesion is evaluated again
-- **WHEN** a professional selects an existing active lesion and performs another analysis
-- **THEN** the new evaluation is appended to that lesion's chronological history
+- **WHEN** a professional selects an existing lesion for another evaluation
+- **THEN** the new image, observation, attestation, and immutable prediction are appended chronologically
 
-### Requirement: Minimum lesion description
-The system SHALL record the lesion's anatomical site, initial observation date or estimated duration, status, and optional clinical notes independently from model prediction data.
+#### Scenario: Lesion exists without prediction
+- **WHEN** valid lesion details are saved before analysis
+- **THEN** the lesion exists without requiring model output
 
-#### Scenario: Lesion is created with valid minimum data
-- **WHEN** a professional submits a supported anatomical site and required temporal information
-- **THEN** the system creates the lesion without requiring a model prediction first
+### Requirement: Selection boundary behavior
+Patient and lesion selections SHALL belong to the active workspace; changing patient SHALL preserve workspace and clear lesion/downstream context, while changing workspace SHALL clear patient, lesion, and every workspace-scoped cache.
 
-### Requirement: Professional consent attestation
-Before a clinical image is captured, analyzed, and stored, the system SHALL require the acting professional to attest that patient authorization has been obtained and SHALL record the professional and timestamp with the evaluation.
+#### Scenario: Patient changes
+- **WHEN** a professional selects a different patient in the same workspace
+- **THEN** the workspace remains active and prior lesion, evaluation, image, and pending result context are cleared
 
-#### Scenario: Professional confirms authorization
-- **WHEN** the professional confirms authorization and submits the image
-- **THEN** the system records the attestation with the evaluation and permits analysis
+#### Scenario: Workspace changes
+- **WHEN** a different active workspace is selected
+- **THEN** patient, lesion, history, prediction, search, and other workspace caches are cleared before new data is accepted
 
-#### Scenario: Authorization is not confirmed
-- **WHEN** the professional attempts to submit an image without confirming patient authorization
-- **THEN** the system does not analyze or persist the image
+### Requirement: Professional authorization attestation
+Before analysis and storage, the system SHALL require the acting professional to attest that patient authorization was obtained and SHALL persist who attested, when, and for which evaluation.
 
-### Requirement: Clinical history ownership
-Clinical records SHALL retain the workspace, patient, lesion, creating professional, and evaluation timestamps needed to reconstruct their history.
+#### Scenario: Authorization is confirmed
+- **WHEN** a professional submits complete clinical context and attestation
+- **THEN** the attestation is recorded with the evaluation and analysis may proceed
 
-#### Scenario: Professional views lesion history
-- **WHEN** an authorized professional opens a lesion
-- **THEN** the system presents its evaluations in chronological order with their responsible professionals and image-analysis results
+#### Scenario: Authorization is absent
+- **WHEN** submission lacks attestation
+- **THEN** the image is not analyzed or persisted as a clinical prediction
+
+### Requirement: Clinical history ownership and navigation
+Clinical history SHALL retain workspace, patient, lesion, professional, evaluation, image, immutable prediction, separate observations, and timestamps, and mobile navigation SHALL open history/results only for current valid context.
+
+#### Scenario: Lesion timeline is viewed
+- **WHEN** an authorized professional opens the current lesion
+- **THEN** evaluations appear chronologically with responsible professional, images, observations, and unchanged prediction provenance
+
+#### Scenario: Result context is stale or absent
+- **WHEN** navigation targets a result or history that no longer belongs to the current workspace/patient/lesion context
+- **THEN** navigation is blocked or redirected to a safe current selection state

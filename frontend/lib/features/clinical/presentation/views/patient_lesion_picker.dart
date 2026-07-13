@@ -201,7 +201,12 @@ class _PatientLesionPickerState extends ConsumerState<PatientLesionPicker> {
                 title: Text(patient.fullName),
                 subtitle: Text(patient.clinicalCode),
                 trailing: TextButton(
-                  onPressed: () => ref.invalidate(clinicalControllerProvider),
+                  onPressed: () {
+                    ref
+                        .read(clinicalControllerProvider.notifier)
+                        .clearPatientSelection();
+                    setState(() => _lesions = const []);
+                  },
                   child: const Text('Cambiar'),
                 ),
               ),

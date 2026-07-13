@@ -17,15 +17,28 @@ class WorkspaceGateView extends ConsumerStatefulWidget {
   ConsumerState<WorkspaceGateView> createState() => _WorkspaceGateViewState();
 }
 
-class _WorkspaceGateViewState extends ConsumerState<WorkspaceGateView> {
+class _WorkspaceGateViewState extends ConsumerState<WorkspaceGateView>
+    with WidgetsBindingObserver {
   bool _loggingOut = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     Future.microtask(
       () => ref.read(clinicalControllerProvider.notifier).loadWorkspaces(),
     );
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _refresh();
   }
 
   Future<void> _refresh() async {
@@ -58,6 +71,7 @@ class _WorkspaceGateViewState extends ConsumerState<WorkspaceGateView> {
     if (state.activeWorkspace != null) return widget.child;
     final active = state.workspaces.where((item) => item.canEnter).toList();
     final pending = state.workspaces.where((item) => !item.canEnter).toList();
+    final gateStatus = _gateStatus(pending);
 
     return PopScope(
       canPop: false,
@@ -82,7 +96,10 @@ class _WorkspaceGateViewState extends ConsumerState<WorkspaceGateView> {
                           _ConnectionStatus(onRetry: _refresh),
                           const SizedBox(height: 20),
                         ] else ...[
-                          _StatusPanel(hasAccess: active.isNotEmpty),
+                          _StatusPanel(
+                            hasAccess: active.isNotEmpty,
+                            status: gateStatus,
+                          ),
                           const SizedBox(height: 20),
                         ],
                         if (active.length > 1) ...[
@@ -226,8 +243,34 @@ class _Header extends StatelessWidget {
 
 class _StatusPanel extends StatelessWidget {
   final bool hasAccess;
+  final _GateStatus status;
 
-  const _StatusPanel({required this.hasAccess});
+  const _StatusPanel({required this.hasAccess, required this.status});
+
+  String get _badge => switch (status) {
+    _GateStatus.pending => 'APROBACIÓN PENDIENTE',
+    _GateStatus.rejected => 'SOLICITUD RECHAZADA',
+    _GateStatus.inactive => 'ACCESO INACTIVO',
+    _GateStatus.empty => 'SIN ACCESO ASOCIADO',
+  };
+
+  String get _title => switch (status) {
+    _GateStatus.pending => 'Tu espacio está en revisión',
+    _GateStatus.rejected => 'Tu solicitud fue rechazada',
+    _GateStatus.inactive => 'Tu acceso está inactivo',
+    _GateStatus.empty => 'No tienes espacios disponibles',
+  };
+
+  String get _description => switch (status) {
+    _GateStatus.pending =>
+      'La aprobación confirma tu vínculo profesional antes de habilitar pacientes, historias y análisis.',
+    _GateStatus.rejected =>
+      'Contacta al administrador del centro si necesitas revisar esta decisión.',
+    _GateStatus.inactive =>
+      'Un administrador del centro debe reactivar tu membresía para continuar.',
+    _GateStatus.empty =>
+      'Solicita acceso a un centro clínico para comenzar a trabajar.',
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -254,7 +297,7 @@ class _StatusPanel extends StatelessWidget {
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(
-            hasAccess ? 'ACCESO DISPONIBLE' : 'APROBACIÓN PENDIENTE',
+            hasAccess ? 'ACCESO DISPONIBLE' : _badge,
             style: TextStyle(
               color: hasAccess ? AppColors.benignText : AppColors.primary,
               fontSize: 11,
@@ -265,9 +308,7 @@ class _StatusPanel extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         Text(
-          hasAccess
-              ? 'Selecciona dónde atenderás'
-              : 'Tu espacio está en revisión',
+          hasAccess ? 'Selecciona dónde atenderás' : _title,
           textAlign: TextAlign.center,
           style: const TextStyle(
             color: AppColors.onSurface,
@@ -279,7 +320,7 @@ class _StatusPanel extends StatelessWidget {
         Text(
           hasAccess
               ? 'El acceso activo protege el contexto clínico de cada institución.'
-              : 'La aprobación confirma tu vínculo profesional antes de habilitar pacientes, historias y análisis.',
+              : _description,
           textAlign: TextAlign.center,
           style: const TextStyle(
             color: AppColors.onSurfaceVariant,
@@ -334,6 +375,8 @@ class _WorkspaceCard extends StatelessWidget {
 
   String get _statusLabel {
     if (workspace.canEnter) return 'Activo';
+    if (workspace.status == 'rejected') return 'Centro rechazado';
+    if (workspace.status == 'inactive') return 'Centro inactivo';
     if (workspace.type == 'independent') {
       return 'Aprobación profesional pendiente';
     }
@@ -428,6 +471,33 @@ class _WorkspaceCard extends StatelessWidget {
       ),
     );
   }
+}
+
+enum _GateStatus { pending, rejected, inactive, empty }
+
+_GateStatus _gateStatus(List<ClinicalWorkspace> workspaces) {
+  if (workspaces.any(
+    (item) =>
+        item.status == 'pending' ||
+        item.membershipStatus == MembershipStatus.pending,
+  )) {
+    return _GateStatus.pending;
+  }
+  if (workspaces.any(
+    (item) =>
+        item.status == 'rejected' ||
+        item.membershipStatus == MembershipStatus.rejected,
+  )) {
+    return _GateStatus.rejected;
+  }
+  if (workspaces.any(
+    (item) =>
+        item.status == 'inactive' ||
+        item.membershipStatus == MembershipStatus.inactive,
+  )) {
+    return _GateStatus.inactive;
+  }
+  return _GateStatus.empty;
 }
 
 class _LoadingState extends StatelessWidget {

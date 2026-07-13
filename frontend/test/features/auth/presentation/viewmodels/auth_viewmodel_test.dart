@@ -153,6 +153,26 @@ void main() {
     });
 
     test(
+      'no usa caché y limpia sesión cuando la cuenta está suspendida',
+      () async {
+        when(mockHasSessionTokenUseCase.call()).thenAnswer((_) async => true);
+        when(mockGetCurrentUserUseCase.call()).thenThrow(
+          Exception('Tu cuenta está suspendida. Contacta al administrador.'),
+        );
+        when(mockGetCachedUserUseCase.call()).thenAnswer((_) async => _user);
+        when(mockLogoutUseCase.call()).thenAnswer((_) async {});
+
+        final result = await container
+            .read(authViewModelProvider.notifier)
+            .tryAutoLogin();
+
+        expect(result, isFalse);
+        expect(container.read(authViewModelProvider).currentUser, isNull);
+        verify(mockLogoutUseCase.call()).called(1);
+      },
+    );
+
+    test(
       'usa el usuario en caché cuando falla por un error no relacionado a auth',
       () async {
         when(mockHasSessionTokenUseCase.call()).thenAnswer((_) async => true);

@@ -28,7 +28,12 @@ class AuthInterceptor extends Interceptor {
     ErrorInterceptorHandler handler,
   ) async {
     final statusCode = err.response?.statusCode;
-    if (statusCode == 401) {
+    final workspaceScoped = err.requestOptions.extra['workspaceScoped'] == true;
+    final validatesAccount =
+        err.requestOptions.extra['validatesAccount'] == true;
+    if (statusCode == 403 && workspaceScoped) {
+      SessionEvents().emitWorkspaceAccessRevoked();
+    } else if (statusCode == 401 || (statusCode == 403 && validatesAccount)) {
       final failedToken =
           err.requestOptions.extra[_requestTokenKey] as String? ??
           _bearerToken(err.requestOptions.headers['Authorization']);

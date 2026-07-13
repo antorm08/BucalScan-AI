@@ -12,6 +12,7 @@ class PredictionState {
   final String? analysisStatusMessage;
   final String? patientId;
   final String? patientName;
+  final String? lesionId;
 
   const PredictionState({
     this.result,
@@ -20,6 +21,7 @@ class PredictionState {
     this.analysisStatusMessage,
     this.patientId,
     this.patientName,
+    this.lesionId,
   });
 
   PredictionState copyWith({
@@ -29,6 +31,7 @@ class PredictionState {
     String? analysisStatusMessage,
     String? patientId,
     String? patientName,
+    String? lesionId,
     bool clearResult = false,
     bool clearError = false,
     bool clearStatus = false,
@@ -43,6 +46,7 @@ class PredictionState {
           : analysisStatusMessage ?? this.analysisStatusMessage,
       patientId: clearPatient ? null : patientId ?? this.patientId,
       patientName: clearPatient ? null : patientName ?? this.patientName,
+      lesionId: clearPatient ? null : lesionId ?? this.lesionId,
     );
   }
 }
@@ -66,6 +70,7 @@ class PredictionViewModel extends Notifier<PredictionState> {
       isLoading: true,
       patientId: patientId,
       patientName: patientName,
+      lesionId: lesionId,
       analysisStatusMessage: 'Enviando imagen para analisis...',
     );
 

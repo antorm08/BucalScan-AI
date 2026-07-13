@@ -45,14 +45,17 @@ def test_pending_workspace_blocks_members_and_platform_admin(client, db_session)
     assert client.get("/api/v1/patients", headers=_headers(admin, workspace)).status_code == 403
 
 
-def test_discovery_only_returns_active_workspaces(client, db_session):
+def test_discovery_returns_active_and_pending_workspaces(client, db_session):
     owner = _user(db_session, "discover-owner")
     active, _ = _workspace(db_session, owner, "visible")
-    _workspace(db_session, owner, "hidden", status="pending")
+    pending, _ = _workspace(db_session, owner, "pending", status="pending")
+    hidden, _ = _workspace(db_session, owner, "hidden", status="rejected")
 
     response = client.get("/api/v1/workspaces")
     assert response.status_code == 200
-    assert [item["id"] for item in response.json()] == [active.id]
+    ids = {item["id"] for item in response.json()}
+    assert ids == {active.id, pending.id}
+    assert hidden.id not in ids
 
 
 def test_legacy_approval_is_pending_only_and_activates_pending_requester(client, db_session):
@@ -102,6 +105,53 @@ def test_last_clinic_admin_cannot_self_demote(client, db_session):
         headers=_headers(clinic_admin, workspace), json={"status": "inactive"},
     )
     assert response.status_code == 409
+
+
+def test_clinic_admin_can_reactivate_inactive_but_rejected_is_terminal(client, db_session):
+    clinic_admin = _user(db_session, "reactivating-admin")
+    workspace, _ = _workspace(db_session, clinic_admin, "reactivation", role="clinic_admin")
+    member = _user(db_session, "reactivated-member")
+    membership = models.WorkspaceMembership(
+        workspace_id=workspace.id, user_id=member.id, status="inactive"
+    )
+    db_session.add(membership)
+    db_session.flush()
+
+    response = client.patch(
+        f"/api/v1/workspaces/{workspace.id}/memberships/{membership.id}",
+        headers=_headers(clinic_admin, workspace),
+        json={"status": "active", "role": "professional"},
+    )
+    assert response.status_code == 200
+    assert response.json()["status"] == "active"
+
+    membership.status = "rejected"
+    db_session.flush()
+    response = client.patch(
+        f"/api/v1/workspaces/{workspace.id}/memberships/{membership.id}",
+        headers=_headers(clinic_admin, workspace), json={"status": "active"},
+    )
+    assert response.status_code == 409
+
+
+def test_admin_user_status_does_not_activate_pending_user(client, db_session):
+    admin = _user(db_session, "status-admin", role="platform_admin")
+    pending = _user(db_session, "status-pending", status="pending")
+    active = _user(db_session, "status-active")
+
+    response = client.patch(
+        f"/api/v1/admin/users/{pending.id}/status",
+        headers=_headers(admin), json={"status": "active"},
+    )
+    assert response.status_code == 409
+    assert pending.status == "pending"
+
+    response = client.patch(
+        f"/api/v1/admin/users/{active.id}/status",
+        headers=_headers(admin), json={"status": "suspended"},
+    )
+    assert response.status_code == 200
+    assert response.json()["status"] == "suspended"
 
 
 def test_registration_and_login_normalize_email(client, db_session):

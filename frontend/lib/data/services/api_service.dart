@@ -29,6 +29,7 @@ class ApiService {
     headers: {
       if (_activeWorkspaceId != null) 'X-Workspace-ID': _activeWorkspaceId,
     },
+    extra: {'workspaceScoped': true},
   );
 
   Future<void> pingReadiness() async {
@@ -131,17 +132,23 @@ class ApiService {
     Map<String, dynamic>? query,
     bool workspaceScoped = false,
   }) async {
-    final response = await _dio.get(
-      path,
-      queryParameters: query,
-      options: workspaceScoped ? _workspaceOptions() : null,
-    );
-    final raw = response.data is Map
-        ? ((response.data as Map)['items'] ?? (response.data as Map)['data'])
-        : response.data;
-    return (raw as List? ?? const [])
-        .map((item) => Map<String, dynamic>.from(item as Map))
-        .toList();
+    try {
+      final response = await _dio.get(
+        path,
+        queryParameters: query,
+        options: workspaceScoped ? _workspaceOptions() : null,
+      );
+      final raw = response.data is Map
+          ? ((response.data as Map)['items'] ?? (response.data as Map)['data'])
+          : response.data;
+      return (raw as List? ?? const [])
+          .map((item) => Map<String, dynamic>.from(item as Map))
+          .toList();
+    } on DioException catch (e) {
+      throw Exception(
+        _buildApiErrorMessage(e, fallback: 'No se pudieron cargar los datos.'),
+      );
+    }
   }
 
   Future<Map<String, dynamic>> postJson(
@@ -149,12 +156,21 @@ class ApiService {
     Map<String, dynamic> data, {
     bool workspaceScoped = false,
   }) async {
-    final response = await _dio.post(
-      path,
-      data: data,
-      options: workspaceScoped ? _workspaceOptions() : null,
-    );
-    return Map<String, dynamic>.from(response.data as Map);
+    try {
+      final response = await _dio.post(
+        path,
+        data: data,
+        options: workspaceScoped ? _workspaceOptions() : null,
+      );
+      return Map<String, dynamic>.from(response.data as Map);
+    } on DioException catch (e) {
+      throw Exception(
+        _buildApiErrorMessage(
+          e,
+          fallback: 'No se pudo guardar la información.',
+        ),
+      );
+    }
   }
 
   Future<Map<String, dynamic>> login({
@@ -176,7 +192,10 @@ class ApiService {
 
   Future<Map<String, dynamic>> me() async {
     try {
-      final response = await _dio.get('${AppConstants.apiVersion}/auth/me');
+      final response = await _dio.get(
+        '${AppConstants.apiVersion}/auth/me',
+        options: Options(extra: {'validatesAccount': true}),
+      );
       return response.data;
     } on DioException catch (e) {
       throw Exception(
@@ -214,7 +233,10 @@ class ApiService {
 
   Future<List<Map<String, dynamic>>> getHistory() async {
     try {
-      final response = await _dio.get('${AppConstants.apiVersion}/history');
+      final response = await _dio.get(
+        '${AppConstants.apiVersion}/history',
+        options: _workspaceOptions(),
+      );
       final List<dynamic> data = response.data;
       return data
           .map((json) => Map<String, dynamic>.from(json as Map))
@@ -230,6 +252,7 @@ class ApiService {
     try {
       final response = await _dio.get(
         '${AppConstants.apiVersion}/summary/today',
+        options: _workspaceOptions(),
       );
       return Map<String, dynamic>.from(response.data as Map);
     } on DioException catch (e) {
@@ -361,27 +384,34 @@ class ApiService {
 
     final data = error.response?.data;
 
+    final detail = _extractDetail(data);
+    if (detail != null) {
+      return _translateServerMessage(detail);
+    }
+
+    if (error.response?.statusCode == 401) {
+      return 'Tu sesión expiró. Inicia sesión nuevamente.';
+    }
+
     if (error.response?.statusCode == 403) {
-      return 'No tiene permiso para realizar esta accion en el espacio de trabajo activo.';
-    }
-
-    if (data is Map<String, dynamic>) {
-      final detail = data['detail'] ?? data['message'] ?? data['error'];
-      if (detail is String && detail.trim().isNotEmpty) {
-        return _translateServerMessage(detail);
-      }
-    }
-
-    if (data is String && data.trim().isNotEmpty) {
-      return _translateServerMessage(data);
-    }
-
-    final message = error.message;
-    if (message != null && message.trim().isNotEmpty) {
-      return '$fallback $message';
+      return 'No tienes permiso para realizar esta acción.';
     }
 
     return fallback;
+  }
+
+  String? _extractDetail(Object? data) {
+    if (data is String && data.trim().isNotEmpty) return data.trim();
+    if (data is Map) {
+      final value =
+          data['detail'] ?? data['message'] ?? data['error'] ?? data['msg'];
+      return _extractDetail(value);
+    }
+    if (data is List && data.isNotEmpty) {
+      final messages = data.map(_extractDetail).whereType<String>().toList();
+      if (messages.isNotEmpty) return messages.join(' ');
+    }
+    return null;
   }
 
   String _translateServerMessage(String message) {
@@ -401,6 +431,21 @@ class ApiService {
       return 'Usuario y clave incorrectos.';
     }
 
-    return message;
+    if (normalized.contains('account suspended')) {
+      return 'Tu cuenta está suspendida. Contacta al administrador.';
+    }
+
+    if (normalized.contains('workspace access') ||
+        normalized.contains('active membership') ||
+        normalized.contains('workspace is not active')) {
+      return 'Tu acceso al espacio de trabajo ya no está activo.';
+    }
+
+    if (normalized.contains('field required') ||
+        normalized.contains('validation error')) {
+      return 'La información enviada es incompleta o no es válida.';
+    }
+
+    return 'El servidor rechazó la solicitud. Revisa los datos e intenta nuevamente.';
   }
 }

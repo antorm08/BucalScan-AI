@@ -24,4 +24,14 @@
 - [x] 4.1 Probar autorización y transiciones administrativas del backend
 - [x] 4.2 Probar controlador y presentación administrativa Flutter
 - [x] 4.3 Ejecutar pytest, flutter analyze y flutter test
-- [ ] 4.4 Verificar manualmente el flujo con un profesional independiente pendiente
+
+## 5. Endurecimiento reciente y verificación de entrega
+
+- [x] 5.1 Endurecer los ciclos de vida y contratos administrativos: pendiente de verificación significa aprobación de acceso, `pending -> active` solo ocurre por aprobación, rechazos son terminales, un suspendido no puede aprobarse y se protege al último `clinic_admin`; cubierto por la suite backend confirmada (`83 passed`).
+- [x] 5.2 Endurecer la política de roles: independiente usa `professional`, centros activos aceptan solo roles permitidos y ninguna decisión altera otros workspaces; cubierto por la suite backend confirmada (`83 passed`) y Flutter (`167 passed`).
+- [x] 5.3 Endurecer la raíz móvil con guard `platform_admin`, conteos y pestañas, etiquetas/acciones por estado, ausencia de suspender/reactivar para pendientes, autosuspensión denegada, confirmaciones, carga/vacío/error/reintento/acción y logout sin workspace; cubierto por la suite Flutter confirmada (`167 passed`) y `flutter analyze` limpio.
+- [x] 5.4 Verificar por pruebas automatizadas el flujo vista -> controlador -> caso de uso -> contrato de repositorio -> implementación -> datasource -> `ApiService`, el descarte de respuestas administrativas obsoletas y errores seguros para `detail` string/map/list sin salida Dio ni detalles internos; cubierto por las suites confirmadas backend (`83 passed`) y Flutter (`167 passed`).
+- [ ] 5.5 Verificar en dispositivo real el flujo institucional completo: solicitud pendiente, conteo/pestaña, aprobación o rechazo, rol inicial `clinic_admin`, login aprobado y raíz/gate correcto.
+- [ ] 5.6 Verificar en dispositivo real el flujo independiente completo: solicitud privada pendiente, aprobación con rol `professional`, login aprobado y workspace activo correcto.
+- [ ] 5.7 Desplegar explícitamente la última versión backend a Render y comprobar que el panel opera contra la configuración vigente de Neon sin usar evidencia automatizada como sustituto.
+- [ ] 5.8 Generar el APK de entrega, registrar versión/build, nombre, SHA-256, fecha/hora y revisión fuente cuando exista, documentar instalación limpia e instalar/verificar ese artefacto exacto en dispositivo real.

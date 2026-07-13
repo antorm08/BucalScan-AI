@@ -187,7 +187,9 @@ class AuthViewModel extends Notifier<AuthState> {
         normalized.contains('not authenticated') ||
         normalized.contains('user not found') ||
         normalized.contains('invalid token payload') ||
-        normalized.contains('account suspended');
+        normalized.contains('account suspended') ||
+        normalized.contains('cuenta está suspendida') ||
+        normalized.contains('sesión expiró');
   }
 }
 

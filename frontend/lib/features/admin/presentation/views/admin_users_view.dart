@@ -4,11 +4,14 @@ import 'package:bucalscan_ai/features/admin/domain/entities/admin_user.dart';
 import 'package:bucalscan_ai/features/admin/presentation/viewmodels/admin_approvals_controller.dart';
 import 'package:bucalscan_ai/features/admin/presentation/viewmodels/admin_users_controller.dart';
 import 'package:bucalscan_ai/features/auth/presentation/viewmodels/auth_viewmodel.dart';
+import 'package:bucalscan_ai/features/auth/presentation/views/login_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class AdminUsersView extends ConsumerStatefulWidget {
-  const AdminUsersView({super.key});
+  final VoidCallback? onLoggedOut;
+
+  const AdminUsersView({super.key, this.onLoggedOut});
 
   @override
   ConsumerState<AdminUsersView> createState() => _AdminUsersViewState();
@@ -27,6 +30,24 @@ class _AdminUsersViewState extends ConsumerState<AdminUsersView> {
     ref.read(adminApprovalsControllerProvider.notifier).load(),
     ref.read(adminUsersControllerProvider.notifier).fetchUsers(),
   ]);
+
+  Future<void> _logout() async {
+    final confirmed = await _confirm(
+      'Cerrar sesión',
+      '¿Deseas salir del panel administrativo?',
+    );
+    if (!confirmed || !mounted) return;
+    await ref.read(authViewModelProvider.notifier).logout();
+    if (!mounted) return;
+    if (widget.onLoggedOut != null) {
+      widget.onLoggedOut!();
+      return;
+    }
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginView()),
+      (_) => false,
+    );
+  }
 
   Future<bool> _confirm(String title, String message) async =>
       await showDialog<bool>(
@@ -219,6 +240,11 @@ class _AdminUsersViewState extends ConsumerState<AdminUsersView> {
                   : const Icon(Icons.refresh_rounded),
               tooltip: 'Actualizar datos',
             ),
+            IconButton(
+              onPressed: busy ? null : _logout,
+              icon: const Icon(Icons.logout_rounded),
+              tooltip: 'Cerrar sesión',
+            ),
             const SizedBox(width: 4),
           ],
           bottom: PreferredSize(
@@ -291,7 +317,9 @@ class _AdminUsersViewState extends ConsumerState<AdminUsersView> {
                     user: user,
                     isCurrent: user.id == currentUserId,
                     busy: users.updatingUserId == user.id,
-                    toggle: () => _toggleUser(user),
+                    toggle: user.canToggleStatus
+                        ? () => _toggleUser(user)
+                        : null,
                   );
                 },
               ),
@@ -596,7 +624,7 @@ class _UserCard extends StatelessWidget {
   final AdminUser user;
   final bool isCurrent;
   final bool busy;
-  final VoidCallback toggle;
+  final VoidCallback? toggle;
 
   @override
   Widget build(BuildContext context) => Card(
@@ -634,7 +662,7 @@ class _UserCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 6),
-              _StatusPill(active: user.isActive),
+              _StatusPill(status: user.lifecycleStatus),
             ],
           ),
           const SizedBox(height: 10),
@@ -649,7 +677,8 @@ class _UserCard extends StatelessWidget {
             alignment: Alignment.centerRight,
             child: isCurrent
                 ? const _Pill(text: 'Tu cuenta', accent: true)
-                : OutlinedButton.icon(
+                : user.canToggleStatus
+                ? OutlinedButton.icon(
                     onPressed: busy ? null : toggle,
                     icon: busy
                         ? const SizedBox.square(
@@ -668,7 +697,8 @@ class _UserCard extends StatelessWidget {
                           ? AppColors.error
                           : AppColors.benignText,
                     ),
-                  ),
+                  )
+                : const SizedBox.shrink(),
           ),
         ],
       ),
@@ -711,20 +741,33 @@ class _UserLine extends StatelessWidget {
 }
 
 class _StatusPill extends StatelessWidget {
-  const _StatusPill({required this.active});
-  final bool active;
+  const _StatusPill({required this.status});
+  final AdminUserStatus status;
 
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
     decoration: BoxDecoration(
-      color: active ? AppColors.benignBg : AppColors.errorContainer,
+      color: status == AdminUserStatus.active
+          ? AppColors.benignBg
+          : status == AdminUserStatus.pending
+          ? AppColors.primaryFixed
+          : AppColors.errorContainer,
       borderRadius: BorderRadius.circular(12),
     ),
     child: Text(
-      active ? 'Activo' : 'Suspendido',
+      switch (status) {
+        AdminUserStatus.active => 'Activo',
+        AdminUserStatus.pending => 'Pendiente de verificación',
+        AdminUserStatus.suspended => 'Suspendido',
+        AdminUserStatus.unknown => 'Estado desconocido',
+      },
       style: TextStyle(
-        color: active ? AppColors.benignText : AppColors.onErrorContainer,
+        color: status == AdminUserStatus.active
+            ? AppColors.benignText
+            : status == AdminUserStatus.pending
+            ? AppColors.primary
+            : AppColors.onErrorContainer,
         fontSize: 11,
         fontWeight: FontWeight.w700,
       ),

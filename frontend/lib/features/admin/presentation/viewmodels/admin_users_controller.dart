@@ -38,6 +38,14 @@ class AdminUsersController extends StateNotifier<AdminUsersState> {
   }
 
   Future<AdminUser?> toggleStatus(AdminUser user) async {
+    if (!user.canToggleStatus) {
+      state = AdminUsersState(
+        users: state.users,
+        error:
+            'Los usuarios pendientes solo pueden activarse mediante aprobación.',
+      );
+      return null;
+    }
     final nextStatus = user.isActive ? 'suspended' : 'active';
     state = AdminUsersState(users: state.users, updatingUserId: user.id);
 

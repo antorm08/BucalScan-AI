@@ -1,41 +1,41 @@
 ## ADDED Requirements
 
 ### Requirement: Retained model contract
-The system SHALL continue using the current ResNet50 ONNX artifact, 224 by 224 RGB ImageNet-normalized preprocessing, benign/malignant class order, and current prediction semantics without retraining or replacing the model.
+The system SHALL continue using the approved ResNet50 ONNX artifact and external data, 224 by 224 RGB ImageNet-normalized preprocessing, benign/malignant class order, current threshold, and current prediction semantics without retraining, replacement, or recalibration.
 
-#### Scenario: Existing supported image is analyzed
-- **WHEN** a valid supported clinical image is submitted to the retained inference service
-- **THEN** the service returns benign and malignant probabilities, a predicted label, confidence, model version, and processing time using the existing contract
+#### Scenario: Supported image is analyzed
+- **WHEN** a valid supported image is submitted with complete clinical context
+- **THEN** the service returns the existing probability, label, confidence, model-version, and processing-time contract
 
-#### Scenario: Clinical foundation is deployed
-- **WHEN** the new persistence and clinical workflow changes are released
-- **THEN** the approved ONNX model artifacts and learned weights remain byte-for-byte unchanged
+#### Scenario: Foundation is released
+- **WHEN** persistence, access, admin, or mobile hardening changes are deployed
+- **THEN** the approved model bytes, preprocessing, class order, threshold, and inference semantics remain unchanged
 
-### Requirement: Prediction provenance
-Each persisted model prediction SHALL retain the model version, probabilities, predicted label, confidence, processing time, source image, and creation timestamp independently from clinical interpretation.
+### Requirement: Immutable prediction provenance
+Each prediction SHALL be an immutable record containing workspace, patient, lesion, evaluation, source image, model version, probabilities, predicted label, confidence, processing time, creation timestamp, and attempt provenance.
 
-#### Scenario: Professional later changes clinical interpretation
-- **WHEN** a professional records or updates a clinical interpretation
-- **THEN** the original model prediction remains unchanged and auditable
+#### Scenario: Clinical observations change
+- **WHEN** a professional adds or updates clinical observations
+- **THEN** the original model prediction remains unchanged and independently auditable
+
+#### Scenario: Analysis is retried
+- **WHEN** a failed or interrupted analysis is retried
+- **THEN** a new attempt uses the original context and never overwrites an existing prediction
 
 ### Requirement: Clinical interpretation separation
-The system SHALL label model output as decision support rather than definitive diagnosis and SHALL store professional observations or future risk levels separately from raw model output.
+The system SHALL store professional observations separately from model output and SHALL describe predictions as decision support rather than definitive diagnosis.
 
 #### Scenario: Result is displayed
-- **WHEN** the analysis result screen opens
-- **THEN** the model probability is visually distinguished from clinical information and includes a non-diagnostic support notice
+- **WHEN** an authorized user opens a current result
+- **THEN** model probability is visually distinct from clinical information and accompanied by non-diagnostic wording
 
 ### Requirement: ResNet50 regression verification
-Automated tests SHALL exercise the configured production ResNet50 model, verify its input/output contract without training it, and compare SHA-256 checksums for the ONNX artifact and its external data file against the approved baseline.
+Automated checks SHALL verify approved SHA-256 checksums and the configured production ResNet50 input/output contract without training or modifying the model.
 
 #### Scenario: Model regression tests run
-- **WHEN** the backend inference test suite executes
-- **THEN** it verifies model loading, expected tensor shape, valid class ordering, bounded probabilities, and a successful prediction using ResNet50
+- **WHEN** the inference suite executes
+- **THEN** it verifies checksums, loading, tensor shape, preprocessing, class order, bounded probabilities, threshold semantics, and endpoint compatibility
 
-#### Scenario: Model artifact is incompatible
-- **WHEN** the configured artifact cannot satisfy the expected inference contract
-- **THEN** readiness fails and the service does not report itself ready for analysis
-
-#### Scenario: Model artifact bytes change
-- **WHEN** either approved ResNet50 file no longer matches its recorded SHA-256 checksum
-- **THEN** model-integrity verification fails and identifies the changed artifact without retraining it
+#### Scenario: Model is incompatible or changed
+- **WHEN** an artifact checksum or expected inference contract does not match
+- **THEN** integrity/readiness verification fails and identifies the affected artifact without exposing internal paths to end users
