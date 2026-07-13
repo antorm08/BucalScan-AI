@@ -90,8 +90,8 @@ class _ClinicSelectorState extends ConsumerState<ClinicSelector> {
           onChanged: _onQueryChanged,
           onSubmitted: (_) => _search(),
           decoration: InputDecoration(
-            labelText: 'Buscar clinica registrada',
-            hintText: 'Nombre de clinica o consultorio',
+            labelText: 'Buscar centro de atención',
+            hintText: 'Clínica, consultorio u hospital',
             prefixIcon: const Icon(Icons.search),
             suffixIcon: IconButton(
               tooltip: 'Buscar',
@@ -158,10 +158,10 @@ class _ClinicSelectorState extends ConsumerState<ClinicSelector> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Text('No encontramos una clinica con ese nombre.'),
+                    const Text('No encontramos un centro con ese nombre.'),
                     const SizedBox(height: 4),
                     const Text(
-                      'Puedes solicitar su registro. Quedara pendiente de revision para evitar duplicados.',
+                      'Puedes solicitar su registro. Quedará pendiente de revisión para evitar duplicados.',
                       style: TextStyle(fontSize: 12),
                     ),
                     const SizedBox(height: 8),
@@ -170,7 +170,7 @@ class _ClinicSelectorState extends ConsumerState<ClinicSelector> {
                       onPressed: () =>
                           widget.onRequestNew(_queryController.text.trim()),
                       icon: const Icon(Icons.add_business_outlined),
-                      label: const Text('Solicitar registro'),
+                      label: const Text('Solicitar registro del centro'),
                     ),
                   ],
                 ),

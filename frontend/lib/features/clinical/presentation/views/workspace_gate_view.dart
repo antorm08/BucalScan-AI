@@ -24,7 +24,8 @@ class _WorkspaceGateViewState extends ConsumerState<WorkspaceGateView> {
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(authViewModelProvider).currentUser;
-    if (user?.isAdmin == true) return widget.child;
+    if (user == null) return const SizedBox.shrink();
+    if (user.isAdmin) return widget.child;
 
     final state = ref.watch(clinicalControllerProvider);
     if (state.activeWorkspace != null) return widget.child;

@@ -186,6 +186,7 @@ class MockAuthRemoteDataSource extends _i1.Mock
     String? workspaceChoice,
     String? workspaceId,
     String? workspaceName,
+    String? workspaceType,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#register, [], {
@@ -199,6 +200,7 @@ class MockAuthRemoteDataSource extends _i1.Mock
               #workspaceChoice: workspaceChoice,
               #workspaceId: workspaceId,
               #workspaceName: workspaceName,
+              #workspaceType: workspaceType,
             }),
             returnValue: _i13.Future<Map<String, dynamic>>.value(
               <String, dynamic>{},
@@ -478,6 +480,7 @@ class MockAuthRepository extends _i1.Mock implements _i22.AuthRepository {
     String? workspaceChoice,
     String? workspaceId,
     String? workspaceName,
+    String? workspaceType,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#register, [], {
@@ -491,6 +494,7 @@ class MockAuthRepository extends _i1.Mock implements _i22.AuthRepository {
               #workspaceChoice: workspaceChoice,
               #workspaceId: workspaceId,
               #workspaceName: workspaceName,
+              #workspaceType: workspaceType,
             }),
             returnValue: _i13.Future<void>.value(),
             returnValueForMissingStub: _i13.Future<void>.value(),
@@ -729,6 +733,7 @@ class MockRegisterUseCase extends _i1.Mock implements _i30.RegisterUseCase {
     String? workspaceChoice,
     String? workspaceId,
     String? workspaceName,
+    String? workspaceType,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#call, [], {
@@ -742,6 +747,7 @@ class MockRegisterUseCase extends _i1.Mock implements _i30.RegisterUseCase {
               #workspaceChoice: workspaceChoice,
               #workspaceId: workspaceId,
               #workspaceName: workspaceName,
+              #workspaceType: workspaceType,
             }),
             returnValue: _i13.Future<void>.value(),
             returnValueForMissingStub: _i13.Future<void>.value(),

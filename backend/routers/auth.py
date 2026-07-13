@@ -59,7 +59,9 @@ async def register(user: UserCreate, db: Session = Depends(get_db)):
         workspace = models.ClinicalWorkspace(
             name=workspace_name,
             normalized_name=normalized_name,
-            workspace_type="clinic" if user.workspace_choice == "new" else "independent",
+            workspace_type=(user.workspace_type or "clinic")
+            if user.workspace_choice == "new"
+            else "independent",
             status="pending",
             initial_requester_id=created_user.id,
         )

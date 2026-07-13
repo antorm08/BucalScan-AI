@@ -28,6 +28,7 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
   bool _showPassword = false;
   bool _showPasswordConfirmation = false;
   String _workspaceChoice = 'existing';
+  String _workspaceType = 'clinic';
   ClinicalWorkspace? _selectedWorkspace;
   String _profession = 'Odontólogo/a';
   String _specialty = '';
@@ -86,6 +87,7 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
         workspaceName: _workspaceChoice == 'new'
             ? _medicalCenterController.text.trim()
             : null,
+        workspaceType: _workspaceChoice == 'new' ? _workspaceType : null,
       );
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -280,9 +282,9 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
                             _WorkModeOption(
                               selected: _workspaceChoice != 'independent',
                               icon: Icons.local_hospital_outlined,
-                              title: 'Clínica o consultorio',
+                              title: 'Centro de atención',
                               subtitle:
-                                  'Busca una institución o solicita su registro.',
+                                  'Busca una clínica, consultorio u hospital.',
                               onTap: () => setState(() {
                                 _workspaceChoice = 'existing';
                                 _medicalCenterController.clear();
@@ -310,7 +312,7 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
                                         _medicalCenterController.text
                                             .trim()
                                             .isEmpty
-                                    ? 'Seleccione una clinica o solicite su registro'
+                                    ? 'Seleccione un centro o solicite su registro'
                                     : null,
                                 builder: (field) => Column(
                                   crossAxisAlignment:
@@ -340,27 +342,85 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
                                         color: Theme.of(
                                           context,
                                         ).colorScheme.secondaryContainer,
-                                        child: ListTile(
-                                          leading: const Icon(
-                                            Icons.add_business_outlined,
-                                          ),
-                                          title: Text(
-                                            _medicalCenterController.text,
-                                          ),
-                                          subtitle: const Text(
-                                            'Solicitud de nueva clinica pendiente de revision',
-                                          ),
-                                          trailing: IconButton(
-                                            tooltip: 'Cancelar solicitud',
-                                            onPressed: () {
-                                              setState(() {
-                                                _workspaceChoice = 'existing';
-                                                _medicalCenterController
-                                                    .clear();
-                                              });
-                                              field.didChange(null);
-                                            },
-                                            icon: const Icon(Icons.close),
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(12),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.stretch,
+                                            children: [
+                                              Row(
+                                                children: [
+                                                  const Icon(
+                                                    Icons.add_business_outlined,
+                                                  ),
+                                                  const SizedBox(width: 12),
+                                                  Expanded(
+                                                    child: Text(
+                                                      _medicalCenterController
+                                                          .text,
+                                                    ),
+                                                  ),
+                                                  IconButton(
+                                                    tooltip:
+                                                        'Cancelar solicitud',
+                                                    onPressed: () {
+                                                      setState(() {
+                                                        _workspaceChoice =
+                                                            'existing';
+                                                        _medicalCenterController
+                                                            .clear();
+                                                      });
+                                                      field.didChange(null);
+                                                    },
+                                                    icon: const Icon(
+                                                      Icons.close,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              const Text(
+                                                'Solicitud de nuevo centro pendiente de revisión',
+                                              ),
+                                              const SizedBox(height: 8),
+                                              DropdownButtonFormField<String>(
+                                                initialValue: _workspaceType,
+                                                decoration:
+                                                    const InputDecoration(
+                                                      labelText:
+                                                          'Tipo de centro',
+                                                      border:
+                                                          OutlineInputBorder(),
+                                                    ),
+                                                items: const [
+                                                  DropdownMenuItem(
+                                                    value: 'clinic',
+                                                    child: Text('Clínica'),
+                                                  ),
+                                                  DropdownMenuItem(
+                                                    value: 'consultorio',
+                                                    child: Text('Consultorio'),
+                                                  ),
+                                                  DropdownMenuItem(
+                                                    value: 'hospital',
+                                                    child: Text('Hospital'),
+                                                  ),
+                                                  DropdownMenuItem(
+                                                    value: 'university',
+                                                    child: Text('Universidad'),
+                                                  ),
+                                                  DropdownMenuItem(
+                                                    value: 'campaign',
+                                                    child: Text(
+                                                      'Campaña de salud',
+                                                    ),
+                                                  ),
+                                                ],
+                                                onChanged: (value) => setState(
+                                                  () => _workspaceType =
+                                                      value ?? 'clinic',
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ),
                                       ),

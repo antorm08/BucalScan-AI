@@ -137,7 +137,7 @@ void main() {
     await tester.testTextInput.receiveAction(TextInputAction.done);
     await tester.pumpAndSettle();
 
-    expect(find.text('Solicitar registro'), findsOneWidget);
+    expect(find.text('Solicitar registro del centro'), findsOneWidget);
     await tester.tap(find.byKey(const Key('request-new-clinic')));
     expect(requestedName, 'Clinica Nueva');
   });

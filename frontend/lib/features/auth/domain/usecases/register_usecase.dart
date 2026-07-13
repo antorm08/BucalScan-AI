@@ -16,6 +16,7 @@ class RegisterUseCase {
     String? workspaceChoice,
     String? workspaceId,
     String? workspaceName,
+    String? workspaceType,
   }) {
     return _repository.register(
       fullName: fullName,
@@ -28,6 +29,7 @@ class RegisterUseCase {
       workspaceChoice: workspaceChoice,
       workspaceId: workspaceId,
       workspaceName: workspaceName,
+      workspaceType: workspaceType,
     );
   }
 }

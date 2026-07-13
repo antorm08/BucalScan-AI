@@ -98,6 +98,7 @@ class ApiService {
     String? workspaceChoice,
     String? workspaceId,
     String? workspaceName,
+    String? workspaceType,
   }) async {
     try {
       final response = await _dio.post(
@@ -114,6 +115,7 @@ class ApiService {
           if (workspaceChoice != null) 'workspace_choice': workspaceChoice,
           if (workspaceId != null) 'workspace_id': workspaceId,
           if (workspaceName != null) 'workspace_name': workspaceName,
+          if (workspaceType != null) 'workspace_type': workspaceType,
         },
       );
       return response.data;

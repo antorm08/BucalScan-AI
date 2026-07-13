@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
 import 'package:bucalscan_ai/core/widgets/app_app_bar.dart';
 import 'package:bucalscan_ai/features/auth/presentation/viewmodels/auth_viewmodel.dart';
-import 'package:bucalscan_ai/features/auth/presentation/views/login_view.dart';
 import 'package:bucalscan_ai/features/profile/presentation/views/edit_profile_view.dart';
 import 'package:bucalscan_ai/features/profile/presentation/views/model_info_view.dart';
 
@@ -34,15 +33,6 @@ class ProfileTabView extends ConsumerWidget {
     }
 
     await ref.read(authViewModelProvider.notifier).logout();
-    if (!context.mounted) {
-      return;
-    }
-
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (_) => const LoginView()),
-      (route) => false,
-    );
   }
 
   String _formatMemberSince(DateTime? date) {

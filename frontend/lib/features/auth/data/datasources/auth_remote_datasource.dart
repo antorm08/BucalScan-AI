@@ -23,6 +23,7 @@ class AuthRemoteDataSource {
     String? workspaceChoice,
     String? workspaceId,
     String? workspaceName,
+    String? workspaceType,
   }) {
     return _apiService.register(
       fullName: fullName,
@@ -35,6 +36,7 @@ class AuthRemoteDataSource {
       workspaceChoice: workspaceChoice,
       workspaceId: workspaceId,
       workspaceName: workspaceName,
+      workspaceType: workspaceType,
     );
   }
 

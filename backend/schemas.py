@@ -24,6 +24,7 @@ class UserCreate(BaseModel):
     workspace_choice: Optional[Literal["existing", "new", "independent"]] = None
     workspace_id: Optional[int] = None
     workspace_name: Optional[str] = None
+    workspace_type: Optional[Literal["clinic", "consultorio", "hospital", "university", "campaign"]] = None
 
 class UserLogin(BaseModel):
     email: str

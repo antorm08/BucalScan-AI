@@ -15,6 +15,7 @@ abstract class AuthRepository {
     String? workspaceChoice,
     String? workspaceId,
     String? workspaceName,
+    String? workspaceType,
   });
 
   Future<AuthUser> getCurrentUser();

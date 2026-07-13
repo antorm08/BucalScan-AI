@@ -98,6 +98,7 @@ class AuthViewModel extends Notifier<AuthState> {
     String? workspaceChoice,
     String? workspaceId,
     String? workspaceName,
+    String? workspaceType,
   }) async {
     state = state.copyWith(isLoading: true, clearError: true);
 
@@ -113,6 +114,7 @@ class AuthViewModel extends Notifier<AuthState> {
         workspaceChoice: workspaceChoice,
         workspaceId: workspaceId,
         workspaceName: workspaceName,
+        workspaceType: workspaceType,
       );
       state = state.copyWith(isLoading: false, clearError: true);
       return true;
@@ -125,6 +127,7 @@ class AuthViewModel extends Notifier<AuthState> {
   Future<void> logout() async {
     state = state.copyWith(clearUser: true, clearError: true);
     await ref.read(logoutUseCaseProvider)();
+    SessionEvents().emitSessionExpired();
   }
 
   Future<bool> updateProfile({

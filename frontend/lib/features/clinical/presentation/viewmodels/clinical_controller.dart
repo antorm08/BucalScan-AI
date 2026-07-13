@@ -59,6 +59,11 @@ class ClinicalController extends Notifier<ClinicalState> {
       lesion: lesion,
     );
   }
+
+  void clearSession() {
+    ref.read(selectWorkspaceUseCaseProvider)(null);
+    state = const ClinicalState();
+  }
 }
 
 final clinicalControllerProvider =

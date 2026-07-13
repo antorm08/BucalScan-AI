@@ -10,6 +10,7 @@ import 'package:bucalscan_ai/features/auth/presentation/viewmodels/auth_viewmode
 import 'package:bucalscan_ai/features/auth/presentation/views/login_view.dart';
 import 'package:bucalscan_ai/features/home/presentation/views/home_view.dart';
 import 'package:bucalscan_ai/features/clinical/presentation/views/workspace_gate_view.dart';
+import 'package:bucalscan_ai/features/clinical/presentation/viewmodels/clinical_controller.dart';
 
 void main() {
   runApp(const ProviderScope(child: BucalScanAiApp()));
@@ -75,6 +76,7 @@ class _BucalScanAiAppState extends ConsumerState<BucalScanAiApp> {
         return;
       }
       _wasAuthenticated = false;
+      ref.read(clinicalControllerProvider.notifier).clearSession();
       if (mounted) {
         setState(() {
           _isAuthenticated = false;

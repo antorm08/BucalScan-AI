@@ -47,6 +47,7 @@ class FakeAuthRepository implements AuthRepository {
     String? workspaceChoice,
     String? workspaceId,
     String? workspaceName,
+    String? workspaceType,
   }) async {}
 
   @override
