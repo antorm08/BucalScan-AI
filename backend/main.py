@@ -56,6 +56,28 @@ async def live():
 def _check_readiness() -> None:
     with SessionLocal() as db:
         db.execute(text("SELECT 1"))
+        tables = {
+            row[0]
+            for row in db.execute(
+                text(
+                    "SELECT table_name FROM information_schema.tables "
+                    "WHERE table_schema = current_schema() "
+                    "AND table_name IN "
+                    "('clinical_assessment_snapshots', 'clinical_priority_results')"
+                )
+            )
+        } if db.get_bind().dialect.name == "postgresql" else {
+            row[0]
+            for row in db.execute(
+                text(
+                    "SELECT name FROM sqlite_master WHERE type = 'table' "
+                    "AND name IN "
+                    "('clinical_assessment_snapshots', 'clinical_priority_results')"
+                )
+            )
+        }
+        if tables != {"clinical_assessment_snapshots", "clinical_priority_results"}:
+            raise RuntimeError("Database schema is not at the required revision")
     classifier.validate_contract()
 
 

@@ -13,6 +13,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 const _accessDisclaimer =
     'La aprobación habilita únicamente el acceso a la aplicación. No verifica identidad, documentos, título, licencia, profesión, especialidad, credenciales ni competencia clínica.';
+const _allFilterValue = '__all__';
 
 class AdminCentersView extends ConsumerWidget {
   const AdminCentersView({super.key});
@@ -173,6 +174,7 @@ class _AdminListState<T> extends State<_AdminList<T>> {
 
   void _searchChanged(String value) {
     _debounce?.cancel();
+    setState(() {});
     _debounce = Timer(
       const Duration(milliseconds: 350),
       () => widget.onQuery(widget.state.query.copyWith(search: value)),
@@ -307,6 +309,8 @@ class _AdminListState<T> extends State<_AdminList<T>> {
             ),
           ),
         ),
+        if (state.loading && state.items.isNotEmpty)
+          const LinearProgressIndicator(minHeight: 2),
         Expanded(child: _body(state)),
       ],
     );
@@ -379,11 +383,17 @@ class _FilterMenu extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => PopupMenuButton<String?>(
+  Widget build(BuildContext context) => PopupMenuButton<String>(
     tooltip: 'Filtrar por $label',
-    onSelected: onChanged,
+    onSelected: (selected) {
+      final nextValue = selected == _allFilterValue ? null : selected;
+      if (nextValue != value) onChanged(nextValue);
+    },
     itemBuilder: (_) => [
-      PopupMenuItem(value: null, child: Text('Todos · $label')),
+      PopupMenuItem(
+        value: _allFilterValue,
+        child: Text(_allFilterLabel(label)),
+      ),
       ...values.map(
         (item) => PopupMenuItem(value: item, child: Text(labelFor(item))),
       ),
@@ -395,6 +405,13 @@ class _FilterMenu extends StatelessWidget {
     ),
   );
 }
+
+String _allFilterLabel(String label) => switch (label) {
+  'Estado' => 'Todos los estados',
+  'Tipo' => 'Todos los tipos',
+  'Rol' => 'Todos los roles',
+  _ => 'Todos',
+};
 
 class _ControlChip extends StatelessWidget {
   final IconData icon;

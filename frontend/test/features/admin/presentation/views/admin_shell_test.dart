@@ -4,6 +4,7 @@ import 'package:bucalscan_ai/features/admin/domain/entities/admin_request.dart';
 import 'package:bucalscan_ai/features/admin/domain/entities/admin_user.dart';
 import 'package:bucalscan_ai/features/admin/domain/repositories/admin_repository.dart';
 import 'package:bucalscan_ai/features/admin/presentation/views/admin_users_view.dart';
+import 'package:bucalscan_ai/features/admin/presentation/viewmodels/admin_list_controllers.dart';
 import 'package:bucalscan_ai/features/auth/di/auth_providers.dart';
 import 'package:bucalscan_ai/features/auth/domain/entities/auth_session.dart';
 import 'package:bucalscan_ai/features/auth/domain/entities/auth_user.dart';
@@ -145,6 +146,28 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.widgetWithText(TextField, 'norte'), findsOneWidget);
+  });
+
+  testWidgets('status filter can be applied and cleared', (tester) async {
+    final container = await _pump(tester);
+    addTearDown(container.dispose);
+
+    await tester.tap(find.byTooltip('Filtrar por Estado'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Pendiente').last);
+    await tester.pumpAndSettle();
+
+    expect(
+      container.read(adminCentersControllerProvider).query.status,
+      'pending',
+    );
+
+    await tester.tap(find.byTooltip('Filtrar por Estado'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Todos los estados'));
+    await tester.pumpAndSettle();
+
+    expect(container.read(adminCentersControllerProvider).query.status, isNull);
   });
 
   testWidgets('center card opens a near-full detail sheet with safe actions', (
