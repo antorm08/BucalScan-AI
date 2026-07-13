@@ -19,7 +19,8 @@ class StartupView extends StatefulWidget {
 }
 
 class _StartupViewState extends State<StartupView> {
-  static const int _automaticAttempts = 1;
+  static const Duration _retryDelay = Duration(seconds: 2);
+  static const int _automaticAttempts = 2;
 
   bool _isLoading = true;
   String? _error;
@@ -94,11 +95,12 @@ class _StartupViewState extends State<StartupView> {
               : 'Preparando el servicio...';
         });
 
-        // Startup warming is best-effort. Real requests report connectivity
-        // errors in context, so a transient liveness failure must not trap users.
-        _hasContinued = true;
-        await widget.onReady();
-        return;
+        if (attempt >= _automaticAttempts) {
+          setState(() => _isLoading = false);
+          return;
+        }
+
+        await Future<void>.delayed(_retryDelay);
       }
     }
   }
