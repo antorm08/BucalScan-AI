@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bucalscan_ai/core/session/session_events.dart';
+import 'package:bucalscan_ai/core/session/user_sensitive_state.dart';
 import 'package:bucalscan_ai/features/auth/di/auth_providers.dart';
 import 'package:bucalscan_ai/features/auth/domain/entities/auth_user.dart';
 import 'package:bucalscan_ai/features/profile/di/profile_providers.dart';
@@ -32,6 +33,7 @@ class AuthViewModel extends Notifier<AuthState> {
   @override
   AuthState build() {
     final sessionSub = SessionEvents().onSessionExpired.listen((_) {
+      ref.resetUserSensitiveState();
       state = state.copyWith(clearUser: true, clearError: true);
     });
     ref.onDispose(sessionSub.cancel);
@@ -47,6 +49,7 @@ class AuthViewModel extends Notifier<AuthState> {
         email: email,
         password: password,
       );
+      ref.resetUserSensitiveState();
       state = AuthState(currentUser: session.user);
       return true;
     } catch (e) {
@@ -65,6 +68,7 @@ class AuthViewModel extends Notifier<AuthState> {
 
     try {
       final user = await ref.read(getCurrentUserUseCaseProvider)();
+      ref.resetUserSensitiveState();
       state = AuthState(currentUser: user);
       return true;
     } catch (e) {
@@ -126,8 +130,12 @@ class AuthViewModel extends Notifier<AuthState> {
 
   Future<void> logout() async {
     state = state.copyWith(clearUser: true, clearError: true);
-    await ref.read(logoutUseCaseProvider)();
-    SessionEvents().emitSessionExpired();
+    ref.resetUserSensitiveState();
+    try {
+      await ref.read(logoutUseCaseProvider)();
+    } finally {
+      SessionEvents().emitSessionExpired();
+    }
   }
 
   Future<bool> updateProfile({

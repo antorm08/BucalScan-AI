@@ -11,7 +11,7 @@ def get_user(db: Session, user_id: int):
     return db.query(models.User).filter(models.User.id == user_id).first()
 
 def get_user_by_email(db: Session, email: str):
-    return db.query(models.User).filter(models.User.email == email).first()
+    return db.query(models.User).filter(models.User.email == email.strip().lower()).first()
 
 def create_user(db: Session, user: UserCreate, *, commit: bool = True):
     hashed_password = get_password_hash(user.password)
@@ -19,7 +19,7 @@ def create_user(db: Session, user: UserCreate, *, commit: bool = True):
         full_name=user.full_name,
         doctor_id=user.doctor_id,
         medical_center=user.medical_center,
-        email=user.email,
+        email=user.email.strip().lower(),
         hashed_password=hashed_password,
         role="professional",
         status="pending",
@@ -46,10 +46,19 @@ def get_all_analyses(db: Session, skip: int = 0, limit: int = 100):
     ).offset(skip).limit(limit).all()
 
 
+def get_workspace_analyses(db: Session, workspace_id: int, skip: int = 0, limit: int = 100):
+    return db.query(models.Analysis).options(joinedload(models.Analysis.owner)).join(
+        models.ClinicalEvaluation, models.Analysis.evaluation_id == models.ClinicalEvaluation.id
+    ).filter(models.ClinicalEvaluation.workspace_id == workspace_id).order_by(
+        models.Analysis.timestamp.desc()
+    ).offset(skip).limit(limit).all()
+
+
 def get_daily_summary(
     db: Session,
     user_id: Optional[int] = None,
     date_target: Optional[date_type] = None,
+    workspace_id: Optional[int] = None,
 ) -> dict:
     today = date_target if date_target is not None else datetime.now(UTC).date()
     start_of_day = datetime(today.year, today.month, today.day)
@@ -67,6 +76,10 @@ def get_daily_summary(
 
     if user_id is not None:
         query = query.filter(models.Analysis.user_id == user_id)
+    if workspace_id is not None:
+        query = query.join(
+            models.ClinicalEvaluation, models.Analysis.evaluation_id == models.ClinicalEvaluation.id
+        ).filter(models.ClinicalEvaluation.workspace_id == workspace_id)
 
     row = query.one()
 

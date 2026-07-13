@@ -9,7 +9,9 @@ import 'package:bucalscan_ai/features/auth/presentation/widgets/clinic_selector.
 import 'package:bucalscan_ai/features/clinical/domain/entities/clinical_entities.dart';
 
 class RegisterView extends ConsumerStatefulWidget {
-  const RegisterView({super.key});
+  final VoidCallback? onAuthenticated;
+
+  const RegisterView({super.key, this.onAuthenticated});
 
   @override
   ConsumerState<RegisterView> createState() => _RegisterViewState();
@@ -112,12 +114,22 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
           return;
         }
 
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const LoginView()),
-        );
+        _returnToLogin();
       }
     }
+  }
+
+  void _returnToLogin() {
+    if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+      return;
+    }
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => LoginView(onAuthenticated: widget.onAuthenticated),
+      ),
+    );
   }
 
   @override
@@ -668,12 +680,7 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
                   ),
                   Center(
                     child: TextButton(
-                      onPressed: () {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(builder: (_) => const LoginView()),
-                        );
-                      },
+                      onPressed: _returnToLogin,
                       style: TextButton.styleFrom(
                         padding: EdgeInsets.zero,
                         minimumSize: Size.zero,

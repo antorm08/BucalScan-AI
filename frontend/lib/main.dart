@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bucalscan_ai/core/constants/app_constants.dart';
 import 'package:bucalscan_ai/core/session/session_events.dart';
+import 'package:bucalscan_ai/core/session/user_sensitive_state.dart';
 import 'package:bucalscan_ai/core/startup/startup_view.dart';
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
 import 'package:bucalscan_ai/features/auth/di/auth_providers.dart';
@@ -10,7 +11,6 @@ import 'package:bucalscan_ai/features/auth/presentation/viewmodels/auth_viewmode
 import 'package:bucalscan_ai/features/auth/presentation/views/login_view.dart';
 import 'package:bucalscan_ai/features/home/presentation/views/home_view.dart';
 import 'package:bucalscan_ai/features/clinical/presentation/views/workspace_gate_view.dart';
-import 'package:bucalscan_ai/features/clinical/presentation/viewmodels/clinical_controller.dart';
 
 void main() {
   runApp(const ProviderScope(child: BucalScanAiApp()));
@@ -76,7 +76,7 @@ class _BucalScanAiAppState extends ConsumerState<BucalScanAiApp> {
         return;
       }
       _wasAuthenticated = false;
-      ref.read(clinicalControllerProvider.notifier).clearSession();
+      ref.resetUserSensitiveState();
       if (mounted) {
         setState(() {
           _isAuthenticated = false;
@@ -96,13 +96,20 @@ class _BucalScanAiAppState extends ConsumerState<BucalScanAiApp> {
       return;
     }
 
-    ref.read(clinicalControllerProvider.notifier).clearSession();
+    ref.resetUserSensitiveState();
     setState(() {
       _isReadyToEnter = true;
       _isAuthenticated = true;
       _wasAuthenticated = true;
     });
     _subscribeToSessionExpiry();
+  }
+
+  void _markLoggedOut() {
+    if (!mounted) return;
+    ref.resetUserSensitiveState();
+    _wasAuthenticated = false;
+    setState(() => _isAuthenticated = false);
   }
 
   @override
@@ -126,7 +133,10 @@ class _BucalScanAiAppState extends ConsumerState<BucalScanAiApp> {
               onReady: _enterApp,
             )
           : _isAuthenticated
-          ? const WorkspaceGateView(child: HomeView())
+          ? WorkspaceGateView(
+              onLoggedOut: _markLoggedOut,
+              child: const HomeView(),
+            )
           : LoginView(onAuthenticated: _markAuthenticated),
     );
   }
