@@ -276,6 +276,78 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> getAdminSummary() => _adminMap(
+    'summary',
+    fallback: 'No se pudo cargar el resumen administrativo.',
+  );
+
+  Future<List<Map<String, dynamic>>> getAdminWorkspaceRequests() => _adminList(
+    'workspaces?status=pending',
+    fallback: 'No se pudieron cargar los centros pendientes.',
+  );
+
+  Future<List<Map<String, dynamic>>> getAdminMembershipRequests() => _adminList(
+    'memberships?status=pending',
+    fallback: 'No se pudieron cargar los accesos pendientes.',
+  );
+
+  Future<void> decideAdminWorkspace(int id, {required bool approve}) async {
+    await _adminPost(
+      'workspaces/$id/${approve ? 'approve' : 'reject'}',
+      fallback: 'No se pudo resolver el centro.',
+    );
+  }
+
+  Future<void> decideAdminMembership(
+    int id, {
+    required bool approve,
+    String role = 'professional',
+  }) async {
+    await _adminPost(
+      'memberships/$id/${approve ? 'approve' : 'reject'}',
+      data: approve ? {'role': role} : null,
+      fallback: 'No se pudo resolver el acceso.',
+    );
+  }
+
+  Future<Map<String, dynamic>> _adminMap(
+    String path, {
+    required String fallback,
+  }) async {
+    try {
+      final response = await _dio.get('${AppConstants.apiVersion}/admin/$path');
+      return Map<String, dynamic>.from(response.data as Map);
+    } on DioException catch (e) {
+      throw Exception(_buildApiErrorMessage(e, fallback: fallback));
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> _adminList(
+    String path, {
+    required String fallback,
+  }) async {
+    try {
+      final response = await _dio.get('${AppConstants.apiVersion}/admin/$path');
+      return (response.data as List)
+          .map((item) => Map<String, dynamic>.from(item as Map))
+          .toList();
+    } on DioException catch (e) {
+      throw Exception(_buildApiErrorMessage(e, fallback: fallback));
+    }
+  }
+
+  Future<void> _adminPost(
+    String path, {
+    Map<String, dynamic>? data,
+    required String fallback,
+  }) async {
+    try {
+      await _dio.post('${AppConstants.apiVersion}/admin/$path', data: data);
+    } on DioException catch (e) {
+      throw Exception(_buildApiErrorMessage(e, fallback: fallback));
+    }
+  }
+
   String _buildApiErrorMessage(DioException error, {required String fallback}) {
     if (error.type == DioExceptionType.connectionTimeout ||
         error.type == DioExceptionType.sendTimeout ||

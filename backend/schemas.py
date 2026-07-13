@@ -94,6 +94,38 @@ class UserStatusUpdate(BaseModel):
     status: Literal["active", "suspended"]
 
 
+class AdminSummaryResponse(BaseModel):
+    pending_workspaces: int
+    pending_memberships: int
+    total_users: int
+    active_users: int
+    suspended_users: int
+
+
+class AdminRequesterResponse(BaseModel):
+    id: int
+    full_name: str
+    doctor_id: str
+    email: str
+    profession: Optional[str] = None
+    specialty: Optional[str] = None
+
+
+class AdminWorkspaceRequestResponse(BaseModel):
+    id: int
+    name: str
+    workspace_type: str
+    status: str
+    city: Optional[str] = None
+    address: Optional[str] = None
+    created_at: datetime
+    requester: Optional[AdminRequesterResponse] = None
+
+
+class AdminMembershipDecision(BaseModel):
+    role: Literal["clinic_admin", "professional", "assistant"]
+
+
 class UserUpdate(BaseModel):
     full_name: Optional[str] = None
     medical_center: Optional[str] = None
@@ -133,6 +165,15 @@ class WorkspaceResponse(BaseModel):
     city: Optional[str] = None
     address: Optional[str] = None
     potential_duplicate: bool = False
+
+
+class AdminMembershipRequestResponse(BaseModel):
+    id: int
+    status: str
+    role: str
+    created_at: datetime
+    requester: AdminRequesterResponse
+    workspace: WorkspaceResponse
 
 
 class MembershipResponse(BaseModel):

@@ -29,6 +29,9 @@ class _WorkspaceGateViewState extends ConsumerState<WorkspaceGateView> {
 
     final state = ref.watch(clinicalControllerProvider);
     if (state.activeWorkspace != null) return widget.child;
+    final hasAvailableWorkspace = state.workspaces.any(
+      (workspace) => workspace.canEnter,
+    );
     return Scaffold(
       appBar: AppBar(title: const Text('Espacio de trabajo')),
       body: state.loading
@@ -40,13 +43,17 @@ class _WorkspaceGateViewState extends ConsumerState<WorkspaceGateView> {
               child: ListView(
                 padding: const EdgeInsets.all(20),
                 children: [
-                  const Text(
-                    'Seleccione donde atendera hoy',
+                  Text(
+                    hasAvailableWorkspace
+                        ? 'Seleccione dónde atenderá hoy'
+                        : 'Acceso profesional pendiente',
                     style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Los pacientes, lesiones e historial se mantienen separados por espacio clinico.',
+                  Text(
+                    hasAvailableWorkspace
+                        ? 'Esta selección separa los pacientes, lesiones e historial de cada centro.'
+                        : 'Un administrador debe aprobar su acceso antes de que pueda registrar pacientes o realizar análisis.',
                   ),
                   if (state.error != null) ...[
                     const SizedBox(height: 16),
@@ -100,9 +107,11 @@ class _WorkspaceTile extends StatelessWidget {
         title: Text(workspace.name),
         subtitle: Text(
           pending
-              ? workspace.status == 'pending'
-                    ? 'Clinica pendiente de aprobacion'
-                    : 'Aprobacion profesional pendiente'
+              ? workspace.type == 'independent'
+                    ? 'Aprobación profesional pendiente'
+                    : workspace.status == 'pending'
+                    ? 'Centro pendiente de aprobación'
+                    : 'Aprobación profesional pendiente'
               : '${workspace.role ?? 'professional'} · Activo',
         ),
         trailing: pending

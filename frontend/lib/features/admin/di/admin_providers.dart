@@ -4,6 +4,7 @@ import 'package:bucalscan_ai/features/admin/data/repositories/admin_repository_i
 import 'package:bucalscan_ai/features/admin/domain/repositories/admin_repository.dart';
 import 'package:bucalscan_ai/features/admin/domain/usecases/get_admin_users_usecase.dart';
 import 'package:bucalscan_ai/features/admin/domain/usecases/update_admin_user_status_usecase.dart';
+import 'package:bucalscan_ai/features/admin/domain/usecases/admin_approvals_usecase.dart';
 import 'package:bucalscan_ai/features/auth/di/auth_providers.dart';
 
 final adminRemoteDataSourceProvider = Provider<AdminRemoteDataSource>((ref) {
@@ -22,3 +23,7 @@ final updateAdminUserStatusUseCaseProvider =
     Provider<UpdateAdminUserStatusUseCase>((ref) {
       return UpdateAdminUserStatusUseCase(ref.watch(adminRepositoryProvider));
     });
+
+final adminApprovalsUseCaseProvider = Provider<AdminApprovalsUseCase>((ref) {
+  return AdminApprovalsUseCase(ref.watch(adminRepositoryProvider));
+});

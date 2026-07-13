@@ -96,6 +96,7 @@ class _BucalScanAiAppState extends ConsumerState<BucalScanAiApp> {
       return;
     }
 
+    ref.read(clinicalControllerProvider.notifier).clearSession();
     setState(() {
       _isReadyToEnter = true;
       _isAuthenticated = true;

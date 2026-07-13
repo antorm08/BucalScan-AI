@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
+import 'package:bucalscan_ai/features/admin/domain/entities/admin_request.dart';
 import 'package:bucalscan_ai/features/admin/domain/entities/admin_user.dart';
+import 'package:bucalscan_ai/features/admin/presentation/viewmodels/admin_approvals_controller.dart';
 import 'package:bucalscan_ai/features/admin/presentation/viewmodels/admin_users_controller.dart';
 import 'package:bucalscan_ai/features/auth/presentation/viewmodels/auth_viewmodel.dart';
 
@@ -13,588 +15,431 @@ class AdminUsersView extends ConsumerStatefulWidget {
 }
 
 class _AdminUsersViewState extends ConsumerState<AdminUsersView> {
-  final _searchController = TextEditingController();
-
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(adminUsersControllerProvider.notifier).fetchUsers();
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _refresh());
   }
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
+  Future<void> _refresh() async {
+    await Future.wait([
+      ref.read(adminApprovalsControllerProvider.notifier).load(),
+      ref.read(adminUsersControllerProvider.notifier).fetchUsers(),
+    ]);
   }
 
-  Future<void> _fetchUsers() async {
-    await ref.read(adminUsersControllerProvider.notifier).fetchUsers();
-  }
-
-  Future<void> _toggleStatus(AdminUser user) async {
-    final updated = await ref
-        .read(adminUsersControllerProvider.notifier)
-        .toggleStatus(user);
-    if (!mounted) return;
-
-    if (updated != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            updated.isActive ? 'Usuario reactivado.' : 'Usuario suspendido.',
+  Future<bool> _confirm(String title, String message) async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(title),
+            content: Text(message),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancelar'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Confirmar'),
+              ),
+            ],
           ),
+        ) ??
+        false;
+  }
+
+  Future<void> _workspaceDecision(
+    AdminWorkspaceRequest item,
+    bool approve,
+  ) async {
+    if (!await _confirm(
+      approve ? 'Aprobar centro' : 'Rechazar centro',
+      '${approve ? 'Aprobar' : 'Rechazar'} ${item.name} y su acceso inicial?',
+    )) {
+      return;
+    }
+    final ok = await ref
+        .read(adminApprovalsControllerProvider.notifier)
+        .decideWorkspace(item.id, approve);
+    if (mounted) {
+      _result(ok, approve ? 'Centro aprobado.' : 'Centro rechazado.');
+    }
+  }
+
+  Future<void> _membershipDecision(
+    AdminMembershipRequest item,
+    bool approve,
+  ) async {
+    var role = 'professional';
+    if (approve) {
+      final selected = await showDialog<String>(
+        context: context,
+        builder: (context) => SimpleDialog(
+          title: const Text('Asignar rol'),
+          children: [
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(context, 'clinic_admin'),
+              child: const Text('Administrador de clínica'),
+            ),
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(context, 'professional'),
+              child: const Text('Profesional'),
+            ),
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(context, 'assistant'),
+              child: const Text('Asistente'),
+            ),
+          ],
         ),
       );
-    } else {
-      final error = ref.read(adminUsersControllerProvider).error;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            (error ?? 'No se pudo actualizar el usuario.').replaceFirst(
-              'Exception: ',
-              '',
-            ),
-          ),
-        ),
+      if (selected == null) return;
+      role = selected;
+    }
+    if (!await _confirm(
+      approve ? 'Aprobar acceso' : 'Rechazar acceso',
+      '${approve ? 'Aprobar' : 'Rechazar'} la solicitud de ${item.requester.fullName}?',
+    )) {
+      return;
+    }
+    final ok = await ref
+        .read(adminApprovalsControllerProvider.notifier)
+        .decideMembership(item.id, approve, role);
+    if (mounted) {
+      _result(ok, approve ? 'Acceso aprobado.' : 'Acceso rechazado.');
+    }
+  }
+
+  Future<void> _toggleUser(AdminUser user) async {
+    final verb = user.isActive ? 'suspender' : 'reactivar';
+    if (!await _confirm(
+      '${user.isActive ? 'Suspender' : 'Reactivar'} usuario',
+      '¿Desea $verb a ${user.fullName}?',
+    )) {
+      return;
+    }
+    final result = await ref
+        .read(adminUsersControllerProvider.notifier)
+        .toggleStatus(user);
+    if (mounted) {
+      _result(
+        result != null,
+        result?.isActive == true
+            ? 'Usuario reactivado.'
+            : 'Usuario suspendido.',
       );
     }
   }
 
-  List<AdminUser> _filteredUsers(List<AdminUser> users) {
-    final query = _searchController.text.trim().toLowerCase();
-    if (query.isEmpty) return users;
-
-    return users.where((user) {
-      return user.fullName.toLowerCase().contains(query) ||
-          user.email.toLowerCase().contains(query) ||
-          user.doctorId.toLowerCase().contains(query) ||
-          (user.medicalCenter?.toLowerCase().contains(query) ?? false) ||
-          user.role.toLowerCase().contains(query) ||
-          user.status.toLowerCase().contains(query);
-    }).toList();
-  }
-
-  String _formatDate(DateTime? date) {
-    if (date == null) return 'Sin fecha';
-    final day = date.day.toString().padLeft(2, '0');
-    final month = date.month.toString().padLeft(2, '0');
-    final year = date.year.toString();
-    return '$day/$month/$year';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final state = ref.watch(adminUsersControllerProvider);
-    final users = _filteredUsers(state.users);
-    final currentUserId = ref.watch(authViewModelProvider).currentUser?.id;
-
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Column(
-        children: [
-          _AdminHeader(onRefresh: state.isLoading ? null : _fetchUsers),
-          _SearchBar(
-            controller: _searchController,
-            onChanged: (_) => setState(() {}),
-          ),
-          Expanded(child: _buildBody(users, currentUserId, state)),
-        ],
+  void _result(bool ok, String success) {
+    final approvalsError = ref.read(adminApprovalsControllerProvider).error;
+    final usersError = ref.read(adminUsersControllerProvider).error;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          ok
+              ? success
+              : (approvalsError ??
+                        usersError ??
+                        'No se pudo completar la acción.')
+                    .replaceFirst('Exception: ', ''),
+        ),
       ),
     );
   }
 
-  Widget _buildBody(
-    List<AdminUser> users,
-    int? currentUserId,
-    AdminUsersState state,
-  ) {
-    if (state.isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
+  @override
+  Widget build(BuildContext context) {
+    final approvals = ref.watch(adminApprovalsControllerProvider);
+    final users = ref.watch(adminUsersControllerProvider);
+    final currentUserId = ref.watch(authViewModelProvider).currentUser?.id;
+    final workspaceCount =
+        approvals.summary?.pendingWorkspaces ?? approvals.workspaces.length;
+    final membershipCount =
+        approvals.summary?.pendingMemberships ?? approvals.memberships.length;
+    final busy = approvals.isLoading || users.isLoading;
 
-    if (state.error != null && state.users.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.admin_panel_settings_outlined, size: 56),
-              const SizedBox(height: 16),
-              const Text(
-                'No se pudo cargar la gestión administrativa',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                state.error!.replaceFirst('Exception: ', ''),
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: AppColors.onSurfaceVariant),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton.icon(
-                onPressed: _fetchUsers,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Reintentar'),
+    return DefaultTabController(
+      length: 3,
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          title: const Text('Panel administrativo'),
+          actions: [
+            IconButton(
+              onPressed: busy ? null : _refresh,
+              icon: const Icon(Icons.refresh),
+              tooltip: 'Actualizar',
+            ),
+          ],
+          bottom: TabBar(
+            isScrollable: true,
+            tabs: [
+              Tab(text: 'Centros ($workspaceCount)'),
+              Tab(text: 'Accesos ($membershipCount)'),
+              Tab(
+                text:
+                    'Usuarios (${approvals.summary?.totalUsers ?? users.users.length})',
               ),
             ],
           ),
         ),
-      );
-    }
-
-    if (users.isEmpty) {
-      return const Center(
-        child: Text(
-          'No hay usuarios para mostrar.',
-          style: TextStyle(color: AppColors.onSurfaceVariant),
-        ),
-      );
-    }
-
-    return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-      itemCount: users.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 12),
-      itemBuilder: (context, index) => _AdminUserCard(
-        user: users[index],
-        isUpdating: state.updatingUserId == users[index].id,
-        isCurrentUser: users[index].id == currentUserId,
-        onToggleStatus: () => _toggleStatus(users[index]),
-        formatDate: _formatDate,
-      ),
-    );
-  }
-}
-
-class _AdminHeader extends StatelessWidget {
-  final VoidCallback? onRefresh;
-
-  const _AdminHeader({required this.onRefresh});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.fromLTRB(
-        16,
-        MediaQuery.paddingOf(context).top + 14,
-        16,
-        18,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLowest,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          _HeaderButton(
-            icon: Icons.arrow_back,
-            tooltip: 'Volver',
-            onPressed: () => Navigator.pop(context),
-          ),
-          const SizedBox(width: 14),
-          const Icon(
-            Icons.admin_panel_settings_outlined,
-            color: AppColors.primary,
-            size: 28,
-          ),
-          const SizedBox(width: 10),
-          const Expanded(
-            child: Text(
-              'Gestión de usuarios',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: AppColors.primary,
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.8,
+        body: TabBarView(
+          children: [
+            _requestBody(
+              loading: approvals.isLoading,
+              error: approvals.error,
+              empty: approvals.workspaces.isEmpty,
+              emptyText: 'No hay centros pendientes. La cola está al día.',
+              retry: _refresh,
+              list: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: approvals.workspaces.length,
+                itemBuilder: (_, index) => _WorkspaceCard(
+                  item: approvals.workspaces[index],
+                  busy:
+                      approvals.decidingKey ==
+                      'w${approvals.workspaces[index].id}',
+                  decide: (approve) =>
+                      _workspaceDecision(approvals.workspaces[index], approve),
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 10),
-          _HeaderButton(
-            icon: Icons.refresh,
-            tooltip: 'Actualizar',
-            onPressed: onRefresh,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _HeaderButton extends StatelessWidget {
-  final IconData icon;
-  final String tooltip;
-  final VoidCallback? onPressed;
-
-  const _HeaderButton({
-    required this.icon,
-    required this.tooltip,
-    required this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 52,
-      height: 52,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: AppColors.surfaceContainerLowest,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.outlineVariant),
-        ),
-        child: IconButton(
-          onPressed: onPressed,
-          icon: Icon(icon, color: AppColors.primary),
-          tooltip: tooltip,
-        ),
-      ),
-    );
-  }
-}
-
-class _SearchBar extends StatelessWidget {
-  final TextEditingController controller;
-  final ValueChanged<String> onChanged;
-
-  const _SearchBar({required this.controller, required this.onChanged});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
-      child: Material(
-        color: AppColors.surfaceContainerLowest,
-        elevation: 6,
-        shadowColor: Colors.black.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(28),
-        child: TextField(
-          controller: controller,
-          onChanged: onChanged,
-          decoration: InputDecoration(
-            prefixIcon: const Icon(Icons.search, color: AppColors.primary),
-            suffixIcon: controller.text.isEmpty
-                ? const Icon(Icons.tune, color: AppColors.onSurfaceVariant)
-                : IconButton(
-                    onPressed: () {
-                      controller.clear();
-                      onChanged('');
-                    },
-                    icon: const Icon(Icons.close),
-                    tooltip: 'Limpiar búsqueda',
-                  ),
-            hintText: 'Buscar por nombre, correo, ID médico o centro...',
-            hintStyle: const TextStyle(color: AppColors.onSurfaceVariant),
-            filled: true,
-            fillColor: Colors.transparent,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(28),
-              borderSide: BorderSide.none,
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 18,
-              vertical: 18,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _AdminUserCard extends StatelessWidget {
-  final AdminUser user;
-  final bool isUpdating;
-  final bool isCurrentUser;
-  final VoidCallback onToggleStatus;
-  final String Function(DateTime?) formatDate;
-
-  const _AdminUserCard({
-    required this.user,
-    required this.isUpdating,
-    required this.isCurrentUser,
-    required this.onToggleStatus,
-    required this.formatDate,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final statusColor = user.isActive ? AppColors.benignText : AppColors.error;
-    final statusBg = user.isActive
-        ? AppColors.benignBg
-        : AppColors.errorContainer;
-    final actionColor = user.isActive
-        ? AppColors.primary
-        : AppColors.benignText;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.outlineVariant.withValues(alpha: 0.5),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 66,
-                  height: 66,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      colors: [AppColors.primaryFixed, Color(0xFFEAF2FF)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                  ),
-                  child: Icon(
-                    user.isAdmin
-                        ? Icons.shield_outlined
-                        : Icons.medical_information_outlined,
-                    color: AppColors.primary,
-                    size: 34,
+            _requestBody(
+              loading: approvals.isLoading,
+              error: approvals.error,
+              empty: approvals.memberships.isEmpty,
+              emptyText: 'No hay accesos pendientes. La cola está al día.',
+              retry: _refresh,
+              list: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: approvals.memberships.length,
+                itemBuilder: (_, index) => _MembershipCard(
+                  item: approvals.memberships[index],
+                  busy:
+                      approvals.decidingKey ==
+                      'm${approvals.memberships[index].id}',
+                  decide: (approve) => _membershipDecision(
+                    approvals.memberships[index],
+                    approve,
                   ),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        user.fullName,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.onSurface,
-                          letterSpacing: -0.4,
+              ),
+            ),
+            _requestBody(
+              loading: users.isLoading,
+              error: users.error,
+              empty: users.users.isEmpty,
+              emptyText: 'No hay usuarios para mostrar.',
+              retry: _refresh,
+              list: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: users.users.length,
+                itemBuilder: (_, index) {
+                  final user = users.users[index];
+                  return Card(
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        child: Icon(
+                          user.isAdmin
+                              ? Icons.shield_outlined
+                              : Icons.person_outline,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        user.email,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          color: AppColors.onSurfaceVariant,
-                        ),
+                      title: Text(user.fullName),
+                      subtitle: Text(
+                        '${user.email}\n${user.profession ?? user.role} · ${user.isActive ? 'Activo' : 'Suspendido'}',
                       ),
-                      const SizedBox(height: 10),
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: statusBg,
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.circle, color: statusColor, size: 10),
-                              const SizedBox(width: 8),
-                              Text(
-                                user.isActive ? 'Activo' : 'Suspendido',
-                                style: TextStyle(
-                                  color: statusColor,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
+                      isThreeLine: true,
+                      trailing: IconButton(
+                        tooltip: user.id == currentUserId
+                            ? 'No puede suspender su propia cuenta'
+                            : (user.isActive ? 'Suspender' : 'Reactivar'),
+                        onPressed:
+                            users.updatingUserId == user.id ||
+                                user.id == currentUserId
+                            ? null
+                            : () => _toggleUser(user),
+                        icon: users.updatingUserId == user.id
+                            ? const SizedBox.square(
+                                dimension: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
                                 ),
+                              )
+                            : Icon(
+                                user.isActive
+                                    ? Icons.block
+                                    : Icons.check_circle_outline,
                               ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 18),
-            const Divider(height: 1, color: AppColors.surfaceVariant),
-            const SizedBox(height: 18),
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final itemWidth = constraints.maxWidth >= 520
-                    ? (constraints.maxWidth - 12) / 2
-                    : constraints.maxWidth;
-
-                return Wrap(
-                  spacing: 12,
-                  runSpacing: 10,
-                  children: [
-                    _InfoChip(
-                      icon: Icons.person_outline,
-                      label: 'Rol',
-                      value: user.isAdmin ? 'Admin' : 'Doctor',
-                      width: itemWidth,
-                    ),
-                    _InfoChip(
-                      icon: Icons.badge_outlined,
-                      label: 'ID médico',
-                      value: user.doctorId,
-                      width: itemWidth,
-                    ),
-                    _InfoChip(
-                      icon: Icons.apartment_outlined,
-                      label: 'Centro',
-                      value: user.medicalCenter?.isNotEmpty == true
-                          ? user.medicalCenter!
-                          : 'No registrado',
-                      width: itemWidth,
-                    ),
-                    _InfoChip(
-                      icon: Icons.calendar_today_outlined,
-                      label: 'Alta',
-                      value: formatDate(user.createdAt),
-                      width: itemWidth,
-                    ),
-                  ],
-                );
-              },
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                SizedBox(
-                  width: 180,
-                  child: OutlinedButton.icon(
-                    onPressed: isUpdating || isCurrentUser
-                        ? null
-                        : onToggleStatus,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: actionColor,
-                      side: BorderSide(color: actionColor),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    icon: isUpdating
-                        ? SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: actionColor,
-                            ),
-                          )
-                        : Icon(
-                            user.isActive
-                                ? Icons.block
-                                : Icons.check_circle_outline,
-                          ),
-                    label: Text(
-                      isCurrentUser
-                          ? 'Tu cuenta'
-                          : user.isActive
-                          ? 'Suspender'
-                          : 'Reactivar',
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                  ),
-                ),
-              ],
+                  );
+                },
+              ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  Widget _requestBody({
+    required bool loading,
+    required String? error,
+    required bool empty,
+    required String emptyText,
+    required Future<void> Function() retry,
+    required Widget list,
+  }) {
+    if (loading && empty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (error != null && empty) {
+      return _Message(
+        icon: Icons.error_outline,
+        text: error.replaceFirst('Exception: ', ''),
+        action: retry,
+      );
+    }
+    if (empty) {
+      return _Message(icon: Icons.task_alt, text: emptyText, action: retry);
+    }
+    return RefreshIndicator(onRefresh: retry, child: list);
   }
 }
 
-class _InfoChip extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final double width;
-
-  const _InfoChip({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.width,
+class _WorkspaceCard extends StatelessWidget {
+  final AdminWorkspaceRequest item;
+  final bool busy;
+  final ValueChanged<bool> decide;
+  const _WorkspaceCard({
+    required this.item,
+    required this.busy,
+    required this.decide,
   });
 
   @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: width,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceContainerLowest,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: AppColors.outlineVariant.withValues(alpha: 0.5),
+  Widget build(BuildContext context) => _DecisionCard(
+    title: item.name,
+    type: item.workspaceType == 'independent'
+        ? 'Práctica independiente'
+        : item.workspaceType,
+    details:
+        '${item.requester?.fullName ?? 'Solicitante no disponible'}\n${item.requester?.profession ?? 'Profesión no indicada'} · ${item.requester?.specialty ?? 'Sin especialidad'}\n${item.city ?? 'Ciudad no indicada'}',
+    busy: busy,
+    decide: decide,
+  );
+}
+
+class _MembershipCard extends StatelessWidget {
+  final AdminMembershipRequest item;
+  final bool busy;
+  final ValueChanged<bool> decide;
+  const _MembershipCard({
+    required this.item,
+    required this.busy,
+    required this.decide,
+  });
+
+  @override
+  Widget build(BuildContext context) => _DecisionCard(
+    title: item.requester.fullName,
+    type: item.isIndependent ? 'Profesional independiente' : item.workspaceName,
+    details:
+        '${item.requester.email}\n${item.requester.profession ?? 'Profesión no indicada'} · ${item.requester.specialty ?? 'Sin especialidad'}',
+    busy: busy,
+    decide: decide,
+  );
+}
+
+class _DecisionCard extends StatelessWidget {
+  final String title;
+  final String type;
+  final String details;
+  final bool busy;
+  final ValueChanged<bool> decide;
+  const _DecisionCard({
+    required this.title,
+    required this.type,
+    required this.details,
+    required this.busy,
+    required this.decide,
+  });
+
+  @override
+  Widget build(BuildContext context) => Card(
+    margin: const EdgeInsets.only(bottom: 12),
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.025),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: AppColors.primary, size: 20),
-            const SizedBox(width: 10),
-            Text(
-              '$label: ',
-              style: const TextStyle(
-                fontSize: 14,
-                color: AppColors.primary,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            Expanded(
-              child: Text(
-                value,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: AppColors.onSurfaceVariant,
+          const SizedBox(height: 4),
+          Chip(label: Text(type)),
+          const SizedBox(height: 6),
+          Text(details),
+          const SizedBox(height: 14),
+          if (busy)
+            const LinearProgressIndicator()
+          else
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => decide(false),
+                    child: const Text('Rechazar'),
+                  ),
                 ),
-              ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: () => decide(true),
+                    child: const Text('Aprobar'),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
+
+class _Message extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  final Future<void> Function() action;
+  const _Message({
+    required this.icon,
+    required this.text,
+    required this.action,
+  });
+
+  @override
+  Widget build(BuildContext context) => Center(
+    child: Padding(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 52, color: AppColors.primary),
+          const SizedBox(height: 12),
+          Text(text, textAlign: TextAlign.center),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: action,
+            icon: const Icon(Icons.refresh),
+            label: const Text('Actualizar'),
+          ),
+        ],
+      ),
+    ),
+  );
 }

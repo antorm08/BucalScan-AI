@@ -28,7 +28,14 @@ class ClinicalController extends Notifier<ClinicalState> {
     state = ClinicalState(loading: true, workspaces: state.workspaces);
     try {
       final workspaces = await ref.read(getMembershipsUseCaseProvider)();
-      state = ClinicalState(workspaces: workspaces);
+      final available = workspaces
+          .where((workspace) => workspace.canEnter)
+          .toList();
+      if (available.length == 1) {
+        selectWorkspace(available.single);
+      } else {
+        state = ClinicalState(workspaces: workspaces);
+      }
     } catch (error) {
       state = ClinicalState(error: error.toString());
     }
