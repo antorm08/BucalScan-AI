@@ -19,8 +19,8 @@ class StartupView extends StatefulWidget {
 }
 
 class _StartupViewState extends State<StartupView> {
-  static const Duration _retryDelay = Duration(seconds: 4);
-  static const int _automaticAttempts = 6;
+  static const Duration _retryDelay = Duration(seconds: 2);
+  static const int _automaticAttempts = 2;
 
   bool _isLoading = true;
   String? _error;
@@ -193,7 +193,7 @@ class _StartupViewState extends State<StartupView> {
                         if (!_isServiceReady) ...[
                           const SizedBox(height: 8),
                           const Text(
-                            'La primera conexión puede tardar unos segundos.',
+                            'Puedes continuar mientras Render termina de iniciar.',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 13,
