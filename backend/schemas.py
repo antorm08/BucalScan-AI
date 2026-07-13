@@ -85,6 +85,8 @@ class UserAdminResponse(BaseModel):
     created_at: Optional[datetime] = None
     status: str
     role: str
+    profession: Optional[str] = None
+    specialty: Optional[str] = None
 
 
 class UserStatusUpdate(BaseModel):

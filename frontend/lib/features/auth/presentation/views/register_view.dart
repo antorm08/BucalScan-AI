@@ -23,9 +23,14 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _otherSpecialtyController = TextEditingController();
   bool _acceptTerms = false;
+  bool _showPassword = false;
+  bool _showPasswordConfirmation = false;
   String _workspaceChoice = 'existing';
   ClinicalWorkspace? _selectedWorkspace;
+  String _profession = 'Odontólogo/a';
+  String _specialty = '';
 
   @override
   void initState() {
@@ -43,6 +48,7 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _otherSpecialtyController.dispose();
     super.dispose();
   }
 
@@ -67,6 +73,12 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
             : null,
         email: _emailController.text.trim(),
         password: _passwordController.text,
+        profession: _profession,
+        specialty: _specialty == 'Otra'
+            ? _otherSpecialtyController.text.trim()
+            : _specialty.isEmpty
+            ? null
+            : _specialty,
         workspaceChoice: _workspaceChoice,
         workspaceId: _workspaceChoice == 'existing'
             ? _selectedWorkspace?.id
@@ -166,47 +178,126 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
                             AppTextField(
                               controller: _fullNameController,
                               label: 'Nombre completo',
-                              hint: 'Dra. Jane Doe',
+                              hint: 'María Fernández López',
                               icon: Icons.person,
                               validator: AuthValidators.validateFullName,
                             ),
                             const SizedBox(height: 16),
                             AppTextField(
                               controller: _doctorIdController,
-                              label: 'Número de licencia médica',
-                              hint: 'MD-123456',
+                              label: 'Colegiatura o registro profesional',
+                              hint: 'COP-123456',
                               icon: Icons.badge,
                               validator: AuthValidators.validateDoctorId,
                             ),
+                            const SizedBox(height: 16),
+                            DropdownButtonFormField<String>(
+                              initialValue: _profession,
+                              isExpanded: true,
+                              decoration: const InputDecoration(
+                                labelText: 'Profesión',
+                                prefixIcon: Icon(
+                                  Icons.medical_services_outlined,
+                                ),
+                                border: OutlineInputBorder(),
+                              ),
+                              items:
+                                  const [
+                                        'Odontólogo/a',
+                                        'Médico/a general',
+                                        'Estomatólogo/a',
+                                        'Cirujano/a dentista',
+                                        'Otro profesional de salud',
+                                      ]
+                                      .map(
+                                        (value) => DropdownMenuItem(
+                                          value: value,
+                                          child: Text(value),
+                                        ),
+                                      )
+                                      .toList(),
+                              onChanged: (value) => setState(
+                                () => _profession = value ?? _profession,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            DropdownButtonFormField<String>(
+                              initialValue: _specialty,
+                              isExpanded: true,
+                              decoration: const InputDecoration(
+                                labelText: 'Especialidad (opcional)',
+                                prefixIcon: Icon(
+                                  Icons.workspace_premium_outlined,
+                                ),
+                                border: OutlineInputBorder(),
+                              ),
+                              items:
+                                  const {
+                                        '': 'Sin especialidad',
+                                        'Odontología general':
+                                            'Odontología general',
+                                        'Patología oral': 'Patología oral',
+                                        'Medicina oral': 'Medicina oral',
+                                        'Cirugía maxilofacial':
+                                            'Cirugía maxilofacial',
+                                        'Oncología de cabeza y cuello':
+                                            'Oncología de cabeza y cuello',
+                                        'Otra': 'Otra',
+                                      }.entries
+                                      .map(
+                                        (entry) => DropdownMenuItem(
+                                          value: entry.key,
+                                          child: Text(entry.value),
+                                        ),
+                                      )
+                                      .toList(),
+                              onChanged: (value) => setState(() {
+                                _specialty = value ?? '';
+                                if (_specialty != 'Otra') {
+                                  _otherSpecialtyController.clear();
+                                }
+                              }),
+                            ),
+                            if (_specialty == 'Otra') ...[
+                              const SizedBox(height: 12),
+                              AppTextField(
+                                controller: _otherSpecialtyController,
+                                label: 'Especifique su especialidad',
+                                hint: 'Nombre de la especialidad',
+                                icon: Icons.edit_outlined,
+                                validator: (value) =>
+                                    value == null || value.trim().isEmpty
+                                    ? 'Ingrese la especialidad'
+                                    : null,
+                              ),
+                            ],
                             const SizedBox(height: 16),
                             const Text(
                               'Modalidad de trabajo',
                               style: TextStyle(fontWeight: FontWeight.w600),
                             ),
                             const SizedBox(height: 8),
-                            SegmentedButton<String>(
-                              segments: const [
-                                ButtonSegment(
-                                  value: 'clinic',
-                                  icon: Icon(Icons.local_hospital_outlined),
-                                  label: Text('Clinica'),
-                                ),
-                                ButtonSegment(
-                                  value: 'independent',
-                                  icon: Icon(Icons.person_outline),
-                                  label: Text('Independiente'),
-                                ),
-                              ],
-                              selected: {
-                                _workspaceChoice == 'independent'
-                                    ? 'independent'
-                                    : 'clinic',
-                              },
-                              onSelectionChanged: (selection) => setState(() {
-                                _workspaceChoice =
-                                    selection.first == 'independent'
-                                    ? 'independent'
-                                    : 'existing';
+                            _WorkModeOption(
+                              selected: _workspaceChoice != 'independent',
+                              icon: Icons.local_hospital_outlined,
+                              title: 'Clínica o consultorio',
+                              subtitle:
+                                  'Busca una institución o solicita su registro.',
+                              onTap: () => setState(() {
+                                _workspaceChoice = 'existing';
+                                _medicalCenterController.clear();
+                                _selectedWorkspace = null;
+                              }),
+                            ),
+                            const SizedBox(height: 8),
+                            _WorkModeOption(
+                              selected: _workspaceChoice == 'independent',
+                              icon: Icons.person_outline,
+                              title: 'Práctica independiente',
+                              subtitle:
+                                  'Para profesionales que atienden por cuenta propia.',
+                              onTap: () => setState(() {
+                                _workspaceChoice = 'independent';
                                 _medicalCenterController.clear();
                                 _selectedWorkspace = null;
                               }),
@@ -319,7 +410,20 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
                               label: 'Contraseña',
                               hint: '••••••••',
                               icon: Icons.lock,
-                              obscureText: true,
+                              obscureText: !_showPassword,
+                              suffixIcon: IconButton(
+                                tooltip: _showPassword
+                                    ? 'Ocultar contraseña'
+                                    : 'Mostrar contraseña',
+                                onPressed: () => setState(
+                                  () => _showPassword = !_showPassword,
+                                ),
+                                icon: Icon(
+                                  _showPassword
+                                      ? Icons.visibility_off_outlined
+                                      : Icons.visibility_outlined,
+                                ),
+                              ),
                               validator:
                                   AuthValidators.validateRegisterPassword,
                             ),
@@ -329,7 +433,21 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
                               label: 'Confirmar contraseña',
                               hint: '••••••••',
                               icon: Icons.lock,
-                              obscureText: true,
+                              obscureText: !_showPasswordConfirmation,
+                              suffixIcon: IconButton(
+                                tooltip: _showPasswordConfirmation
+                                    ? 'Ocultar confirmación'
+                                    : 'Mostrar confirmación',
+                                onPressed: () => setState(
+                                  () => _showPasswordConfirmation =
+                                      !_showPasswordConfirmation,
+                                ),
+                                icon: Icon(
+                                  _showPasswordConfirmation
+                                      ? Icons.visibility_off_outlined
+                                      : Icons.visibility_outlined,
+                                ),
+                              ),
                               validator: (value) =>
                                   AuthValidators.validateConfirmPassword(
                                     value,
@@ -515,6 +633,70 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
                 ],
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _WorkModeOption extends StatelessWidget {
+  final bool selected;
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _WorkModeOption({
+    required this.selected,
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Material(
+      color: selected ? colors.primaryContainer : colors.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: selected ? colors.primary : colors.outlineVariant,
+          width: selected ? 1.5 : 1,
+        ),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(icon, color: selected ? colors.primary : colors.outline),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(subtitle, style: const TextStyle(fontSize: 12)),
+                  ],
+                ),
+              ),
+              Icon(
+                selected
+                    ? Icons.radio_button_checked
+                    : Icons.radio_button_unchecked,
+                color: selected ? colors.primary : colors.outline,
+              ),
+            ],
           ),
         ),
       ),

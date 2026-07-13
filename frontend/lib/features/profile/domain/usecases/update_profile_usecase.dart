@@ -10,11 +10,15 @@ class UpdateProfileUseCase {
     String? fullName,
     String? medicalCenter,
     String? email,
+    String? profession,
+    String? specialty,
   }) {
     return _repository.updateProfile(
       fullName: fullName,
       medicalCenter: medicalCenter,
       email: email,
+      profession: profession,
+      specialty: specialty,
     );
   }
 }

@@ -12,11 +12,15 @@ class ProfileRepositoryImpl implements ProfileRepository {
     String? fullName,
     String? medicalCenter,
     String? email,
+    String? profession,
+    String? specialty,
   }) async {
     final model = await _remoteDataSource.updateProfile(
       fullName: fullName,
       medicalCenter: medicalCenter,
       email: email,
+      profession: profession,
+      specialty: specialty,
     );
     return model.toEntity();
   }

@@ -23,6 +23,7 @@ void main() {
           medicalCenter: 'Hospital Central',
           email: 'jane.doe@hospital.org',
           password: '123456',
+          profession: 'Odontólogo/a',
         ),
       ).thenAnswer((_) async {});
 
@@ -32,6 +33,7 @@ void main() {
         medicalCenter: 'Hospital Central',
         email: 'jane.doe@hospital.org',
         password: '123456',
+        profession: 'Odontólogo/a',
       );
 
       verify(
@@ -41,6 +43,7 @@ void main() {
           medicalCenter: 'Hospital Central',
           email: 'jane.doe@hospital.org',
           password: '123456',
+          profession: 'Odontólogo/a',
         ),
       ).called(1);
     },
@@ -54,6 +57,7 @@ void main() {
         medicalCenter: null,
         email: 'jane.doe@hospital.org',
         password: '123456',
+        profession: 'Odontólogo/a',
       ),
     ).thenThrow(Exception('El correo ya está registrado'));
 
@@ -63,6 +67,7 @@ void main() {
         doctorId: 'MD-123456',
         email: 'jane.doe@hospital.org',
         password: '123456',
+        profession: 'Odontólogo/a',
       ),
       throwsException,
     );

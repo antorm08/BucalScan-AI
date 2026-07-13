@@ -93,6 +93,8 @@ class ApiService {
     String? medicalCenter,
     required String email,
     required String password,
+    required String profession,
+    String? specialty,
     String? workspaceChoice,
     String? workspaceId,
     String? workspaceName,
@@ -107,6 +109,8 @@ class ApiService {
             'medical_center': medicalCenter,
           'email': email,
           'password': password,
+          'profession': profession,
+          if (specialty != null && specialty.isNotEmpty) 'specialty': specialty,
           if (workspaceChoice != null) 'workspace_choice': workspaceChoice,
           if (workspaceId != null) 'workspace_id': workspaceId,
           if (workspaceName != null) 'workspace_name': workspaceName,
@@ -183,12 +187,16 @@ class ApiService {
     String? fullName,
     String? medicalCenter,
     String? email,
+    String? profession,
+    String? specialty,
   }) async {
     try {
       final data = <String, dynamic>{};
       if (fullName != null && fullName.isNotEmpty) data['full_name'] = fullName;
       if (medicalCenter != null) data['medical_center'] = medicalCenter;
       if (email != null && email.isNotEmpty) data['email'] = email;
+      if (profession != null) data['profession'] = profession;
+      if (specialty != null) data['specialty'] = specialty;
 
       final response = await _dio.put(
         '${AppConstants.apiVersion}/auth/me',

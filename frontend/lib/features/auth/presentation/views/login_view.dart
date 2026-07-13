@@ -20,6 +20,7 @@ class _LoginViewState extends ConsumerState<LoginView> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  bool _showPassword = false;
 
   String _formatLoginError(String error) {
     final cleaned = error.replaceFirst('Exception: ', '').trim();
@@ -202,7 +203,20 @@ class _LoginViewState extends ConsumerState<LoginView> {
                               label: 'Contraseña',
                               hint: '••••••••',
                               icon: Icons.lock_outline,
-                              obscureText: true,
+                              obscureText: !_showPassword,
+                              suffixIcon: IconButton(
+                                tooltip: _showPassword
+                                    ? 'Ocultar contraseña'
+                                    : 'Mostrar contraseña',
+                                onPressed: () => setState(
+                                  () => _showPassword = !_showPassword,
+                                ),
+                                icon: Icon(
+                                  _showPassword
+                                      ? Icons.visibility_off_outlined
+                                      : Icons.visibility_outlined,
+                                ),
+                              ),
                               validator: AuthValidators.validateLoginPassword,
                             ),
                             const SizedBox(height: 16),

@@ -7,6 +7,8 @@ class AdminUser {
   final DateTime? createdAt;
   final String status;
   final String role;
+  final String? profession;
+  final String? specialty;
 
   const AdminUser({
     required this.id,
@@ -17,8 +19,11 @@ class AdminUser {
     this.createdAt,
     required this.status,
     required this.role,
+    this.profession,
+    this.specialty,
   });
 
   bool get isActive => status.toLowerCase() == 'active';
-  bool get isAdmin => role.toLowerCase() == 'admin';
+  bool get isAdmin =>
+      const {'admin', 'platform_admin'}.contains(role.toLowerCase());
 }

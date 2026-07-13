@@ -167,6 +167,7 @@ void main() {
         medicalCenter: null,
         email: 'jane.doe@hospital.org',
         password: '123456',
+        profession: 'Odontólogo/a',
       ),
     ).thenAnswer((_) async => <String, dynamic>{});
 
@@ -175,6 +176,7 @@ void main() {
       doctorId: 'MD-123456',
       email: 'jane.doe@hospital.org',
       password: '123456',
+      profession: 'Odontólogo/a',
     );
 
     verify(
@@ -184,6 +186,7 @@ void main() {
         medicalCenter: null,
         email: 'jane.doe@hospital.org',
         password: '123456',
+        profession: 'Odontólogo/a',
       ),
     ).called(1);
   });

@@ -27,6 +27,7 @@ class _StartupViewState extends State<StartupView> {
   String _statusMessage = 'Conectando con el servidor...';
   int _currentAttempt = 0;
   bool _hasContinued = false;
+  bool _isServiceReady = false;
 
   @override
   void initState() {
@@ -41,6 +42,7 @@ class _StartupViewState extends State<StartupView> {
       _currentAttempt = 0;
       _statusMessage = 'Conectando con el servidor...';
       _hasContinued = false;
+      _isServiceReady = false;
     });
 
     while (mounted) {
@@ -68,10 +70,12 @@ class _StartupViewState extends State<StartupView> {
         }
 
         setState(() {
-          _statusMessage = 'Servidor listo. Ingresando...';
+          _isServiceReady = true;
+          _error = null;
+          _statusMessage = 'Servicio listo';
         });
 
-        await Future<void>.delayed(const Duration(milliseconds: 500));
+        await Future<void>.delayed(const Duration(milliseconds: 1200));
         if (!mounted) {
           return;
         }
@@ -85,10 +89,10 @@ class _StartupViewState extends State<StartupView> {
         }
 
         setState(() {
-          _error = e.toString().replaceFirst('Exception: ', '');
+          _error = 'No se pudo conectar con el servicio.';
           _statusMessage = attempt >= _automaticAttempts
-              ? 'El servicio no esta disponible por el momento.'
-              : 'El servicio sigue preparandose. Reintentando automaticamente...';
+              ? 'Servicio no disponible'
+              : 'Preparando el servicio...';
         });
 
         if (attempt >= _automaticAttempts) {
@@ -164,11 +168,18 @@ class _StartupViewState extends State<StartupView> {
                       ),
                       const SizedBox(height: 24),
                       if (_isLoading) ...[
-                        const SizedBox(
-                          width: 28,
-                          height: 28,
-                          child: CircularProgressIndicator(strokeWidth: 3),
-                        ),
+                        if (_isServiceReady)
+                          const Icon(
+                            Icons.check_circle,
+                            size: 42,
+                            color: AppColors.benignText,
+                          )
+                        else
+                          const SizedBox(
+                            width: 28,
+                            height: 28,
+                            child: CircularProgressIndicator(strokeWidth: 3),
+                          ),
                         const SizedBox(height: 18),
                         Text(
                           _statusMessage,
@@ -179,43 +190,34 @@ class _StartupViewState extends State<StartupView> {
                             color: AppColors.onSurface,
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Puede tomar unos minutos si el servidor estaba en reposo.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: AppColors.onSurfaceVariant,
-                          ),
-                        ),
-                        if (_currentAttempt > 1) ...[
+                        if (!_isServiceReady) ...[
                           const SizedBox(height: 8),
-                          Text(
-                            'Intento $_currentAttempt. BucalScan AI seguira comprobando la disponibilidad.',
+                          const Text(
+                            'La primera conexión puede tardar unos segundos.',
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 13,
                               color: AppColors.onSurfaceVariant,
                             ),
                           ),
-                        ],
-                        if (_error != null) ...[
-                          const SizedBox(height: 12),
-                          Text(
-                            _error!,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: AppColors.onSurfaceVariant,
+                          if (_currentAttempt > 1) ...[
+                            const SizedBox(height: 6),
+                            Text(
+                              'Reintento $_currentAttempt de $_automaticAttempts',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.onSurfaceVariant,
+                              ),
                             ),
+                          ],
+                          const SizedBox(height: 20),
+                          TextButton.icon(
+                            onPressed: _continueToLogin,
+                            icon: const Icon(Icons.arrow_forward),
+                            label: const Text('Continuar sin esperar'),
                           ),
                         ],
-                        const SizedBox(height: 20),
-                        TextButton.icon(
-                          onPressed: _continueToLogin,
-                          icon: const Icon(Icons.arrow_forward),
-                          label: const Text('Continuar sin esperar'),
-                        ),
                       ] else ...[
                         const Icon(
                           Icons.cloud_off_outlined,

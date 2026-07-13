@@ -44,6 +44,19 @@ void main() {
   });
 
   group('AdminUser.isAdmin', () {
+    test('es true para platform_admin', () {
+      const user = AdminUser(
+        id: 1,
+        fullName: 'Admin',
+        doctorId: 'ADMIN-001',
+        email: 'admin@bucalscan.test',
+        status: 'active',
+        role: 'platform_admin',
+      );
+
+      expect(user.isAdmin, true);
+    });
+
     test('es true cuando el rol es "admin"', () {
       const user = AdminUser(
         id: 1,

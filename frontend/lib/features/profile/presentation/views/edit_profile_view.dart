@@ -17,6 +17,8 @@ class _EditProfileViewState extends ConsumerState<EditProfileView> {
   late final TextEditingController _fullNameController;
   late final TextEditingController _medicalCenterController;
   late final TextEditingController _emailController;
+  late final TextEditingController _professionController;
+  late final TextEditingController _specialtyController;
 
   @override
   void initState() {
@@ -27,6 +29,8 @@ class _EditProfileViewState extends ConsumerState<EditProfileView> {
       text: user?.medicalCenter ?? '',
     );
     _emailController = TextEditingController(text: user?.email ?? '');
+    _professionController = TextEditingController(text: user?.profession ?? '');
+    _specialtyController = TextEditingController(text: user?.specialty ?? '');
   }
 
   @override
@@ -34,6 +38,8 @@ class _EditProfileViewState extends ConsumerState<EditProfileView> {
     _fullNameController.dispose();
     _medicalCenterController.dispose();
     _emailController.dispose();
+    _professionController.dispose();
+    _specialtyController.dispose();
     super.dispose();
   }
 
@@ -45,6 +51,8 @@ class _EditProfileViewState extends ConsumerState<EditProfileView> {
       fullName: _fullNameController.text.trim(),
       medicalCenter: _medicalCenterController.text.trim(),
       email: _emailController.text.trim(),
+      profession: _professionController.text.trim(),
+      specialty: _specialtyController.text.trim(),
     );
 
     if (!mounted) return;
@@ -88,7 +96,7 @@ class _EditProfileViewState extends ConsumerState<EditProfileView> {
               AppTextField(
                 controller: _fullNameController,
                 label: 'Nombre completo',
-                hint: 'Ej: Dra. Jane Doe',
+                hint: 'Ej: María Fernández López',
                 icon: Icons.person_outline,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -96,6 +104,20 @@ class _EditProfileViewState extends ConsumerState<EditProfileView> {
                   }
                   return null;
                 },
+              ),
+              const SizedBox(height: 16),
+              AppTextField(
+                controller: _professionController,
+                label: 'Profesión',
+                hint: 'Ej: Odontólogo/a',
+                icon: Icons.medical_services_outlined,
+              ),
+              const SizedBox(height: 16),
+              AppTextField(
+                controller: _specialtyController,
+                label: 'Especialidad',
+                hint: 'Opcional',
+                icon: Icons.workspace_premium_outlined,
               ),
               const SizedBox(height: 16),
               AppTextField(

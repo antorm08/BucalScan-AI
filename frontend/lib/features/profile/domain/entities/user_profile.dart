@@ -6,6 +6,9 @@ class UserProfile {
   final String email;
   final DateTime? createdAt;
   final String role;
+  final String status;
+  final String? profession;
+  final String? specialty;
 
   const UserProfile({
     required this.id,
@@ -15,5 +18,8 @@ class UserProfile {
     required this.email,
     this.createdAt,
     required this.role,
+    this.status = 'active',
+    this.profession,
+    this.specialty,
   });
 }

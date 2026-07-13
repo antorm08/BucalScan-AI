@@ -138,6 +138,8 @@ class _FakeAuthRepository implements AuthRepository {
     String? medicalCenter,
     required String email,
     required String password,
+    required String profession,
+    String? specialty,
     String? workspaceChoice,
     String? workspaceId,
     String? workspaceName,

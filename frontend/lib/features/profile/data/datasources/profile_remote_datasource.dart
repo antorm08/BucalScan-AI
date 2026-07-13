@@ -10,11 +10,15 @@ class ProfileRemoteDataSource {
     String? fullName,
     String? medicalCenter,
     String? email,
+    String? profession,
+    String? specialty,
   }) async {
     final response = await _apiService.updateProfile(
       fullName: fullName,
       medicalCenter: medicalCenter,
       email: email,
+      profession: profession,
+      specialty: specialty,
     );
     final data = response['data'] as Map<String, dynamic>?;
     final userData = data?['user'] as Map<String, dynamic>?;

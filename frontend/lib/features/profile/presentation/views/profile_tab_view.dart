@@ -116,8 +116,20 @@ class ProfileTabView extends ConsumerWidget {
                 children: [
                   _ProfileTile(
                     icon: Icons.badge,
-                    title: 'ID Médico',
+                    title: 'Registro profesional',
                     subtitle: user?.doctorId ?? '—',
+                  ),
+                  const Divider(height: 1, color: AppColors.surfaceVariant),
+                  _ProfileTile(
+                    icon: Icons.medical_services_outlined,
+                    title: 'Profesión',
+                    subtitle: user?.profession ?? '—',
+                  ),
+                  const Divider(height: 1, color: AppColors.surfaceVariant),
+                  _ProfileTile(
+                    icon: Icons.workspace_premium_outlined,
+                    title: 'Especialidad',
+                    subtitle: user?.specialty ?? 'Sin especialidad',
                   ),
                   const Divider(height: 1, color: AppColors.surfaceVariant),
                   _ProfileTile(
@@ -136,8 +148,8 @@ class ProfileTabView extends ConsumerWidget {
                     icon: Icons.admin_panel_settings_outlined,
                     title: 'Rol de acceso',
                     subtitle: user?.isAdmin == true
-                        ? 'Administrador'
-                        : 'Doctor',
+                        ? 'Administrador de plataforma'
+                        : 'Profesional',
                   ),
                 ],
               ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bucalscan_ai/features/clinical/domain/entities/clinical_entities.dart';
 import 'package:bucalscan_ai/features/clinical/presentation/viewmodels/clinical_controller.dart';
+import 'package:bucalscan_ai/features/auth/presentation/viewmodels/auth_viewmodel.dart';
 
 class WorkspaceGateView extends ConsumerStatefulWidget {
   final Widget child;
@@ -22,6 +23,9 @@ class _WorkspaceGateViewState extends ConsumerState<WorkspaceGateView> {
 
   @override
   Widget build(BuildContext context) {
+    final user = ref.watch(authViewModelProvider).currentUser;
+    if (user?.isAdmin == true) return widget.child;
+
     final state = ref.watch(clinicalControllerProvider);
     if (state.activeWorkspace != null) return widget.child;
     return Scaffold(

@@ -198,6 +198,7 @@ void main() {
         medicalCenter: null,
         email: 'jane.doe@hospital.org',
         password: '123456',
+        profession: 'Odontólogo/a',
       ),
     ).thenAnswer((_) async {});
 
@@ -208,6 +209,7 @@ void main() {
           doctorId: 'MD-123456',
           email: 'jane.doe@hospital.org',
           password: '123456',
+          profession: 'Odontólogo/a',
         );
 
     expect(success, true);
@@ -222,6 +224,7 @@ void main() {
         medicalCenter: null,
         email: 'jane.doe@hospital.org',
         password: '123456',
+        profession: 'Odontólogo/a',
       ),
     ).thenThrow(Exception('El correo ya está registrado'));
 
@@ -232,6 +235,7 @@ void main() {
           doctorId: 'MD-123456',
           email: 'jane.doe@hospital.org',
           password: '123456',
+          profession: 'Odontólogo/a',
         );
 
     expect(success, false);

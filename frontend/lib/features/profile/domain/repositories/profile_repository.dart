@@ -5,5 +5,7 @@ abstract class ProfileRepository {
     String? fullName,
     String? medicalCenter,
     String? email,
+    String? profession,
+    String? specialty,
   });
 }

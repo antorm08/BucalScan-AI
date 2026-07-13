@@ -8,6 +8,9 @@ class UserProfileModel {
   final String email;
   final DateTime? createdAt;
   final String role;
+  final String status;
+  final String? profession;
+  final String? specialty;
 
   const UserProfileModel({
     required this.id,
@@ -17,6 +20,9 @@ class UserProfileModel {
     required this.email,
     this.createdAt,
     required this.role,
+    this.status = 'active',
+    this.profession,
+    this.specialty,
   });
 
   factory UserProfileModel.fromJson(Map<String, dynamic> json) {
@@ -30,6 +36,9 @@ class UserProfileModel {
           ? DateTime.tryParse(json['created_at'] as String)
           : null,
       role: json['role'] as String? ?? 'doctor',
+      status: json['status'] as String? ?? 'active',
+      profession: json['profession'] as String?,
+      specialty: json['specialty'] as String?,
     );
   }
 
@@ -42,6 +51,9 @@ class UserProfileModel {
       email: email,
       createdAt: createdAt,
       role: role,
+      status: status,
+      profession: profession,
+      specialty: specialty,
     );
   }
 }

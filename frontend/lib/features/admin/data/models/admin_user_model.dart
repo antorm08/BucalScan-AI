@@ -9,6 +9,8 @@ class AdminUserModel {
   final DateTime? createdAt;
   final String status;
   final String role;
+  final String? profession;
+  final String? specialty;
 
   const AdminUserModel({
     required this.id,
@@ -19,6 +21,8 @@ class AdminUserModel {
     required this.status,
     required this.role,
     this.createdAt,
+    this.profession,
+    this.specialty,
   });
 
   factory AdminUserModel.fromJson(Map<String, dynamic> json) {
@@ -33,6 +37,8 @@ class AdminUserModel {
           : null,
       status: json['status'] as String? ?? 'active',
       role: json['role'] as String? ?? 'doctor',
+      profession: json['profession'] as String?,
+      specialty: json['specialty'] as String?,
     );
   }
 
@@ -46,6 +52,8 @@ class AdminUserModel {
       createdAt: createdAt,
       status: status,
       role: role,
+      profession: profession,
+      specialty: specialty,
     );
   }
 }

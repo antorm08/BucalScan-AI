@@ -9,6 +9,9 @@ class AuthUserModel extends AuthUser {
     required super.email,
     super.createdAt,
     required super.role,
+    super.status,
+    super.profession,
+    super.specialty,
   });
 
   factory AuthUserModel.fromJson(Map<String, dynamic> json) {
@@ -22,6 +25,9 @@ class AuthUserModel extends AuthUser {
           ? DateTime.tryParse(json['created_at'] as String)
           : null,
       role: json['role'] as String? ?? 'doctor',
+      status: json['status'] as String? ?? 'active',
+      profession: json['profession'] as String?,
+      specialty: json['specialty'] as String?,
     );
   }
 
@@ -34,6 +40,9 @@ class AuthUserModel extends AuthUser {
       'email': email,
       'created_at': createdAt?.toIso8601String(),
       'role': role,
+      'status': status,
+      'profession': profession,
+      'specialty': specialty,
     };
   }
 }

@@ -181,6 +181,8 @@ class MockAuthRemoteDataSource extends _i1.Mock
     String? medicalCenter,
     required String? email,
     required String? password,
+    required String? profession,
+    String? specialty,
     String? workspaceChoice,
     String? workspaceId,
     String? workspaceName,
@@ -192,6 +194,8 @@ class MockAuthRemoteDataSource extends _i1.Mock
               #medicalCenter: medicalCenter,
               #email: email,
               #password: password,
+              #profession: profession,
+              #specialty: specialty,
               #workspaceChoice: workspaceChoice,
               #workspaceId: workspaceId,
               #workspaceName: workspaceName,
@@ -408,12 +412,16 @@ class MockProfileRemoteDataSource extends _i1.Mock
     String? fullName,
     String? medicalCenter,
     String? email,
+    String? profession,
+    String? specialty,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#updateProfile, [], {
               #fullName: fullName,
               #medicalCenter: medicalCenter,
               #email: email,
+              #profession: profession,
+              #specialty: specialty,
             }),
             returnValue: _i13.Future<_i5.UserProfileModel>.value(
               _FakeUserProfileModel_3(
@@ -422,6 +430,8 @@ class MockProfileRemoteDataSource extends _i1.Mock
                   #fullName: fullName,
                   #medicalCenter: medicalCenter,
                   #email: email,
+                  #profession: profession,
+                  #specialty: specialty,
                 }),
               ),
             ),
@@ -463,6 +473,8 @@ class MockAuthRepository extends _i1.Mock implements _i22.AuthRepository {
     String? medicalCenter,
     required String? email,
     required String? password,
+    required String? profession,
+    String? specialty,
     String? workspaceChoice,
     String? workspaceId,
     String? workspaceName,
@@ -474,6 +486,8 @@ class MockAuthRepository extends _i1.Mock implements _i22.AuthRepository {
               #medicalCenter: medicalCenter,
               #email: email,
               #password: password,
+              #profession: profession,
+              #specialty: specialty,
               #workspaceChoice: workspaceChoice,
               #workspaceId: workspaceId,
               #workspaceName: workspaceName,
@@ -640,12 +654,16 @@ class MockProfileRepository extends _i1.Mock implements _i28.ProfileRepository {
     String? fullName,
     String? medicalCenter,
     String? email,
+    String? profession,
+    String? specialty,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#updateProfile, [], {
               #fullName: fullName,
               #medicalCenter: medicalCenter,
               #email: email,
+              #profession: profession,
+              #specialty: specialty,
             }),
             returnValue: _i13.Future<_i11.UserProfile>.value(
               _FakeUserProfile_9(
@@ -654,6 +672,8 @@ class MockProfileRepository extends _i1.Mock implements _i28.ProfileRepository {
                   #fullName: fullName,
                   #medicalCenter: medicalCenter,
                   #email: email,
+                  #profession: profession,
+                  #specialty: specialty,
                 }),
               ),
             ),
@@ -704,6 +724,8 @@ class MockRegisterUseCase extends _i1.Mock implements _i30.RegisterUseCase {
     String? medicalCenter,
     required String? email,
     required String? password,
+    required String? profession,
+    String? specialty,
     String? workspaceChoice,
     String? workspaceId,
     String? workspaceName,
@@ -715,6 +737,8 @@ class MockRegisterUseCase extends _i1.Mock implements _i30.RegisterUseCase {
               #medicalCenter: medicalCenter,
               #email: email,
               #password: password,
+              #profession: profession,
+              #specialty: specialty,
               #workspaceChoice: workspaceChoice,
               #workspaceId: workspaceId,
               #workspaceName: workspaceName,
@@ -813,12 +837,16 @@ class MockUpdateProfileUseCase extends _i1.Mock
     String? fullName,
     String? medicalCenter,
     String? email,
+    String? profession,
+    String? specialty,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#call, [], {
               #fullName: fullName,
               #medicalCenter: medicalCenter,
               #email: email,
+              #profession: profession,
+              #specialty: specialty,
             }),
             returnValue: _i13.Future<_i11.UserProfile>.value(
               _FakeUserProfile_9(
@@ -827,6 +855,8 @@ class MockUpdateProfileUseCase extends _i1.Mock
                   #fullName: fullName,
                   #medicalCenter: medicalCenter,
                   #email: email,
+                  #profession: profession,
+                  #specialty: specialty,
                 }),
               ),
             ),

@@ -3,6 +3,18 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('AuthUser.isAdmin', () {
+    test('es true para platform_admin', () {
+      const user = AuthUser(
+        id: 1,
+        fullName: 'Admin',
+        doctorId: 'ADMIN-001',
+        email: 'admin@bucalscan.test',
+        role: 'platform_admin',
+      );
+
+      expect(user.isAdmin, true);
+    });
+
     test('es true cuando el rol es "admin"', () {
       const user = AuthUser(
         id: 1,

@@ -93,6 +93,8 @@ class AuthViewModel extends Notifier<AuthState> {
     String? medicalCenter,
     required String email,
     required String password,
+    required String profession,
+    String? specialty,
     String? workspaceChoice,
     String? workspaceId,
     String? workspaceName,
@@ -106,6 +108,8 @@ class AuthViewModel extends Notifier<AuthState> {
         medicalCenter: medicalCenter,
         email: email,
         password: password,
+        profession: profession,
+        specialty: specialty,
         workspaceChoice: workspaceChoice,
         workspaceId: workspaceId,
         workspaceName: workspaceName,
@@ -127,6 +131,8 @@ class AuthViewModel extends Notifier<AuthState> {
     String? fullName,
     String? medicalCenter,
     String? email,
+    String? profession,
+    String? specialty,
   }) async {
     state = state.copyWith(isLoading: true, clearError: true);
 
@@ -135,6 +141,8 @@ class AuthViewModel extends Notifier<AuthState> {
         fullName: fullName,
         medicalCenter: medicalCenter,
         email: email,
+        profession: profession,
+        specialty: specialty,
       );
 
       state = AuthState(
@@ -146,6 +154,9 @@ class AuthViewModel extends Notifier<AuthState> {
           email: profile.email,
           createdAt: profile.createdAt,
           role: profile.role,
+          status: profile.status,
+          profession: profile.profession,
+          specialty: profile.specialty,
         ),
       );
       return true;
