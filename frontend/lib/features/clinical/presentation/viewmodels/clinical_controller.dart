@@ -21,23 +21,60 @@ class ClinicalState {
 }
 
 class ClinicalController extends Notifier<ClinicalState> {
+  int _generation = 0;
+
   @override
   ClinicalState build() => const ClinicalState();
 
   Future<void> loadWorkspaces() async {
-    state = ClinicalState(loading: true, workspaces: state.workspaces);
+    final generation = ++_generation;
+    final previous = state;
+    state = ClinicalState(
+      loading: true,
+      workspaces: previous.workspaces,
+      activeWorkspace: previous.activeWorkspace,
+      patient: previous.patient,
+      lesion: previous.lesion,
+    );
     try {
       final workspaces = await ref.read(getMembershipsUseCaseProvider)();
+      if (generation != _generation) return;
       final available = workspaces
           .where((workspace) => workspace.canEnter)
           .toList();
-      if (available.length == 1) {
+      final activeId = previous.activeWorkspace?.id;
+      final preserved = activeId == null
+          ? null
+          : available
+                .where((workspace) => workspace.id == activeId)
+                .firstOrNull;
+      if (preserved != null) {
+        ref.read(selectWorkspaceUseCaseProvider)(preserved.id);
+        state = ClinicalState(
+          workspaces: workspaces,
+          activeWorkspace: preserved,
+          patient: previous.patient,
+          lesion: previous.lesion,
+        );
+      } else if (activeId != null) {
+        ref.read(selectWorkspaceUseCaseProvider)(null);
+        state = ClinicalState(workspaces: workspaces);
+      } else if (available.length == 1) {
+        state = ClinicalState(workspaces: workspaces);
         selectWorkspace(available.single);
       } else {
+        ref.read(selectWorkspaceUseCaseProvider)(null);
         state = ClinicalState(workspaces: workspaces);
       }
     } catch (error) {
-      state = ClinicalState(error: error.toString());
+      if (generation != _generation) return;
+      state = ClinicalState(
+        workspaces: previous.workspaces,
+        activeWorkspace: previous.activeWorkspace,
+        patient: previous.patient,
+        lesion: previous.lesion,
+        error: error.toString(),
+      );
     }
   }
 
@@ -68,6 +105,7 @@ class ClinicalController extends Notifier<ClinicalState> {
   }
 
   void clearSession() {
+    _generation++;
     ref.read(selectWorkspaceUseCaseProvider)(null);
     state = const ClinicalState();
   }

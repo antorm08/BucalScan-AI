@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 
 from auth.jwt import create_access_token, get_current_user
 from auth.security import verify_password
@@ -14,13 +15,14 @@ router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
 @router.post("/register")
 async def register(user: UserCreate, db: Session = Depends(get_db)):
+    user.email = user.email.strip().lower()
     db_user = crud.get_user_by_email(db, email=user.email)
     if db_user:
-        raise HTTPException(status_code=400, detail="Email already registered")
+        raise HTTPException(status_code=409, detail="Email already registered")
 
     existing_doctor = db.query(models.User).filter(models.User.doctor_id == user.doctor_id).first()
     if existing_doctor:
-        raise HTTPException(status_code=400, detail="Doctor ID already registered")
+        raise HTTPException(status_code=409, detail="Doctor ID already registered")
 
     if user.workspace_choice == "existing":
         workspace = db.query(models.ClinicalWorkspace).filter_by(
@@ -31,7 +33,11 @@ async def register(user: UserCreate, db: Session = Depends(get_db)):
     elif user.workspace_choice == "new" and not (user.workspace_name or "").strip():
         raise HTTPException(status_code=400, detail="Workspace name is required")
 
-    created_user = crud.create_user(db=db, user=user, commit=False)
+    try:
+        created_user = crud.create_user(db=db, user=user, commit=False)
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Email or doctor ID already registered")
 
     if user.workspace_choice == "existing":
         db.add(models.WorkspaceMembership(
@@ -74,7 +80,11 @@ async def register(user: UserCreate, db: Session = Depends(get_db)):
             status="pending",
         ))
 
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Email or doctor ID already registered")
     db.refresh(created_user)
     return {
         "success": True,
@@ -87,7 +97,7 @@ async def register(user: UserCreate, db: Session = Depends(get_db)):
 
 @router.post("/login")
 async def login(user: UserLogin, db: Session = Depends(get_db)):
-    db_user = crud.get_user_by_email(db, email=user.email)
+    db_user = crud.get_user_by_email(db, email=user.email.strip().lower())
     if not db_user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

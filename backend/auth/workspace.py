@@ -29,6 +29,10 @@ def get_workspace_access(
     ).first()
     if workspace is None:
         raise HTTPException(status_code=404, detail="Workspace not found.")
+    if workspace.status != "active":
+        raise HTTPException(status_code=403, detail="Active workspace required.")
+    if current_user.status != "active":
+        raise HTTPException(status_code=403, detail="Active user account required.")
     membership = db.query(models.WorkspaceMembership).filter(
         models.WorkspaceMembership.workspace_id == x_workspace_id,
         models.WorkspaceMembership.user_id == current_user.id,

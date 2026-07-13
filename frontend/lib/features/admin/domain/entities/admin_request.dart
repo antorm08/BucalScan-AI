@@ -17,6 +17,7 @@ class AdminRequester {
   final String doctorId;
   final String? profession;
   final String? specialty;
+  final String status;
 
   const AdminRequester({
     required this.id,
@@ -25,7 +26,10 @@ class AdminRequester {
     required this.doctorId,
     this.profession,
     this.specialty,
+    this.status = 'active',
   });
+
+  bool get isSuspended => status.toLowerCase() == 'suspended';
 }
 
 class AdminWorkspaceRequest {

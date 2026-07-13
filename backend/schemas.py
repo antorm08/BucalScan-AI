@@ -109,6 +109,7 @@ class AdminRequesterResponse(BaseModel):
     email: str
     profession: Optional[str] = None
     specialty: Optional[str] = None
+    status: str
 
 
 class AdminWorkspaceRequestResponse(BaseModel):

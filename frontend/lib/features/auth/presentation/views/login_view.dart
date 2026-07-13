@@ -5,6 +5,8 @@ import 'package:bucalscan_ai/core/validators/auth_validators.dart';
 import 'package:bucalscan_ai/core/widgets/app_text_field.dart';
 import 'package:bucalscan_ai/features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import 'package:bucalscan_ai/features/auth/presentation/views/register_view.dart';
+import 'package:bucalscan_ai/features/clinical/presentation/viewmodels/clinical_controller.dart';
+import 'package:bucalscan_ai/features/clinical/presentation/views/workspace_gate_view.dart';
 import 'package:bucalscan_ai/features/home/presentation/views/home_view.dart';
 
 class LoginView extends ConsumerStatefulWidget {
@@ -88,9 +90,12 @@ class _LoginViewState extends ConsumerState<LoginView> {
         if (widget.onAuthenticated != null) {
           widget.onAuthenticated!();
         } else {
+          ref.read(clinicalControllerProvider.notifier).clearSession();
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => const HomeView()),
+            MaterialPageRoute(
+              builder: (_) => const WorkspaceGateView(child: HomeView()),
+            ),
           );
         }
       }
@@ -339,7 +344,9 @@ class _LoginViewState extends ConsumerState<LoginView> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) => const RegisterView(),
+                                  builder: (_) => RegisterView(
+                                    onAuthenticated: widget.onAuthenticated,
+                                  ),
                                 ),
                               );
                             },

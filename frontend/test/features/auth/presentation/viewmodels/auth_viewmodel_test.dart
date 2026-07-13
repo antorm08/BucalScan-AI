@@ -251,6 +251,26 @@ void main() {
     verify(mockLogoutUseCase.call()).called(1);
   });
 
+  test('logout limpia el estado aunque falle el almacenamiento', () async {
+    when(
+      mockLoginUseCase.call(email: 'doctor@hospital.org', password: '123456'),
+    ).thenAnswer(
+      (_) async => const AuthSession(user: _user, token: 'token_jwt'),
+    );
+    await container
+        .read(authViewModelProvider.notifier)
+        .login(email: 'doctor@hospital.org', password: '123456');
+    when(mockLogoutUseCase.call()).thenThrow(Exception('storage failed'));
+
+    await expectLater(
+      container.read(authViewModelProvider.notifier).logout(),
+      throwsException,
+    );
+
+    expect(container.read(authViewModelProvider).currentUser, isNull);
+    expect(container.read(authViewModelProvider).isLoading, isFalse);
+  });
+
   test('updateProfile actualiza el usuario actual cuando es exitoso', () async {
     const profile = UserProfile(
       id: 1,
