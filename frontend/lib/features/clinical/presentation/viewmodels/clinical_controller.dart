@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:bucalscan_ai/features/auth/di/auth_providers.dart';
 import 'package:bucalscan_ai/features/clinical/di/clinical_providers.dart';
 import 'package:bucalscan_ai/features/clinical/domain/entities/clinical_entities.dart';
 
@@ -28,9 +27,7 @@ class ClinicalController extends Notifier<ClinicalState> {
   Future<void> loadWorkspaces() async {
     state = ClinicalState(loading: true, workspaces: state.workspaces);
     try {
-      final workspaces = await ref
-          .read(clinicalRepositoryProvider)
-          .getMemberships();
+      final workspaces = await ref.read(getMembershipsUseCaseProvider)();
       state = ClinicalState(workspaces: workspaces);
     } catch (error) {
       state = ClinicalState(error: error.toString());
@@ -39,7 +36,7 @@ class ClinicalController extends Notifier<ClinicalState> {
 
   void selectWorkspace(ClinicalWorkspace workspace) {
     if (!workspace.canEnter) return;
-    ref.read(authApiServiceProvider).setActiveWorkspace(workspace.id);
+    ref.read(selectWorkspaceUseCaseProvider)(workspace.id);
     state = ClinicalState(
       workspaces: state.workspaces,
       activeWorkspace: workspace,

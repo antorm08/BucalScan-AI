@@ -27,9 +27,9 @@ class _PatientLesionPickerState extends ConsumerState<PatientLesionPicker> {
   Future<void> _findPatients() async {
     setState(() => _loading = true);
     try {
-      final patients = await ref
-          .read(clinicalRepositoryProvider)
-          .searchPatients(_search.text.trim());
+      final patients = await ref.read(searchPatientsUseCaseProvider)(
+        _search.text.trim(),
+      );
       if (mounted) {
         setState(() => _patients = patients);
       }
@@ -43,9 +43,7 @@ class _PatientLesionPickerState extends ConsumerState<PatientLesionPicker> {
   Future<void> _choosePatient(Patient patient) async {
     ref.read(clinicalControllerProvider.notifier).selectPatient(patient);
     setState(() => _loading = true);
-    final lesions = await ref
-        .read(clinicalRepositoryProvider)
-        .getLesions(patient.id);
+    final lesions = await ref.read(getLesionsUseCaseProvider)(patient.id);
     if (mounted) {
       setState(() {
         _lesions = lesions;
@@ -98,13 +96,11 @@ class _PatientLesionPickerState extends ConsumerState<PatientLesionPicker> {
         name.text.trim().isEmpty) {
       return;
     }
-    final patient = await ref
-        .read(clinicalRepositoryProvider)
-        .createPatient(
-          clinicalCode: code.text.trim(),
-          fullName: name.text.trim(),
-          identityDocument: document.text.trim(),
-        );
+    final patient = await ref.read(createPatientUseCaseProvider)(
+      clinicalCode: code.text.trim(),
+      fullName: name.text.trim(),
+      identityDocument: document.text.trim(),
+    );
     await _choosePatient(patient);
   }
 
@@ -152,14 +148,12 @@ class _PatientLesionPickerState extends ConsumerState<PatientLesionPicker> {
         temporal.text.trim().isEmpty) {
       return;
     }
-    final lesion = await ref
-        .read(clinicalRepositoryProvider)
-        .createLesion(
-          patientId: patient.id,
-          anatomicalSite: site.text.trim(),
-          temporalDescription: temporal.text.trim(),
-          notes: notes.text.trim(),
-        );
+    final lesion = await ref.read(createLesionUseCaseProvider)(
+      patientId: patient.id,
+      anatomicalSite: site.text.trim(),
+      temporalDescription: temporal.text.trim(),
+      notes: notes.text.trim(),
+    );
     ref.read(clinicalControllerProvider.notifier).selectLesion(lesion);
   }
 

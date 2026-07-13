@@ -1,6 +1,7 @@
 import '../entities/clinical_entities.dart';
 
 abstract class ClinicalRepository {
+  void setActiveWorkspace(String? workspaceId);
   Future<List<ClinicalWorkspace>> getMemberships();
   Future<List<ClinicalWorkspace>> discoverWorkspaces(String query);
   Future<List<Patient>> searchPatients(String query);

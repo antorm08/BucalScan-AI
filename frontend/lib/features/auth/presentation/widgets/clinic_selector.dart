@@ -8,11 +8,13 @@ import 'package:bucalscan_ai/features/clinical/domain/entities/clinical_entities
 class ClinicSelector extends ConsumerStatefulWidget {
   final ClinicalWorkspace? selectedWorkspace;
   final ValueChanged<ClinicalWorkspace?> onSelected;
+  final ValueChanged<String> onRequestNew;
 
   const ClinicSelector({
     super.key,
     required this.selectedWorkspace,
     required this.onSelected,
+    required this.onRequestNew,
   });
 
   @override
@@ -57,9 +59,7 @@ class _ClinicSelectorState extends ConsumerState<ClinicSelector> {
       _error = null;
     });
     try {
-      final results = await ref
-          .read(clinicalRepositoryProvider)
-          .discoverWorkspaces(query);
+      final results = await ref.read(discoverWorkspacesUseCaseProvider)(query);
       if (!mounted || query != _queryController.text.trim()) return;
       setState(() => _results = results);
     } catch (_) {
@@ -149,9 +149,33 @@ class _ClinicSelectorState extends ConsumerState<ClinicSelector> {
             _queryController.text.trim().length >= 2 &&
             _results.isEmpty &&
             widget.selectedWorkspace == null)
-          const Padding(
-            padding: EdgeInsets.only(top: 8),
-            child: Text('No se encontraron clinicas con esa busqueda.'),
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Card(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Text('No encontramos una clinica con ese nombre.'),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Puedes solicitar su registro. Quedara pendiente de revision para evitar duplicados.',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      key: const Key('request-new-clinic'),
+                      onPressed: () =>
+                          widget.onRequestNew(_queryController.text.trim()),
+                      icon: const Icon(Icons.add_business_outlined),
+                      label: const Text('Solicitar registro'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
       ],
     );

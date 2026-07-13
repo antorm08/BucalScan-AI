@@ -7,6 +7,9 @@ import 'package:bucalscan_ai/features/clinical/domain/entities/clinical_entities
 import 'package:bucalscan_ai/features/clinical/domain/repositories/clinical_repository.dart';
 
 class _ClinicSearchRepository implements ClinicalRepository {
+  final List<ClinicalWorkspace> results;
+  const _ClinicSearchRepository({this.results = const [active, pending]});
+
   static const active = ClinicalWorkspace(
     id: 'active-1',
     name: 'Clinica Activa',
@@ -23,10 +26,11 @@ class _ClinicSearchRepository implements ClinicalRepository {
   );
 
   @override
-  Future<List<ClinicalWorkspace>> discoverWorkspaces(String query) async => [
-    active,
-    pending,
-  ];
+  void setActiveWorkspace(String? workspaceId) {}
+
+  @override
+  Future<List<ClinicalWorkspace>> discoverWorkspaces(String query) async =>
+      results;
 
   @override
   Future<List<ClinicalWorkspace>> getMemberships() =>
@@ -70,6 +74,7 @@ void main() {
               builder: (context, setState) => ClinicSelector(
                 selectedWorkspace: selected,
                 onSelected: (value) => setState(() => selected = value),
+                onRequestNew: (_) {},
               ),
             ),
           ),
@@ -102,5 +107,38 @@ void main() {
     );
     await tester.pump();
     expect(selected, isNull);
+  });
+
+  testWidgets('offers registration when no clinic matches', (tester) async {
+    String? requestedName;
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          clinicalRepositoryProvider.overrideWithValue(
+            const _ClinicSearchRepository(results: []),
+          ),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: ClinicSelector(
+              selectedWorkspace: null,
+              onSelected: (_) {},
+              onRequestNew: (name) => requestedName = name,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.enterText(
+      find.byKey(const Key('clinic-search-field')),
+      'Clinica Nueva',
+    );
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Solicitar registro'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('request-new-clinic')));
+    expect(requestedName, 'Clinica Nueva');
   });
 }

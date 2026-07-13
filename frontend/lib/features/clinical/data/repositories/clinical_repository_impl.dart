@@ -8,6 +8,11 @@ class ClinicalRepositoryImpl implements ClinicalRepository {
   const ClinicalRepositoryImpl(this._api);
 
   @override
+  void setActiveWorkspace(String? workspaceId) {
+    _api.setActiveWorkspace(workspaceId);
+  }
+
+  @override
   Future<List<ClinicalWorkspace>> getMemberships() async => (await _api.getList(
     ClinicalEndpoints.memberships,
   )).map(_workspace).toList();

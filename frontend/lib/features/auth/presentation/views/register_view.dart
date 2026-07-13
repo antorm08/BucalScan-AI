@@ -28,6 +28,14 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
   ClinicalWorkspace? _selectedWorkspace;
 
   @override
+  void initState() {
+    super.initState();
+    Future.microtask(
+      () => ref.read(authViewModelProvider.notifier).clearError(),
+    );
+  }
+
+  @override
   void dispose() {
     _fullNameController.dispose();
     _doctorIdController.dispose();
@@ -171,42 +179,47 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
                               validator: AuthValidators.validateDoctorId,
                             ),
                             const SizedBox(height: 16),
-                            DropdownButtonFormField<String>(
-                              initialValue: _workspaceChoice,
-                              decoration: const InputDecoration(
-                                labelText: 'Modalidad de trabajo',
-                                prefixIcon: Icon(Icons.business_outlined),
-                                border: OutlineInputBorder(),
-                              ),
-                              items: const [
-                                DropdownMenuItem(
-                                  value: 'existing',
-                                  child: Text(
-                                    'Solicitar acceso a una clinica activa',
-                                  ),
+                            const Text(
+                              'Modalidad de trabajo',
+                              style: TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                            const SizedBox(height: 8),
+                            SegmentedButton<String>(
+                              segments: const [
+                                ButtonSegment(
+                                  value: 'clinic',
+                                  icon: Icon(Icons.local_hospital_outlined),
+                                  label: Text('Clinica'),
                                 ),
-                                DropdownMenuItem(
-                                  value: 'new',
-                                  child: Text(
-                                    'Registrar nueva clinica o consultorio',
-                                  ),
-                                ),
-                                DropdownMenuItem(
+                                ButtonSegment(
                                   value: 'independent',
-                                  child: Text('Practica independiente'),
+                                  icon: Icon(Icons.person_outline),
+                                  label: Text('Independiente'),
                                 ),
                               ],
-                              onChanged: (value) => setState(() {
-                                _workspaceChoice = value ?? 'existing';
+                              selected: {
+                                _workspaceChoice == 'independent'
+                                    ? 'independent'
+                                    : 'clinic',
+                              },
+                              onSelectionChanged: (selection) => setState(() {
+                                _workspaceChoice =
+                                    selection.first == 'independent'
+                                    ? 'independent'
+                                    : 'existing';
                                 _medicalCenterController.clear();
                                 _selectedWorkspace = null;
                               }),
                             ),
                             const SizedBox(height: 16),
-                            if (_workspaceChoice == 'existing')
+                            if (_workspaceChoice != 'independent')
                               FormField<ClinicalWorkspace>(
-                                validator: (_) => _selectedWorkspace == null
-                                    ? 'Seleccione una clinica activa'
+                                validator: (_) =>
+                                    _selectedWorkspace == null &&
+                                        _medicalCenterController.text
+                                            .trim()
+                                            .isEmpty
+                                    ? 'Seleccione una clinica o solicite su registro'
                                     : null,
                                 builder: (field) => Column(
                                   crossAxisAlignment:
@@ -217,10 +230,49 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
                                       onSelected: (workspace) {
                                         setState(() {
                                           _selectedWorkspace = workspace;
+                                          _workspaceChoice = 'existing';
+                                          _medicalCenterController.clear();
                                         });
                                         field.didChange(workspace);
                                       },
+                                      onRequestNew: (name) {
+                                        setState(() {
+                                          _selectedWorkspace = null;
+                                          _workspaceChoice = 'new';
+                                          _medicalCenterController.text = name;
+                                        });
+                                        field.didChange(null);
+                                      },
                                     ),
+                                    if (_workspaceChoice == 'new')
+                                      Card(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.secondaryContainer,
+                                        child: ListTile(
+                                          leading: const Icon(
+                                            Icons.add_business_outlined,
+                                          ),
+                                          title: Text(
+                                            _medicalCenterController.text,
+                                          ),
+                                          subtitle: const Text(
+                                            'Solicitud de nueva clinica pendiente de revision',
+                                          ),
+                                          trailing: IconButton(
+                                            tooltip: 'Cancelar solicitud',
+                                            onPressed: () {
+                                              setState(() {
+                                                _workspaceChoice = 'existing';
+                                                _medicalCenterController
+                                                    .clear();
+                                              });
+                                              field.didChange(null);
+                                            },
+                                            icon: const Icon(Icons.close),
+                                          ),
+                                        ),
+                                      ),
                                     if (field.hasError)
                                       Padding(
                                         padding: const EdgeInsets.only(
@@ -240,24 +292,13 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
                                   ],
                                 ),
                               ),
-                            if (_workspaceChoice == 'new')
-                              AppTextField(
-                                controller: _medicalCenterController,
-                                label: 'Nombre de la clinica o consultorio',
-                                hint: 'Consultorio Dental Central',
-                                icon: Icons.local_hospital,
-                                validator: (value) {
-                                  if (value == null || value.trim().isEmpty) {
-                                    return 'Este dato es obligatorio';
-                                  }
-                                  return null;
-                                },
-                              ),
                             const SizedBox(height: 8),
                             Text(
                               _workspaceChoice == 'new'
                                   ? 'La clinica quedara visible como pendiente y sera revisada para evitar duplicados.'
-                                  : 'Su cuenta profesional quedara pendiente de aprobacion antes de poder realizar analisis.',
+                                  : _workspaceChoice == 'independent'
+                                  ? 'Tu practica y cuenta profesional quedaran pendientes de aprobacion.'
+                                  : 'Busca tu clinica por nombre. Si no existe, podras solicitar su registro.',
                               style: const TextStyle(
                                 fontSize: 12,
                                 color: AppColors.onSurfaceVariant,
@@ -378,7 +419,10 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
                               Padding(
                                 padding: const EdgeInsets.only(bottom: 12),
                                 child: Text(
-                                  viewModel.error!,
+                                  viewModel.error!.replaceFirst(
+                                    'Exception: ',
+                                    '',
+                                  ),
                                   style: const TextStyle(
                                     color: AppColors.error,
                                     fontSize: 14,
