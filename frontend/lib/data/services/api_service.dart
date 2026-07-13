@@ -12,8 +12,8 @@ class ApiService {
     : _dio = Dio(
         BaseOptions(
           baseUrl: AppConstants.apiBaseUrl,
-          connectTimeout: const Duration(seconds: 30),
-          receiveTimeout: const Duration(seconds: 30),
+          connectTimeout: const Duration(seconds: 12),
+          receiveTimeout: const Duration(seconds: 15),
         ),
       ) {
     if (interceptors.isNotEmpty) {
