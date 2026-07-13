@@ -93,6 +93,12 @@ An analysis attempt snapshots workspace, patient, lesion, image, and attestation
 
 Automated backend and Flutter suites can establish regression evidence. They do not prove production deployment, migrated production data, or real-device behavior. A release APK record includes version/build identity, filename, SHA-256 hash, build timestamp, source revision when available, and clean-install guidance. Institutional and independent approval flows, root/gate routing, full Render-to-Neon clinical flow, migrated history, latest backend deployment, and APK installation remain unchecked until directly observed.
 
+### 12. Longitudinal chart and safe root transitions
+
+Lesion detail returns a typed aggregate with current lesion data and complete evaluations ordered by evaluation time and stable identifier. Each evaluation exposes separate observations, responsible-professional summary, image metadata and usable URL, immutable prediction provenance, and consent-attestation time. Current lesion status and notes are mutable through one controlled patch contract; this does not create or migrate historical lesion-state events.
+
+Flutter exposes the aggregate through clinical entities/models, repository contracts, use cases, and a generation-guarded Riverpod follow-up controller. Patient, patient-detail, and lesion-detail views render explicit loading, empty, error, retry, and action states. Repeat analysis selects the existing patient and lesion, clears the prior prediction attempt, and delegates capture-tab selection to `HomeView`; it never pushes an unguarded home shell. Workspace switching is confirmed at the authenticated root, clears the API workspace header and all patient, lesion, prediction, summary, history, follow-up, and request-generation state, removes detail routes, and lets the existing `WorkspaceGateView` select the next workspace.
+
 ## Risks / Trade-offs
 
 - [Cross-cutting state can leak between users or workspaces] -> Invalidate providers at boundaries and reject stale completion by token/session/workspace generation.

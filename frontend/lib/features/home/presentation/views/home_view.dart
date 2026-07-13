@@ -9,17 +9,22 @@ import 'package:bucalscan_ai/features/home/presentation/views/home_tab_view.dart
 import 'package:bucalscan_ai/features/prediction/presentation/views/capture_tab_view.dart';
 import 'package:bucalscan_ai/features/profile/presentation/views/profile_tab_view.dart';
 import 'package:bucalscan_ai/features/auth/presentation/views/login_view.dart';
+import 'package:bucalscan_ai/core/session/user_sensitive_state.dart';
+import 'package:bucalscan_ai/features/clinical/domain/entities/clinical_entities.dart';
+import 'package:bucalscan_ai/features/clinical/presentation/viewmodels/clinical_controller.dart';
+import 'package:bucalscan_ai/features/clinical/presentation/views/patients_view.dart';
+import 'package:bucalscan_ai/features/prediction/presentation/viewmodels/prediction_viewmodel.dart';
 
-class HomeView extends StatefulWidget {
+class HomeView extends ConsumerStatefulWidget {
   final int initialIndex;
 
   const HomeView({super.key, this.initialIndex = 0});
 
   @override
-  State<HomeView> createState() => _HomeViewState();
+  ConsumerState<HomeView> createState() => _HomeViewState();
 }
 
-class _HomeViewState extends State<HomeView> {
+class _HomeViewState extends ConsumerState<HomeView> {
   late int _currentIndex;
 
   late final List<Widget> _screens;
@@ -34,6 +39,7 @@ class _HomeViewState extends State<HomeView> {
       ),
       const CaptureTabView(),
       const HistoryTabView(),
+      PatientsView(onRepeatAnalysis: _repeatAnalysis),
       const ProfileTabView(),
     ];
     _currentIndex = widget.initialIndex.clamp(0, _screens.length - 1).toInt();
@@ -43,11 +49,82 @@ class _HomeViewState extends State<HomeView> {
     setState(() => _currentIndex = index);
   }
 
+  void _repeatAnalysis(Patient patient, OralLesion lesion) {
+    ref.read(clinicalControllerProvider.notifier)
+      ..selectPatient(patient)
+      ..selectLesion(lesion);
+    ref.read(predictionViewModelProvider.notifier).clearResult();
+    Navigator.of(context).popUntil((route) => route.isFirst);
+    _selectTab(1);
+  }
+
+  Future<void> _changeWorkspace() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cambiar espacio'),
+        content: const Text(
+          'Se limpiarán el paciente, la lesión, la predicción y los datos clínicos cargados.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Cambiar espacio'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    Navigator.of(context).popUntil((route) => route.isFirst);
+    ref.resetWorkspaceSensitiveState();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      drawer: _MainDrawer(onSelectTab: _selectTab),
-      body: _screens[_currentIndex],
+      drawer: _MainDrawer(
+        onSelectTab: _selectTab,
+        onChangeWorkspace: _changeWorkspace,
+      ),
+      body: Column(
+        children: [
+          Consumer(
+            builder: (context, ref, _) {
+              final workspace = ref
+                  .watch(clinicalControllerProvider)
+                  .activeWorkspace;
+              if (workspace == null) return const SizedBox.shrink();
+              return Material(
+                color: AppColors.primaryFixed,
+                child: SafeArea(
+                  bottom: false,
+                  child: ListTile(
+                    dense: true,
+                    leading: const Icon(
+                      Icons.domain_outlined,
+                      color: AppColors.primary,
+                    ),
+                    title: Text(
+                      'Espacio activo: ${workspace.name}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    trailing: TextButton(
+                      onPressed: _changeWorkspace,
+                      child: const Text('Cambiar espacio'),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+          Expanded(child: _screens[_currentIndex]),
+        ],
+      ),
       floatingActionButton: Builder(
         builder: (context) {
           return FloatingActionButton.small(
@@ -92,6 +169,12 @@ class _HomeViewState extends State<HomeView> {
                   onTap: () => _selectTab(1),
                 ),
                 NavBarItem(
+                  icon: Icons.people_outline,
+                  label: 'Pacientes',
+                  isActive: _currentIndex == 3,
+                  onTap: () => _selectTab(3),
+                ),
+                NavBarItem(
                   icon: Icons.history,
                   label: 'Historial',
                   isActive: _currentIndex == 2,
@@ -100,8 +183,8 @@ class _HomeViewState extends State<HomeView> {
                 NavBarItem(
                   icon: Icons.person,
                   label: 'Perfil',
-                  isActive: _currentIndex == 3,
-                  onTap: () => _selectTab(3),
+                  isActive: _currentIndex == 4,
+                  onTap: () => _selectTab(4),
                 ),
               ],
             ),
@@ -114,8 +197,12 @@ class _HomeViewState extends State<HomeView> {
 
 class _MainDrawer extends ConsumerWidget {
   final ValueChanged<int> onSelectTab;
+  final VoidCallback onChangeWorkspace;
 
-  const _MainDrawer({required this.onSelectTab});
+  const _MainDrawer({
+    required this.onSelectTab,
+    required this.onChangeWorkspace,
+  });
 
   void _goToTab(BuildContext context, int index) {
     Navigator.pop(context);
@@ -204,6 +291,11 @@ class _MainDrawer extends ConsumerWidget {
               onTap: () => _goToTab(context, 1),
             ),
             ListTile(
+              leading: const Icon(Icons.people_outline),
+              title: const Text('Pacientes'),
+              onTap: () => _goToTab(context, 3),
+            ),
+            ListTile(
               leading: const Icon(Icons.history_outlined),
               title: const Text('Historial'),
               onTap: () => _goToTab(context, 2),
@@ -211,7 +303,16 @@ class _MainDrawer extends ConsumerWidget {
             ListTile(
               leading: const Icon(Icons.person_outline),
               title: const Text('Perfil'),
-              onTap: () => _goToTab(context, 3),
+              onTap: () => _goToTab(context, 4),
+            ),
+            ListTile(
+              key: const Key('changeWorkspaceButton'),
+              leading: const Icon(Icons.swap_horiz),
+              title: const Text('Cambiar espacio'),
+              onTap: () {
+                Navigator.pop(context);
+                onChangeWorkspace();
+              },
             ),
             if (user?.isAdmin ?? false)
               ListTile(

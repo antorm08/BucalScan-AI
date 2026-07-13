@@ -56,6 +56,7 @@ class ApiService {
     String? patientName,
     required bool consentToStore,
     String? lesionId,
+    String? clinicalObservations,
   }) async {
     try {
       final formData = FormData.fromMap({
@@ -65,6 +66,8 @@ class ApiService {
         if (patientId != null && patientId.isNotEmpty) 'patient_id': patientId,
         if (patientName != null && patientName.isNotEmpty)
           'patient_name': patientName,
+        if (clinicalObservations != null && clinicalObservations.isNotEmpty)
+          'clinical_observations': clinicalObservations,
       });
 
       final response = await _dio.post(
@@ -168,6 +171,45 @@ class ApiService {
         _buildApiErrorMessage(
           e,
           fallback: 'No se pudo guardar la información.',
+        ),
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> getJson(
+    String path, {
+    bool workspaceScoped = false,
+  }) async {
+    try {
+      final response = await _dio.get(
+        path,
+        options: workspaceScoped ? _workspaceOptions() : null,
+      );
+      return Map<String, dynamic>.from(response.data as Map);
+    } on DioException catch (e) {
+      throw Exception(
+        _buildApiErrorMessage(e, fallback: 'No se pudieron cargar los datos.'),
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> patchJson(
+    String path,
+    Map<String, dynamic> data, {
+    bool workspaceScoped = false,
+  }) async {
+    try {
+      final response = await _dio.patch(
+        path,
+        data: data,
+        options: workspaceScoped ? _workspaceOptions() : null,
+      );
+      return Map<String, dynamic>.from(response.data as Map);
+    } on DioException catch (e) {
+      throw Exception(
+        _buildApiErrorMessage(
+          e,
+          fallback: 'No se pudo actualizar la información.',
         ),
       );
     }

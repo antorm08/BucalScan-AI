@@ -58,6 +58,10 @@ El panel muestra conteos pendientes y pestañas de centros, membresías y usuari
 
 FastAPI puede devolver `detail` como string, mapa o lista. La capa de datos lo normaliza y la UI presenta texto seguro; nunca muestra salida Dio, stack traces, rutas internas, nombres de providers ni detalles de implementación.
 
+### 6. Integración con seguimiento clínico
+
+La nueva ficha de paciente, línea temporal de lesión, repetición de análisis y cambio confirmado de workspace pertenecen exclusivamente a la raíz profesional validada. `HomeView` conserva el callback de navegación de nivel raíz, elimina rutas clínicas obsoletas y vuelve al `WorkspaceGateView`; ninguna vista de detalle crea una raíz sin guard. El estado administrativo se mantiene separado y solo se invalida en límites de autenticación, no al cambiar un workspace clínico.
+
 ## Risks / Trade-offs
 
 - [Dos administradores resuelven a la vez] -> Validar estado dentro de la transacción y responder conflicto sanitizado.

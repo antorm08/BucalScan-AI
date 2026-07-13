@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from pathlib import Path
 
 from fastapi import FastAPI, Response, status
@@ -16,6 +17,8 @@ from routers.predict import router as predict_router
 from routers.summary import router as summary_router
 from routers.workspaces import router as workspaces_router
 from routers.clinical import router as clinical_router
+
+logger = logging.getLogger(__name__)
 from routers.predict import classifier
 
 uploads_dir = Path(__file__).resolve().parent / "uploads"
@@ -60,6 +63,7 @@ async def ready(response: Response):
     try:
         await asyncio.wait_for(asyncio.to_thread(_check_readiness), timeout=settings.readiness_timeout_seconds)
     except Exception:
+        logger.exception("Readiness check failed")
         response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
         return {"status": "unavailable"}
     return {"status": "ready"}

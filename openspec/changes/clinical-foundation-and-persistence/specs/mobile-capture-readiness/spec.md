@@ -30,6 +30,10 @@ The mobile application SHALL prevent analysis unless an active workspace, patien
 - **WHEN** every prerequisite is current and the user submits
 - **THEN** the request snapshots workspace, patient, lesion, image, and attestation for that attempt
 
+#### Scenario: Professional records observations
+- **WHEN** optional clinical observations are entered before submission
+- **THEN** they pass through the prediction clean layers to the existing backend form field and remain separate from model output
+
 ### Requirement: Context-preserving prediction retry
 Retry SHALL preserve the original attempt's workspace, patient, lesion, image, and attestation, SHALL reject completion after auth/workspace context changes, and SHALL never overwrite an existing immutable prediction.
 
@@ -44,6 +48,10 @@ Retry SHALL preserve the original attempt's workspace, patient, lesion, image, a
 #### Scenario: Prior prediction exists
 - **WHEN** another attempt is made for an evaluation context with a persisted prediction
 - **THEN** the prior prediction remains unchanged and any permitted new attempt has separate provenance
+
+#### Scenario: Repeat analysis starts from lesion follow-up
+- **WHEN** a professional chooses a new analysis for an existing lesion
+- **THEN** the current patient and lesion are selected, prior prediction attempt state is cleared, and the authenticated root selects capture without pushing a bare home route
 
 ### Requirement: Guarded clinical navigation and wording
 Result and history navigation SHALL require current workspace/patient/lesion ownership and all prediction presentation SHALL use non-diagnostic decision-support language.

@@ -125,6 +125,12 @@ class ClinicalController extends Notifier<ClinicalState> {
     );
   }
 
+  void leaveWorkspace() {
+    _generation++;
+    ref.read(selectWorkspaceUseCaseProvider)(null);
+    state = ClinicalState(workspaces: state.workspaces);
+  }
+
   void clearSession() {
     _generation++;
     ref.read(selectWorkspaceUseCaseProvider)(null);

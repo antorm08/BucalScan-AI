@@ -1,4 +1,5 @@
 import io
+from datetime import datetime
 
 from PIL import Image
 
@@ -158,15 +159,99 @@ def test_multiple_lesions_and_repeated_evaluations(client, db_session, monkeypat
         "probabilities": {"benign": 0.8, "malignant": 0.2},
     })
     monkeypatch.setattr("routers.predict.upload_image", lambda *args, **kwargs: "https://images.example.test/test.png")
-    form = {"consent_to_store": "true", "patient_id": str(patient["id"]), "lesion_id": str(lesion_one.json()["id"])}
+    form = {
+        "consent_to_store": "true",
+        "patient_id": str(patient["id"]),
+        "lesion_id": str(lesion_one.json()["id"]),
+        "clinical_observations": "Borde regular, sin ulceracion.",
+    }
     files = {"file": ("lesion.png", _png_bytes(), "image/png")}
     first = client.post("/api/v1/predict", headers=headers, data=form, files=files)
     second = client.post("/api/v1/predict", headers=headers, data=form, files=files)
     assert first.status_code == second.status_code == 200
+    evaluations = db_session.query(models.ClinicalEvaluation).order_by(models.ClinicalEvaluation.id).all()
+    evaluations[0].evaluated_at = datetime(2026, 1, 3, 10, 0)
+    evaluations[1].evaluated_at = datetime(2026, 1, 2, 10, 0)
+    db_session.commit()
+
     detail = client.get(f"/api/v1/lesions/{lesion_one.json()['id']}", headers=headers).json()
     assert len(detail["evaluations"]) == 2
+    assert [item["id"] for item in detail["evaluations"]] == [evaluations[1].id, evaluations[0].id]
+    item = detail["evaluations"][0]
+    assert item["clinical_observations"] == "Borde regular, sin ulceracion."
+    assert item["professional"]["id"] == professional.id
+    assert item["image"]["url"] == "https://images.example.test/test.png"
+    assert item["image"]["content_type"] == "image/png"
+    assert item["prediction"] == {
+        "id": item["prediction"]["id"],
+        "label": "benign",
+        "confidence": 0.8,
+        "probabilities": {"benign": 0.8, "malignant": 0.2},
+        "model_version": item["prediction"]["model_version"],
+        "processing_time_ms": item["prediction"]["processing_time_ms"],
+        "created_at": item["prediction"]["created_at"],
+    }
+    assert item["consent_attested_at"] is not None
     assert db_session.query(models.ModelPrediction).count() == 2
     assert db_session.query(models.ConsentAttestation).count() == 2
+
+    history = client.get("/api/v1/history", headers=headers).json()
+    assert {entry["evaluation_id"] for entry in history} == {value.id for value in evaluations}
+    assert {entry["patient_record_id"] for entry in history} == {patient["id"]}
+    assert {entry["lesion_id"] for entry in history} == {lesion_one.json()["id"]}
+
+
+def test_lesion_detail_and_update_are_workspace_scoped(client, db_session):
+    owner = _user(db_session, "lesion-update-owner")
+    workspace, _ = _workspace(db_session, owner, "lesion-update")
+    outsider = _user(db_session, "lesion-update-outsider")
+    other_workspace, _ = _workspace(db_session, outsider, "lesion-update-other")
+    patient = models.Patient(
+        workspace_id=workspace.id,
+        clinical_code="LU-1",
+        full_name="Follow Up Patient",
+        normalized_name="follow up patient",
+        created_by_id=owner.id,
+    )
+    db_session.add(patient)
+    db_session.flush()
+    lesion = models.OralLesion(
+        workspace_id=workspace.id,
+        patient_id=patient.id,
+        anatomical_site="buccal mucosa",
+        estimated_duration="three weeks",
+        status="active",
+        clinical_notes="Initial note",
+        created_by_id=owner.id,
+    )
+    db_session.add(lesion)
+    db_session.commit()
+
+    updated = client.patch(
+        f"/api/v1/lesions/{lesion.id}",
+        headers=_headers(owner, workspace),
+        json={"status": "monitoring", "clinical_notes": "Review in 30 days"},
+    )
+    assert updated.status_code == 200
+    assert updated.json()["status"] == "monitoring"
+    assert updated.json()["clinical_notes"] == "Review in 30 days"
+
+    legacy = client.patch(
+        f"/api/v1/lesions/{lesion.id}/status",
+        headers=_headers(owner, workspace),
+        json={"status": "resolved"},
+    )
+    assert legacy.status_code == 200
+    assert legacy.json()["status"] == "resolved"
+    assert legacy.json()["clinical_notes"] == "Review in 30 days"
+
+    outsider_headers = _headers(outsider, other_workspace)
+    assert client.get(f"/api/v1/lesions/{lesion.id}", headers=outsider_headers).status_code == 404
+    assert client.patch(
+        f"/api/v1/lesions/{lesion.id}",
+        headers=outsider_headers,
+        json={"clinical_notes": "Must not leak"},
+    ).status_code == 404
 
 
 def test_missing_attestation_does_not_infer_or_persist(client, db_session, monkeypatch):

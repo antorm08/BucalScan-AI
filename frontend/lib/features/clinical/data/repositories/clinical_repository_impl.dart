@@ -2,6 +2,7 @@ import 'package:bucalscan_ai/core/constants/app_constants.dart';
 import 'package:bucalscan_ai/data/services/api_service.dart';
 import 'package:bucalscan_ai/features/clinical/domain/entities/clinical_entities.dart';
 import 'package:bucalscan_ai/features/clinical/domain/repositories/clinical_repository.dart';
+import 'package:bucalscan_ai/features/clinical/data/models/clinical_models.dart';
 
 class ClinicalRepositoryImpl implements ClinicalRepository {
   final ApiService _api;
@@ -30,28 +31,45 @@ class ClinicalRepositoryImpl implements ClinicalRepository {
         ClinicalEndpoints.patients,
         query: {'q': query},
         workspaceScoped: true,
-      )).map(_patient).toList();
+      )).map((json) => PatientModel.fromJson(json).toEntity()).toList();
+
+  @override
+  Future<Patient> getPatient(String patientId) async => PatientModel.fromJson(
+    await _api.getJson(
+      ClinicalEndpoints.patient(patientId),
+      workspaceScoped: true,
+    ),
+  ).toEntity();
 
   @override
   Future<Patient> createPatient({
     required String clinicalCode,
     required String fullName,
     String? identityDocument,
-  }) async => _patient(
+  }) async => PatientModel.fromJson(
     await _api.postJson(ClinicalEndpoints.patients, {
       'clinical_code': clinicalCode,
       'full_name': fullName,
       if (identityDocument?.isNotEmpty ?? false)
         'identity_document': identityDocument,
     }, workspaceScoped: true),
-  );
+  ).toEntity();
 
   @override
   Future<List<OralLesion>> getLesions(String patientId) async =>
       (await _api.getList(
         ClinicalEndpoints.patientLesions(patientId),
         workspaceScoped: true,
-      )).map(_lesion).toList();
+      )).map((json) => OralLesionModel.fromJson(json).toEntity()).toList();
+
+  @override
+  Future<LesionDetail> getLesionDetail(String lesionId) async =>
+      LesionDetailModel.fromJson(
+        await _api.getJson(
+          ClinicalEndpoints.lesion(lesionId),
+          workspaceScoped: true,
+        ),
+      ).toEntity();
 
   @override
   Future<OralLesion> createLesion({
@@ -59,14 +77,26 @@ class ClinicalRepositoryImpl implements ClinicalRepository {
     required String anatomicalSite,
     required String temporalDescription,
     String? notes,
-  }) async => _lesion(
+  }) async => OralLesionModel.fromJson(
     await _api.postJson(ClinicalEndpoints.patientLesions(patientId), {
       'anatomical_site': anatomicalSite,
       'estimated_duration': temporalDescription,
       'status': 'active',
       if (notes?.isNotEmpty ?? false) 'clinical_notes': notes,
     }, workspaceScoped: true),
-  );
+  ).toEntity();
+
+  @override
+  Future<OralLesion> updateLesion({
+    required String lesionId,
+    required String status,
+    String? notes,
+  }) async => OralLesionModel.fromJson(
+    await _api.patchJson(ClinicalEndpoints.lesion(lesionId), {
+      'status': status,
+      'clinical_notes': notes,
+    }, workspaceScoped: true),
+  ).toEntity();
 
   ClinicalWorkspace _workspace(Map<String, dynamic> json) {
     final workspace = json['workspace'] is Map
@@ -89,20 +119,4 @@ class ClinicalRepositoryImpl implements ClinicalRepository {
       role: membership['role']?.toString(),
     );
   }
-
-  Patient _patient(Map<String, dynamic> json) => Patient(
-    id: '${json['id']}',
-    clinicalCode: '${json['clinical_code'] ?? json['code']}',
-    fullName: '${json['full_name'] ?? json['name']}',
-    identityDocument: json['identity_document']?.toString(),
-  );
-
-  OralLesion _lesion(Map<String, dynamic> json) => OralLesion(
-    id: '${json['id']}',
-    anatomicalSite: '${json['anatomical_site'] ?? json['site']}',
-    status: '${json['status'] ?? 'active'}',
-    temporalDescription:
-        '${json['temporal_description'] ?? json['estimated_duration'] ?? json['initial_observation_date'] ?? ''}',
-    notes: json['clinical_notes']?.toString(),
-  );
 }

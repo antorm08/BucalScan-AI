@@ -14,6 +14,9 @@ class AnalysisModel {
   final String? createdByName;
   final String? createdByEmail;
   final String? createdByDoctorId;
+  final int? evaluationId;
+  final int? patientRecordId;
+  final int? lesionId;
 
   const AnalysisModel({
     required this.id,
@@ -29,6 +32,9 @@ class AnalysisModel {
     this.createdByName,
     this.createdByEmail,
     this.createdByDoctorId,
+    this.evaluationId,
+    this.patientRecordId,
+    this.lesionId,
   });
 
   factory AnalysisModel.fromJson(Map<String, dynamic> json) {
@@ -48,6 +54,9 @@ class AnalysisModel {
       createdByName: json['created_by_name'] as String?,
       createdByEmail: json['created_by_email'] as String?,
       createdByDoctorId: json['created_by_doctor_id'] as String?,
+      evaluationId: json['evaluation_id'] as int?,
+      patientRecordId: json['patient_record_id'] as int?,
+      lesionId: json['lesion_id'] as int?,
     );
   }
 
@@ -67,6 +76,9 @@ class AnalysisModel {
       createdByName: createdByName,
       createdByEmail: createdByEmail,
       createdByDoctorId: createdByDoctorId,
+      evaluationId: evaluationId,
+      patientRecordId: patientRecordId,
+      lesionId: lesionId,
     );
   }
 }

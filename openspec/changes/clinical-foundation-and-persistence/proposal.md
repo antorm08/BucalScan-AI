@@ -14,6 +14,7 @@ BucalScan AI needs a production-safe clinical foundation that supports approved 
 - Require active `X-Workspace-ID`, patient, lesion, image, and professional authorization attestation before analysis; preserve the original context on retry and use non-diagnostic wording.
 - Preserve the current ResNet50 ONNX files, preprocessing, class order, thresholds, and response semantics without retraining or replacement.
 - Define camera/gallery permissions and denial states, sanitized FastAPI/Dio error presentation, and guarded result/history navigation.
+- Deliver the professional patient chart vertical slice: searchable patient list, profile with multiple lesions, complete chronological evaluation timelines, controlled current lesion status/notes, repeat analysis in the original patient/lesion context, optional clinical observations, and safe workspace switching from the authenticated root.
 - Define a versioned APK release checkpoint with identity, hash, build-time, and clean-install guidance, while leaving real-device, deployment, and production end-to-end evidence explicitly open until performed.
 
 ## Capabilities

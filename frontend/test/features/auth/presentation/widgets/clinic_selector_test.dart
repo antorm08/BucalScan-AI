@@ -10,6 +10,9 @@ class _ClinicSearchRepository implements ClinicalRepository {
   final List<ClinicalWorkspace> results;
   const _ClinicSearchRepository({this.results = const [active, pending]});
 
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+
   static const active = ClinicalWorkspace(
     id: 'active-1',
     name: 'Clinica Activa',

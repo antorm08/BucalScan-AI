@@ -4,6 +4,7 @@ import 'package:bucalscan_ai/features/clinical/presentation/viewmodels/clinical_
 import 'package:bucalscan_ai/features/dashboard/presentation/viewmodels/summary_viewmodel.dart';
 import 'package:bucalscan_ai/features/history/presentation/viewmodels/history_viewmodel.dart';
 import 'package:bucalscan_ai/features/prediction/presentation/viewmodels/prediction_viewmodel.dart';
+import 'package:bucalscan_ai/features/clinical/presentation/viewmodels/patient_follow_up_controller.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 void _resetUserSensitiveState(Ref ref) {
@@ -12,6 +13,7 @@ void _resetUserSensitiveState(Ref ref) {
   ref.invalidate(historyViewModelProvider);
   ref.invalidate(summaryViewModelProvider);
   ref.invalidate(predictionViewModelProvider);
+  ref.invalidate(patientFollowUpControllerProvider);
   ref.invalidate(adminUsersControllerProvider);
   ref.invalidate(adminApprovalsControllerProvider);
 }
@@ -27,7 +29,18 @@ extension UserSensitiveWidgetRefReset on WidgetRef {
     invalidate(historyViewModelProvider);
     invalidate(summaryViewModelProvider);
     invalidate(predictionViewModelProvider);
+    invalidate(patientFollowUpControllerProvider);
     invalidate(adminUsersControllerProvider);
     invalidate(adminApprovalsControllerProvider);
+  }
+
+  void resetWorkspaceSensitiveState() {
+    read(clinicalControllerProvider.notifier).leaveWorkspace();
+    read(patientFollowUpControllerProvider.notifier).clear();
+    invalidate(patientFollowUpControllerProvider);
+    invalidate(historyViewModelProvider);
+    invalidate(summaryViewModelProvider);
+    read(predictionViewModelProvider.notifier).clearResult();
+    invalidate(predictionViewModelProvider);
   }
 }

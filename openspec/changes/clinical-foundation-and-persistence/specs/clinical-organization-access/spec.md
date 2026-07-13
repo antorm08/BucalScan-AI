@@ -121,6 +121,10 @@ The Flutter application SHALL route only from freshly validated identity and acc
 - **WHEN** memberships are pending, rejected, inactive, empty, unavailable, or fail to load
 - **THEN** the gate shows a polished typed state with refresh, error/retry where applicable, and logout
 
+#### Scenario: Administrator approves while professional waits
+- **WHEN** a professional remains on the pending gate and an administrator activates the eligible workspace and membership
+- **THEN** the gate refreshes automatically without overlapping requests and enters the single active workspace without requiring logout or app restart
+
 #### Scenario: Back navigation is attempted at gate
 - **WHEN** a professional presses back before selecting an active workspace
 - **THEN** navigation does not bypass the gate into cached clinical content
@@ -154,6 +158,10 @@ The Flutter application SHALL clear user-sensitive Riverpod providers at authent
 #### Scenario: Workspace changes during clinical load
 - **WHEN** a response for the previous workspace completes after selection changed
 - **THEN** the response is discarded and cannot repopulate workspace caches
+
+#### Scenario: Professional changes active workspace from home
+- **WHEN** the professional confirms the visible Cambiar espacio action
+- **THEN** the workspace header, patient, lesion, prediction, summary, history, follow-up, stale generations, and detail routes are cleared before the existing workspace selector is shown
 
 #### Scenario: Application resumes
 - **WHEN** the app resumes with an authenticated workspace session

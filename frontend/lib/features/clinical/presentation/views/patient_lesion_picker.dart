@@ -17,6 +17,9 @@ class _PatientLesionPickerState extends ConsumerState<PatientLesionPicker> {
   List<Patient> _patients = const [];
   List<OralLesion> _lesions = const [];
   bool _loading = false;
+  bool _searched = false;
+  String? _error;
+  int _requestGeneration = 0;
 
   @override
   void dispose() {
@@ -25,30 +28,53 @@ class _PatientLesionPickerState extends ConsumerState<PatientLesionPicker> {
   }
 
   Future<void> _findPatients() async {
-    setState(() => _loading = true);
+    final generation = ++_requestGeneration;
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       final patients = await ref.read(searchPatientsUseCaseProvider)(
         _search.text.trim(),
       );
-      if (mounted) {
-        setState(() => _patients = patients);
+      if (mounted && generation == _requestGeneration) {
+        setState(() {
+          _patients = patients;
+          _searched = true;
+        });
+      }
+    } catch (_) {
+      if (mounted && generation == _requestGeneration) {
+        setState(() => _error = 'No se pudieron buscar pacientes.');
       }
     } finally {
-      if (mounted) {
+      if (mounted && generation == _requestGeneration) {
         setState(() => _loading = false);
       }
     }
   }
 
   Future<void> _choosePatient(Patient patient) async {
+    final generation = ++_requestGeneration;
     ref.read(clinicalControllerProvider.notifier).selectPatient(patient);
-    setState(() => _loading = true);
-    final lesions = await ref.read(getLesionsUseCaseProvider)(patient.id);
-    if (mounted) {
-      setState(() {
-        _lesions = lesions;
-        _loading = false;
-      });
+    setState(() {
+      _loading = true;
+      _error = null;
+      _lesions = const [];
+    });
+    try {
+      final lesions = await ref.read(getLesionsUseCaseProvider)(patient.id);
+      if (mounted && generation == _requestGeneration) {
+        setState(() => _lesions = lesions);
+      }
+    } catch (_) {
+      if (mounted && generation == _requestGeneration) {
+        setState(() => _error = 'No se pudieron cargar las lesiones.');
+      }
+    } finally {
+      if (mounted && generation == _requestGeneration) {
+        setState(() => _loading = false);
+      }
     }
   }
 
@@ -96,12 +122,21 @@ class _PatientLesionPickerState extends ConsumerState<PatientLesionPicker> {
         name.text.trim().isEmpty) {
       return;
     }
-    final patient = await ref.read(createPatientUseCaseProvider)(
-      clinicalCode: code.text.trim(),
-      fullName: name.text.trim(),
-      identityDocument: document.text.trim(),
-    );
-    await _choosePatient(patient);
+    try {
+      final patient = await ref.read(createPatientUseCaseProvider)(
+        clinicalCode: code.text.trim(),
+        fullName: name.text.trim(),
+        identityDocument: document.text.trim(),
+      );
+      if (mounted) await _choosePatient(patient);
+    } catch (_) {
+      if (mounted) {
+        setState(
+          () => _error =
+              'No se pudo crear el paciente. Revisa si el código o documento ya existe.',
+        );
+      }
+    }
   }
 
   Future<void> _createLesion(Patient patient) async {
@@ -148,13 +183,19 @@ class _PatientLesionPickerState extends ConsumerState<PatientLesionPicker> {
         temporal.text.trim().isEmpty) {
       return;
     }
-    final lesion = await ref.read(createLesionUseCaseProvider)(
-      patientId: patient.id,
-      anatomicalSite: site.text.trim(),
-      temporalDescription: temporal.text.trim(),
-      notes: notes.text.trim(),
-    );
-    ref.read(clinicalControllerProvider.notifier).selectLesion(lesion);
+    try {
+      final lesion = await ref.read(createLesionUseCaseProvider)(
+        patientId: patient.id,
+        anatomicalSite: site.text.trim(),
+        temporalDescription: temporal.text.trim(),
+        notes: notes.text.trim(),
+      );
+      if (!mounted) return;
+      setState(() => _lesions = [..._lesions, lesion]);
+      ref.read(clinicalControllerProvider.notifier).selectLesion(lesion);
+    } catch (_) {
+      if (mounted) setState(() => _error = 'No se pudo registrar la lesión.');
+    }
   }
 
   @override
@@ -190,6 +231,11 @@ class _PatientLesionPickerState extends ConsumerState<PatientLesionPicker> {
                   onTap: () => _choosePatient(item),
                 ),
               ),
+              if (_searched && _patients.isEmpty && !_loading && _error == null)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  child: Text('No se encontraron pacientes.'),
+                ),
               TextButton.icon(
                 onPressed: _createPatient,
                 icon: const Icon(Icons.person_add),
@@ -205,7 +251,11 @@ class _PatientLesionPickerState extends ConsumerState<PatientLesionPicker> {
                     ref
                         .read(clinicalControllerProvider.notifier)
                         .clearPatientSelection();
-                    setState(() => _lesions = const []);
+                    _requestGeneration++;
+                    setState(() {
+                      _lesions = const [];
+                      _error = null;
+                    });
                   },
                   child: const Text('Cambiar'),
                 ),
@@ -226,6 +276,11 @@ class _PatientLesionPickerState extends ConsumerState<PatientLesionPicker> {
                       .selectLesion(lesion),
                 ),
               ),
+              if (_lesions.isEmpty && !_loading && _error == null)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Text('Este paciente aún no tiene lesiones.'),
+                ),
               TextButton.icon(
                 onPressed: () => _createLesion(patient),
                 icon: const Icon(Icons.add),
@@ -233,6 +288,23 @@ class _PatientLesionPickerState extends ConsumerState<PatientLesionPicker> {
               ),
             ],
             if (_loading) const LinearProgressIndicator(),
+            if (_error != null)
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      _error!,
+                      style: const TextStyle(color: Colors.red),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: patient == null
+                        ? _findPatients
+                        : () => _choosePatient(patient),
+                    child: const Text('Reintentar'),
+                  ),
+                ],
+              ),
           ],
         ),
       ),

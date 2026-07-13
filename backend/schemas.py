@@ -66,6 +66,9 @@ class AnalysisHistory(BaseModel):
     created_by_name: Optional[str] = None
     created_by_email: Optional[str] = None
     created_by_doctor_id: Optional[str] = None
+    evaluation_id: Optional[int] = None
+    patient_record_id: Optional[int] = None
+    lesion_id: Optional[int] = None
 
 
 class DailySummary(BaseModel):
@@ -231,6 +234,11 @@ class LesionStatusUpdate(BaseModel):
     status: Literal["active", "resolved", "monitoring"]
 
 
+class LesionUpdate(BaseModel):
+    status: Optional[Literal["active", "resolved", "monitoring"]] = None
+    clinical_notes: Optional[str] = None
+
+
 class LesionResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
@@ -242,3 +250,47 @@ class LesionResponse(BaseModel):
     status: str
     clinical_notes: Optional[str] = None
     created_at: datetime
+
+
+class EvaluationProfessionalResponse(BaseModel):
+    id: int
+    full_name: str
+    doctor_id: str
+    profession: Optional[str] = None
+    specialty: Optional[str] = None
+
+
+class LesionImageResponse(BaseModel):
+    id: int
+    url: str
+    content_type: Optional[str] = None
+    original_filename: Optional[str] = None
+    created_at: datetime
+
+
+class EvaluationPredictionResponse(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
+
+    id: int
+    label: str
+    confidence: float
+    probabilities: dict[str, float]
+    model_version: str
+    processing_time_ms: Optional[float] = None
+    created_at: datetime
+
+
+class LesionEvaluationResponse(BaseModel):
+    id: int
+    evaluated_at: datetime
+    created_at: datetime
+    clinical_observations: Optional[str] = None
+    professional: EvaluationProfessionalResponse
+    image: Optional[LesionImageResponse] = None
+    prediction: Optional[EvaluationPredictionResponse] = None
+    consent_attested_at: Optional[datetime] = None
+
+
+class LesionDetailResponse(BaseModel):
+    lesion: LesionResponse
+    evaluations: list[LesionEvaluationResponse]

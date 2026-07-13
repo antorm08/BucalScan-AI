@@ -13,6 +13,7 @@ Las solicitudes de centros de atención y accesos profesionales necesitan una ra
 - Mantener Flutter Clean Architecture + Riverpod: vista -> controlador -> caso de uso -> contrato de repositorio -> implementación -> datasource -> `ApiService`, sin llamadas API directas desde vistas.
 - Conservar el modelo ResNet50 y el flujo clínico sin cambios; el administrador de plataforma no entra al resumen clínico sin workspace.
 - Mantener como pendientes las verificaciones manuales, de despliegue y APK/dispositivo hasta contar con evidencia real.
+- Preservar la separación de raíces al incorporar la ficha longitudinal profesional y el cambio seguro de workspace: ninguna pantalla clínica construye el panel administrativo ni una raíz `HomeView` sin guard, y el cambio de workspace no altera estado administrativo.
 
 ## Capabilities
 

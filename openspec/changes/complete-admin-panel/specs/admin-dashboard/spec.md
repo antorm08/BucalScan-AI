@@ -76,3 +76,10 @@ El panel SHALL normalizar `detail` de FastAPI como string, mapa o lista, SHALL o
 #### Scenario: Respuesta llega después de logout
 - **WHEN** una carga administrativa termina después de limpiar autenticación
 - **THEN** no repuebla conteos, listas, errores ni rutas privilegiadas
+
+### Requirement: Separación de navegación clínica y administrativa
+La aplicación SHALL mantener la raíz administrativa independiente de las fichas longitudinales profesionales y SHALL resolver repetición de análisis y cambio de workspace mediante callbacks/estado de la raíz profesional validada, sin construir un `HomeView` desnudo desde una vista de detalle.
+
+#### Scenario: Profesional cambia de workspace o repite análisis
+- **WHEN** la acción nace en una ficha clínica autorizada
+- **THEN** la raíz profesional limpia o selecciona contexto según corresponda sin abrir, invalidar ni reutilizar estado del panel administrativo

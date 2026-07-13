@@ -45,6 +45,13 @@ class CreatePatientUseCase {
   );
 }
 
+class GetPatientUseCase {
+  final ClinicalRepository _repository;
+  const GetPatientUseCase(this._repository);
+
+  Future<Patient> call(String patientId) => _repository.getPatient(patientId);
+}
+
 class GetLesionsUseCase {
   final ClinicalRepository _repository;
   const GetLesionsUseCase(this._repository);
@@ -66,6 +73,29 @@ class CreateLesionUseCase {
     patientId: patientId,
     anatomicalSite: anatomicalSite,
     temporalDescription: temporalDescription,
+    notes: notes,
+  );
+}
+
+class GetLesionDetailUseCase {
+  final ClinicalRepository _repository;
+  const GetLesionDetailUseCase(this._repository);
+
+  Future<LesionDetail> call(String lesionId) =>
+      _repository.getLesionDetail(lesionId);
+}
+
+class UpdateLesionUseCase {
+  final ClinicalRepository _repository;
+  const UpdateLesionUseCase(this._repository);
+
+  Future<OralLesion> call({
+    required String lesionId,
+    required String status,
+    String? notes,
+  }) => _repository.updateLesion(
+    lesionId: lesionId,
+    status: status,
     notes: notes,
   );
 }

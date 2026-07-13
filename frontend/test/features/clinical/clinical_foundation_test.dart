@@ -65,11 +65,13 @@ void main() {
         patientId: 'patient-1',
         lesionId: 'lesion-1',
         consentToStore: true,
+        clinicalObservations: 'Borde regular',
       );
 
       expect(input.patientId, 'patient-1');
       expect(input.lesionId, 'lesion-1');
       expect(input.consentToStore, isTrue);
+      expect(input.clinicalObservations, 'Borde regular');
     },
   );
 

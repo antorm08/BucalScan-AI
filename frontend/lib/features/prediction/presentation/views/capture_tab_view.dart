@@ -23,11 +23,14 @@ class _CaptureTabViewState extends ConsumerState<CaptureTabView> {
   bool _hasStorageConsent = false;
   final TextEditingController _patientIdController = TextEditingController();
   final TextEditingController _patientNameController = TextEditingController();
+  final TextEditingController _clinicalObservationsController =
+      TextEditingController();
 
   @override
   void dispose() {
     _patientIdController.dispose();
     _patientNameController.dispose();
+    _clinicalObservationsController.dispose();
     super.dispose();
   }
 
@@ -96,6 +99,7 @@ class _CaptureTabViewState extends ConsumerState<CaptureTabView> {
                 (patientName.isEmpty ? null : patientName),
             lesionId: clinical.lesion?.id,
             consentToStore: _hasStorageConsent,
+            clinicalObservations: _clinicalObservationsController.text.trim(),
           ),
     );
 
@@ -199,6 +203,40 @@ class _CaptureTabViewState extends ConsumerState<CaptureTabView> {
             ),
             const SizedBox(height: 12),
             const PatientLesionPicker(),
+            const SizedBox(height: 12),
+            if (clinical.patient != null && clinical.lesion != null) ...[
+              Container(
+                key: const Key('selectedClinicalContext'),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryFixed,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.link, color: AppColors.primary),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        '${clinical.patient!.fullName} · ${clinical.patient!.clinicalCode}\nLesión: ${clinical.lesion!.anatomicalSite}',
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+            TextField(
+              key: const Key('clinicalObservationsField'),
+              controller: _clinicalObservationsController,
+              maxLines: 4,
+              decoration: const InputDecoration(
+                labelText: 'Observaciones clínicas (opcional)',
+                hintText: 'Aspecto, bordes, síntomas y cambios observados',
+                border: OutlineInputBorder(),
+              ),
+            ),
             const SizedBox(height: 12),
             Card(
               color: AppColors.surfaceContainerLowest,

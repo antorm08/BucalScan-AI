@@ -28,10 +28,22 @@ final createPatientUseCaseProvider = Provider<CreatePatientUseCase>(
   (ref) => CreatePatientUseCase(ref.watch(clinicalRepositoryProvider)),
 );
 
+final getPatientUseCaseProvider = Provider<GetPatientUseCase>(
+  (ref) => GetPatientUseCase(ref.watch(clinicalRepositoryProvider)),
+);
+
 final getLesionsUseCaseProvider = Provider<GetLesionsUseCase>(
   (ref) => GetLesionsUseCase(ref.watch(clinicalRepositoryProvider)),
 );
 
 final createLesionUseCaseProvider = Provider<CreateLesionUseCase>(
   (ref) => CreateLesionUseCase(ref.watch(clinicalRepositoryProvider)),
+);
+
+final getLesionDetailUseCaseProvider = Provider<GetLesionDetailUseCase>(
+  (ref) => GetLesionDetailUseCase(ref.watch(clinicalRepositoryProvider)),
+);
+
+final updateLesionUseCaseProvider = Provider<UpdateLesionUseCase>(
+  (ref) => UpdateLesionUseCase(ref.watch(clinicalRepositoryProvider)),
 );

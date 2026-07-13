@@ -16,6 +16,9 @@ class _FakeClinicalRepository implements ClinicalRepository {
   String? activeWorkspaceId;
 
   @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+
+  @override
   Future<List<ClinicalWorkspace>> getMemberships() async => const [
     ClinicalWorkspace(
       id: 'pending-center',
@@ -60,6 +63,24 @@ class _FailingClinicalRepository extends _FakeClinicalRepository {
   @override
   Future<List<ClinicalWorkspace>> getMemberships() =>
       throw Exception('connection failed');
+}
+
+class _ApprovalClinicalRepository extends _FakeClinicalRepository {
+  bool approved = false;
+
+  @override
+  Future<List<ClinicalWorkspace>> getMemberships() async => [
+    ClinicalWorkspace(
+      id: 'center-1',
+      name: 'Hospital Central',
+      type: 'hospital',
+      status: approved ? 'active' : 'pending',
+      membershipStatus: approved
+          ? MembershipStatus.active
+          : MembershipStatus.pending,
+      role: 'professional',
+    ),
+  ];
 }
 
 void main() {
@@ -129,6 +150,40 @@ void main() {
 
     expect(loggedOut, isTrue);
     expect(container.read(authViewModelProvider).currentUser, isNull);
+  });
+
+  testWidgets('pending gate enters automatically after approval', (
+    tester,
+  ) async {
+    final repository = _ApprovalClinicalRepository();
+    final container = ProviderContainer(
+      overrides: [
+        authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
+        clinicalRepositoryProvider.overrideWithValue(repository),
+      ],
+    );
+    addTearDown(container.dispose);
+    await container
+        .read(authViewModelProvider.notifier)
+        .login(email: 'doctor@hospital.org', password: 'secret123');
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(
+          home: WorkspaceGateView(child: Text('Clinical home')),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Tu espacio está en revisión'), findsOneWidget);
+
+    repository.approved = true;
+    await tester.pump(const Duration(seconds: 12));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Clinical home'), findsOneWidget);
+    expect(repository.activeWorkspaceId, 'center-1');
   });
 
   testWidgets(

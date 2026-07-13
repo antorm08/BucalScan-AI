@@ -12,6 +12,9 @@ class Analysis {
   final String? createdByName;
   final String? createdByEmail;
   final String? createdByDoctorId;
+  final int? evaluationId;
+  final int? patientRecordId;
+  final int? lesionId;
 
   const Analysis({
     required this.id,
@@ -27,5 +30,8 @@ class Analysis {
     this.createdByName,
     this.createdByEmail,
     this.createdByDoctorId,
+    this.evaluationId,
+    this.patientRecordId,
+    this.lesionId,
   });
 }

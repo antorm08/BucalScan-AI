@@ -1,13 +1,23 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from pathlib import Path
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from auth.workspace import WorkspaceAccess, get_workspace_access, require_clinical_professional
 from database import get_db
 from models import models
 from routers.workspaces import normalize
-from schemas import LesionCreate, LesionResponse, LesionStatusUpdate, PatientCreate, PatientResponse
+from schemas import (
+    LesionCreate,
+    LesionDetailResponse,
+    LesionResponse,
+    LesionStatusUpdate,
+    LesionUpdate,
+    PatientCreate,
+    PatientResponse,
+)
 
 router = APIRouter(prefix="/api/v1", tags=["clinical"])
 
@@ -83,24 +93,93 @@ def list_lesions(patient_id: int, access: WorkspaceAccess = Depends(get_workspac
     return db.query(models.OralLesion).filter_by(patient_id=patient_id, workspace_id=access.workspace.id).order_by(models.OralLesion.created_at).all()
 
 
-@router.get("/lesions/{lesion_id}")
-def lesion_detail(lesion_id: int, access: WorkspaceAccess = Depends(get_workspace_access), db: Session = Depends(get_db)):
+@router.get("/lesions/{lesion_id}", response_model=LesionDetailResponse)
+def lesion_detail(lesion_id: int, request: Request, access: WorkspaceAccess = Depends(get_workspace_access), db: Session = Depends(get_db)):
+    lesion = db.query(models.OralLesion).options(
+        joinedload(models.OralLesion.evaluations).joinedload(models.ClinicalEvaluation.image),
+        joinedload(models.OralLesion.evaluations).joinedload(models.ClinicalEvaluation.prediction),
+        joinedload(models.OralLesion.evaluations).joinedload(models.ClinicalEvaluation.consent_attestation),
+    ).filter_by(id=lesion_id, workspace_id=access.workspace.id).first()
+    if lesion is None:
+        raise HTTPException(status_code=404, detail="Lesion not found.")
+
+    professional_ids = {item.professional_id for item in lesion.evaluations}
+    professionals = {
+        user.id: user
+        for user in db.query(models.User).filter(models.User.id.in_(professional_ids)).all()
+    } if professional_ids else {}
+
+    evaluations = []
+    for item in sorted(lesion.evaluations, key=lambda value: (value.evaluated_at, value.id)):
+        professional = professionals[item.professional_id]
+        image = None
+        if item.image:
+            image_url = item.image.storage_url
+            if not image_url.startswith(("http://", "https://")):
+                image_url = str(request.url_for("uploads", path=Path(image_url).name))
+            image = {
+                "id": item.image.id,
+                "url": image_url,
+                "content_type": item.image.content_type,
+                "original_filename": item.image.original_filename,
+                "created_at": item.image.created_at,
+            }
+        prediction = None
+        if item.prediction:
+            prediction = {
+                "id": item.prediction.id,
+                "label": item.prediction.predicted_label,
+                "confidence": item.prediction.confidence,
+                "probabilities": {
+                    "benign": item.prediction.benign_probability,
+                    "malignant": item.prediction.malignant_probability,
+                },
+                "model_version": item.prediction.model_version,
+                "processing_time_ms": item.prediction.processing_time_ms,
+                "created_at": item.prediction.created_at,
+            }
+        evaluations.append({
+            "id": item.id,
+            "evaluated_at": item.evaluated_at,
+            "created_at": item.created_at,
+            "clinical_observations": item.clinical_observations,
+            "professional": {
+                "id": professional.id,
+                "full_name": professional.full_name,
+                "doctor_id": professional.doctor_id,
+                "profession": professional.profession,
+                "specialty": professional.specialty,
+            },
+            "image": image,
+            "prediction": prediction,
+            "consent_attested_at": item.consent_attestation.attested_at if item.consent_attestation else None,
+        })
+    return {"lesion": lesion, "evaluations": evaluations}
+
+
+def _update_lesion(lesion_id: int, payload: LesionUpdate, access: WorkspaceAccess, db: Session):
     lesion = db.query(models.OralLesion).filter_by(id=lesion_id, workspace_id=access.workspace.id).first()
     if lesion is None:
         raise HTTPException(status_code=404, detail="Lesion not found.")
-    return {"lesion": LesionResponse.model_validate(lesion), "evaluations": [
-        {"id": item.id, "evaluated_at": item.evaluated_at, "professional_id": item.professional_id,
-         "prediction": item.prediction.predicted_label if item.prediction else None}
-        for item in lesion.evaluations
-    ]}
+    supplied = payload.model_fields_set
+    if not supplied:
+        raise HTTPException(status_code=422, detail="status or clinical_notes is required.")
+    if "status" in supplied:
+        if payload.status is None:
+            raise HTTPException(status_code=422, detail="status cannot be null.")
+        lesion.status = payload.status
+    if "clinical_notes" in supplied:
+        lesion.clinical_notes = payload.clinical_notes
+    db.commit()
+    db.refresh(lesion)
+    return lesion
+
+
+@router.patch("/lesions/{lesion_id}", response_model=LesionResponse)
+def update_lesion(lesion_id: int, payload: LesionUpdate, access: WorkspaceAccess = Depends(require_clinical_professional), db: Session = Depends(get_db)):
+    return _update_lesion(lesion_id, payload, access, db)
 
 
 @router.patch("/lesions/{lesion_id}/status", response_model=LesionResponse)
 def update_lesion_status(lesion_id: int, payload: LesionStatusUpdate, access: WorkspaceAccess = Depends(require_clinical_professional), db: Session = Depends(get_db)):
-    lesion = db.query(models.OralLesion).filter_by(id=lesion_id, workspace_id=access.workspace.id).first()
-    if lesion is None:
-        raise HTTPException(status_code=404, detail="Lesion not found.")
-    lesion.status = payload.status
-    db.commit()
-    db.refresh(lesion)
-    return lesion
+    return _update_lesion(lesion_id, LesionUpdate(status=payload.status), access, db)

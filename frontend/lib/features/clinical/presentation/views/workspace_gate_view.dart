@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
 import 'package:bucalscan_ai/core/session/user_sensitive_state.dart';
 import 'package:bucalscan_ai/features/auth/presentation/viewmodels/auth_viewmodel.dart';
@@ -19,7 +21,11 @@ class WorkspaceGateView extends ConsumerStatefulWidget {
 
 class _WorkspaceGateViewState extends ConsumerState<WorkspaceGateView>
     with WidgetsBindingObserver {
+  static const _approvalRefreshInterval = Duration(seconds: 12);
+
   bool _loggingOut = false;
+  bool _autoRefreshing = false;
+  Timer? _approvalTimer;
 
   @override
   void initState() {
@@ -28,11 +34,16 @@ class _WorkspaceGateViewState extends ConsumerState<WorkspaceGateView>
     Future.microtask(
       () => ref.read(clinicalControllerProvider.notifier).loadWorkspaces(),
     );
+    _approvalTimer = Timer.periodic(
+      _approvalRefreshInterval,
+      (_) => unawaited(_autoRefresh()),
+    );
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _approvalTimer?.cancel();
     super.dispose();
   }
 
@@ -43,6 +54,18 @@ class _WorkspaceGateViewState extends ConsumerState<WorkspaceGateView>
 
   Future<void> _refresh() async {
     await ref.read(clinicalControllerProvider.notifier).loadWorkspaces();
+  }
+
+  Future<void> _autoRefresh() async {
+    if (!mounted || _autoRefreshing) return;
+    final state = ref.read(clinicalControllerProvider);
+    if (state.loading || state.activeWorkspace != null) return;
+    _autoRefreshing = true;
+    try {
+      await _refresh();
+    } finally {
+      _autoRefreshing = false;
+    }
   }
 
   Future<void> _logout() async {
@@ -145,7 +168,7 @@ class _WorkspaceGateViewState extends ConsumerState<WorkspaceGateView>
                         ),
                         const SizedBox(height: 8),
                         const Text(
-                          'Desliza hacia abajo o actualiza después de recibir la confirmación de un administrador.',
+                          'El estado se actualiza automáticamente. También puedes deslizar hacia abajo o actualizar manualmente.',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: AppColors.onSurfaceVariant,

@@ -35,3 +35,4 @@
 - [ ] 5.6 Verificar en dispositivo real el flujo independiente completo: solicitud privada pendiente, aprobación con rol `professional`, login aprobado y workspace activo correcto.
 - [ ] 5.7 Desplegar explícitamente la última versión backend a Render y comprobar que el panel opera contra la configuración vigente de Neon sin usar evidencia automatizada como sustituto.
 - [ ] 5.8 Generar el APK de entrega, registrar versión/build, nombre, SHA-256, fecha/hora y revisión fuente cuando exista, documentar instalación limpia e instalar/verificar ese artefacto exacto en dispositivo real.
+- [x] 5.9 Verificar la integración de navegación con la ficha longitudinal profesional, repetición de análisis y cambio seguro de workspace sin `HomeView` desnudo ni contaminación del estado administrativo; cubierta por Flutter (`174 passed`) y `flutter analyze` limpio.

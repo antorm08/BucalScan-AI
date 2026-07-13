@@ -81,3 +81,28 @@ Clinical history SHALL retain workspace, patient, lesion, professional, evaluati
 #### Scenario: Result context is stale or absent
 - **WHEN** navigation targets a result or history that no longer belongs to the current workspace/patient/lesion context
 - **THEN** navigation is blocked or redirected to a safe current selection state
+
+### Requirement: Complete lesion follow-up aggregate
+The backend SHALL return a typed workspace-authorized lesion aggregate containing the current lesion and evaluations in chronological order, with evaluation and creation times, separate clinical observations, responsible-professional summary, image metadata and URL, immutable prediction label, confidence, probabilities, model version, processing and creation times, and consent-attestation time.
+
+#### Scenario: Professional opens a lesion timeline
+- **WHEN** the lesion belongs to the active workspace
+- **THEN** every available normalized evaluation field is returned in oldest-first stable order and displayed separately from current lesion notes
+
+#### Scenario: Identifier belongs to another workspace
+- **WHEN** a professional requests or updates another workspace's lesion identifier
+- **THEN** no lesion, evaluation, image, prediction, attestation, or professional data is disclosed
+
+### Requirement: Controlled current lesion update
+An authorized professional SHALL update only the current allowed lesion status and clinical notes through the lesion patch contract, while the legacy status-only route remains compatible and no historical event stream is inferred.
+
+#### Scenario: Status and notes are changed
+- **WHEN** an authorized professional submits an allowed status and clinical notes
+- **THEN** the current lesion reflects both values without modifying prior evaluations or immutable predictions
+
+### Requirement: Professional patient chart
+Flutter SHALL provide a searchable patient list, profile details, independent cards for multiple lesions, lesion creation, current status/notes editing, and a complete chronological evaluation timeline with image, observation, professional, prediction, confidence, probabilities, model, processing, consent, empty, error, and retry states.
+
+#### Scenario: New lesion is registered from a patient chart
+- **WHEN** creation succeeds
+- **THEN** the lesion is appended to the visible list and selected for subsequent clinical work

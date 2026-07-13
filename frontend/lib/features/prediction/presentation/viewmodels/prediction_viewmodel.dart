@@ -52,6 +52,8 @@ class PredictionState {
 }
 
 class PredictionViewModel extends Notifier<PredictionState> {
+  int _generation = 0;
+
   @override
   PredictionState build() {
     return const PredictionState();
@@ -63,7 +65,9 @@ class PredictionViewModel extends Notifier<PredictionState> {
     String? patientName,
     required bool consentToStore,
     String? lesionId,
+    String? clinicalObservations,
   }) async {
+    final generation = ++_generation;
     final stopwatch = Stopwatch()..start();
 
     state = PredictionState(
@@ -82,28 +86,36 @@ class PredictionViewModel extends Notifier<PredictionState> {
           patientId: patientId,
           patientName: patientName,
           lesionId: lesionId,
+          clinicalObservations: clinicalObservations,
         ),
       );
+      if (generation != _generation) return;
       state = state.copyWith(
         result: result,
         analysisStatusMessage: 'Procesando resultado...',
       );
     } catch (e) {
+      if (generation != _generation) return;
       state = state.copyWith(error: e.toString());
     } finally {
-      if (state.error == null) {
-        const minimumLoadingDuration = Duration(milliseconds: 900);
-        final remainingTime = minimumLoadingDuration - stopwatch.elapsed;
-        if (remainingTime.inMilliseconds > 0) {
-          await Future<void>.delayed(remainingTime);
+      if (generation == _generation) {
+        if (state.error == null) {
+          const minimumLoadingDuration = Duration(milliseconds: 900);
+          final remainingTime = minimumLoadingDuration - stopwatch.elapsed;
+          if (remainingTime.inMilliseconds > 0) {
+            await Future<void>.delayed(remainingTime);
+          }
+        }
+
+        if (generation == _generation) {
+          state = state.copyWith(isLoading: false, clearStatus: true);
         }
       }
-
-      state = state.copyWith(isLoading: false, clearStatus: true);
     }
   }
 
   void clearResult() {
+    _generation++;
     state = const PredictionState();
   }
 }
