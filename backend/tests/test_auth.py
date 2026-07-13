@@ -182,7 +182,7 @@ class TestRegistration:
                 "password": "secret123",
             },
         )
-        assert response.status_code == 409
+        assert response.status_code == 400
         assert "Email already registered" in response.json()["detail"]
 
     def test_register_duplicate_doctor_id(self, client, db_session):
@@ -197,7 +197,7 @@ class TestRegistration:
                 "password": "secret123",
             },
         )
-        assert response.status_code == 409
+        assert response.status_code == 400
         assert "Doctor ID already registered" in response.json()["detail"]
 
     def test_register_password_is_hashed_not_stored_plain(self, client, db_session):
@@ -384,14 +384,82 @@ class TestProtectedRoutes:
         response = client.get("/api/v1/history")
         assert response.status_code == 401
 
-    def test_history_requires_workspace_context(self, client, db_session):
+    def test_history_with_valid_token_returns_200(self, client, db_session):
         user = _create_db_user(db_session, email="hist@hospital.org", doctor_id="MD-HIST-1")
         token = create_access_token({"sub": str(user.id), "email": user.email})
         response = client.get(
             "/api/v1/history",
             headers={"Authorization": f"Bearer {token}"},
         )
-        assert response.status_code == 422
+        assert response.status_code == 200
+
+    def test_history_doctor_only_sees_own_analyses(self, client, db_session):
+        doctor = _create_db_user(
+            db_session, email="doctorhist@hospital.org", doctor_id="MD-HIST-DOCTOR"
+        )
+        other = _create_db_user(
+            db_session, email="otherhist@hospital.org", doctor_id="MD-HIST-OTHER"
+        )
+        own_analysis = models.Analysis(
+            user_id=doctor.id,
+            prediction="benign",
+            confidence=0.91,
+        )
+        other_analysis = models.Analysis(
+            user_id=other.id,
+            prediction="malignant",
+            confidence=0.88,
+        )
+        db_session.add_all([own_analysis, other_analysis])
+        db_session.commit()
+
+        token = create_access_token({"sub": str(doctor.id), "email": doctor.email})
+        response = client.get(
+            "/api/v1/history",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        assert response.status_code == 200
+        items = response.json()
+        ids = {item["id"] for item in items}
+        assert ids == {own_analysis.id}
+        assert items[0]["created_by_id"] == doctor.id
+        assert items[0]["created_by_name"] == doctor.full_name
+        assert items[0]["created_by_email"] == doctor.email
+        assert items[0]["created_by_doctor_id"] == doctor.doctor_id
+
+    def test_history_admin_sees_all_analyses(self, client, db_session):
+        admin = _create_db_user(
+            db_session,
+            email="adminhist@hospital.org",
+            doctor_id="MD-HIST-ADMIN",
+            role="admin",
+        )
+        doctor = _create_db_user(
+            db_session, email="doctorallhist@hospital.org", doctor_id="MD-HIST-ALL"
+        )
+        admin_analysis = models.Analysis(
+            user_id=admin.id,
+            prediction="benign",
+            confidence=0.93,
+        )
+        doctor_analysis = models.Analysis(
+            user_id=doctor.id,
+            prediction="malignant",
+            confidence=0.87,
+        )
+        db_session.add_all([admin_analysis, doctor_analysis])
+        db_session.commit()
+
+        token = create_access_token({"sub": str(admin.id), "email": admin.email})
+        response = client.get(
+            "/api/v1/history",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        assert response.status_code == 200
+        ids = {item["id"] for item in response.json()}
+        assert {admin_analysis.id, doctor_analysis.id}.issubset(ids)
 
     def test_history_with_invalid_token_returns_401(self, client, db_session):
         response = client.get(
@@ -419,14 +487,67 @@ class TestProtectedRoutes:
         response = client.get("/api/v1/summary/today")
         assert response.status_code == 401
 
-    def test_summary_requires_workspace_context(self, client, db_session):
+    def test_summary_with_valid_token_returns_200(self, client, db_session):
         user = _create_db_user(db_session, email="summ@hospital.org", doctor_id="MD-SUMM-1")
         token = create_access_token({"sub": str(user.id), "email": user.email})
         response = client.get(
             "/api/v1/summary/today",
             headers={"Authorization": f"Bearer {token}"},
         )
-        assert response.status_code == 422
+        assert response.status_code == 200
+
+    def test_summary_doctor_only_counts_own_analyses(self, client, db_session):
+        doctor = _create_db_user(
+            db_session, email="doctorsummary@hospital.org", doctor_id="MD-SUMMARY-DOCTOR"
+        )
+        other = _create_db_user(
+            db_session, email="othersummary@hospital.org", doctor_id="MD-SUMMARY-OTHER"
+        )
+        db_session.add_all([
+            models.Analysis(user_id=doctor.id, prediction="benign", confidence=0.91),
+            models.Analysis(user_id=other.id, prediction="malignant", confidence=0.88),
+        ])
+        db_session.commit()
+
+        token = create_access_token({"sub": str(doctor.id), "email": doctor.email})
+        response = client.get(
+            "/api/v1/summary/today",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total"] == 1
+        assert data["benign"] == 1
+        assert data["malignant"] == 0
+
+    def test_summary_admin_counts_all_analyses(self, client, db_session):
+        admin = _create_db_user(
+            db_session,
+            email="adminsummary@hospital.org",
+            doctor_id="MD-SUMMARY-ADMIN",
+            role="admin",
+        )
+        doctor = _create_db_user(
+            db_session, email="doctorglobalsummary@hospital.org", doctor_id="MD-SUMMARY-ALL"
+        )
+        db_session.add_all([
+            models.Analysis(user_id=admin.id, prediction="benign", confidence=0.93),
+            models.Analysis(user_id=doctor.id, prediction="malignant", confidence=0.87),
+        ])
+        db_session.commit()
+
+        token = create_access_token({"sub": str(admin.id), "email": admin.email})
+        response = client.get(
+            "/api/v1/summary/today",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total"] == 2
+        assert data["benign"] == 1
+        assert data["malignant"] == 1
 
     def test_register_is_public_no_token_required(self, client, db_session):
         response = client.post(

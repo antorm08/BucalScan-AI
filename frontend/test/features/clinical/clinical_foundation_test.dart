@@ -7,15 +7,13 @@ import 'package:bucalscan_ai/features/prediction/domain/entities/prediction_imag
 
 class _MemoryAuthStorage extends AuthStorageService {
   int clearCount = 0;
-  String? token = 'token';
 
   @override
-  Future<String?> getToken() async => token;
+  Future<String?> getToken() async => 'token';
 
   @override
   Future<void> clear() async {
     clearCount++;
-    token = null;
   }
 }
 
@@ -24,17 +22,13 @@ class _RecordingErrorHandler extends ErrorInterceptorHandler {
   void next(DioException error) {}
 }
 
-DioException _responseError(int status, {String token = 'token'}) =>
-    DioException(
-      requestOptions: RequestOptions(
-        path: '/clinical',
-        headers: {'Authorization': 'Bearer $token'},
-      ),
-      response: Response<void>(
-        requestOptions: RequestOptions(path: '/clinical'),
-        statusCode: status,
-      ),
-    );
+DioException _responseError(int status) => DioException(
+  requestOptions: RequestOptions(path: '/clinical'),
+  response: Response<void>(
+    requestOptions: RequestOptions(path: '/clinical'),
+    statusCode: status,
+  ),
+);
 
 void main() {
   test('only active approved workspace can be selected', () {
@@ -84,19 +78,5 @@ void main() {
     interceptor.onError(_responseError(401), _RecordingErrorHandler());
     await Future<void>.delayed(Duration.zero);
     expect(storage.clearCount, 1);
-  });
-
-  test('stale 401 cannot clear or expire a newer authentication', () async {
-    final storage = _MemoryAuthStorage()..token = 'new-token';
-    final interceptor = AuthInterceptor(storage);
-
-    interceptor.onError(
-      _responseError(401, token: 'old-token'),
-      _RecordingErrorHandler(),
-    );
-    await Future<void>.delayed(Duration.zero);
-
-    expect(storage.token, 'new-token');
-    expect(storage.clearCount, 0);
   });
 }

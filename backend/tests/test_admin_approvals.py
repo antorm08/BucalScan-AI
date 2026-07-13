@@ -42,9 +42,6 @@ def test_admin_summary_and_pending_queues_require_platform_admin(client, db_sess
     active_workspace, membership = _request(
         db_session, member, "joining", workspace_status="active"
     )
-    legacy_workspace, legacy_membership = _request(
-        db_session, admin, "legacy-admin", workspace_status="active"
-    )
 
     assert client.get("/api/v1/admin/summary", headers=_headers(requester)).status_code == 403
     summary = client.get("/api/v1/admin/summary", headers=_headers(admin))
@@ -56,8 +53,6 @@ def test_admin_summary_and_pending_queues_require_platform_admin(client, db_sess
     assert workspaces[0]["requester"]["profession"] == "Dentist"
     assert memberships[0]["workspace"]["id"] == active_workspace.id
     assert memberships[0]["id"] == membership.id
-    assert legacy_membership.id not in {item["id"] for item in memberships}
-    assert legacy_workspace.id != active_workspace.id
 
 
 def test_workspace_approve_and_reject_update_initial_membership_atomically(client, db_session):

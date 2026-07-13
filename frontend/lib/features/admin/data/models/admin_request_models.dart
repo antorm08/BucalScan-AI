@@ -22,7 +22,6 @@ AdminRequester _requester(Map<String, dynamic> json) => AdminRequester(
   doctorId: json['doctor_id'] as String? ?? '',
   profession: json['profession'] as String?,
   specialty: json['specialty'] as String?,
-  status: json['status'] as String? ?? 'active',
 );
 
 class AdminWorkspaceRequestModel {

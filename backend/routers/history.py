@@ -4,8 +4,8 @@ from typing import List
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
-from auth.workspace import WorkspaceAccess, get_workspace_access
-from crud import get_workspace_analyses
+from auth.jwt import get_current_user
+from crud import get_all_analyses, get_user_analyses
 from database import get_db
 from models import models
 from schemas import AnalysisHistory
@@ -18,10 +18,13 @@ async def get_history(
     request: Request,
     skip: int = 0,
     limit: int = 100,
-    access: WorkspaceAccess = Depends(get_workspace_access),
+    current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    analyses = get_workspace_analyses(db, access.workspace.id, skip=skip, limit=limit)
+    if current_user.role == "admin":
+        analyses = get_all_analyses(db, skip=skip, limit=limit)
+    else:
+        analyses = get_user_analyses(db, user_id=current_user.id, skip=skip, limit=limit)
 
     serialized = []
     for analysis in analyses:

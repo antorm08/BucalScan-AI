@@ -77,10 +77,8 @@ def get_admin_summary(
         ).count(),
         pending_memberships=db.query(models.WorkspaceMembership)
         .join(models.ClinicalWorkspace)
-        .join(models.User, models.User.id == models.WorkspaceMembership.user_id)
         .filter(
             models.WorkspaceMembership.status == "pending",
-            models.User.role != "platform_admin",
             or_(
                 models.ClinicalWorkspace.status == "active",
                 models.ClinicalWorkspace.workspace_type == "independent",
@@ -123,7 +121,6 @@ def list_membership_requests(
         .join(models.User, models.User.id == models.WorkspaceMembership.user_id)
         .join(models.ClinicalWorkspace, models.ClinicalWorkspace.id == models.WorkspaceMembership.workspace_id)
         .filter(models.WorkspaceMembership.status == status)
-        .filter(models.User.role != "platform_admin")
         .filter(or_(
             models.ClinicalWorkspace.status == "active",
             models.ClinicalWorkspace.workspace_type == "independent",
@@ -156,9 +153,6 @@ def approve_workspace_request(
         initial.role = "clinic_admin"
         initial.approved_by_id = current_user.id
         initial.approved_at = now
-        requester = db.query(models.User).filter_by(id=initial.user_id).first()
-        if requester and requester.status == "pending":
-            requester.status = "active"
     db.commit()
     db.refresh(workspace)
     requester = db.query(models.User).filter_by(id=workspace.initial_requester_id).first()
@@ -198,11 +192,6 @@ def approve_membership_request(
         raise HTTPException(status_code=404, detail="Membership not found.")
     if membership.status != "pending":
         raise HTTPException(status_code=409, detail="Membership request has already been resolved.")
-    member = db.query(models.User).filter_by(id=membership.user_id).first()
-    if member is None:
-        raise HTTPException(status_code=404, detail="User not found.")
-    if member.status == "suspended":
-        raise HTTPException(status_code=409, detail="Suspended users cannot have memberships approved.")
     workspace = db.query(models.ClinicalWorkspace).filter_by(id=membership.workspace_id).first()
     if workspace.status == "pending":
         if workspace.workspace_type != "independent" or workspace.initial_requester_id != membership.user_id:
@@ -216,8 +205,6 @@ def approve_membership_request(
     membership.role = payload.role
     membership.approved_by_id = current_user.id
     membership.approved_at = datetime.now(UTC).replace(tzinfo=None)
-    if member.status == "pending":
-        member.status = "active"
     db.commit()
     db.refresh(membership)
     return membership

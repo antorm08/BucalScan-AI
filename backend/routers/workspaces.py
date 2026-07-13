@@ -21,7 +21,7 @@ def normalize(value: str) -> str:
 
 @router.get("", response_model=list[WorkspaceResponse])
 def discover_workspaces(q: str = Query("", max_length=100), db: Session = Depends(get_db)):
-    query = db.query(models.ClinicalWorkspace).filter(models.ClinicalWorkspace.status == "active")
+    query = db.query(models.ClinicalWorkspace)
     if q.strip():
         query = query.filter(models.ClinicalWorkspace.normalized_name.contains(normalize(q)))
     return query.order_by(models.ClinicalWorkspace.name).limit(50).all()
@@ -78,8 +78,6 @@ def approve_workspace(workspace_id: int, admin: models.User = Depends(require_ad
     workspace = db.query(models.ClinicalWorkspace).filter_by(id=workspace_id).first()
     if workspace is None:
         raise HTTPException(status_code=404, detail="Workspace not found.")
-    if workspace.status != "pending":
-        raise HTTPException(status_code=409, detail="Workspace request has already been resolved.")
     workspace.status = "active"
     workspace.approved_by_id = admin.id
     workspace.approved_at = datetime.now(UTC).replace(tzinfo=None)
@@ -91,9 +89,6 @@ def approve_workspace(workspace_id: int, admin: models.User = Depends(require_ad
         initial.role = "clinic_admin"
         initial.approved_by_id = admin.id
         initial.approved_at = workspace.approved_at
-        requester = db.query(models.User).filter_by(id=initial.user_id).first()
-        if requester and requester.status == "pending":
-            requester.status = "active"
     db.commit()
     db.refresh(workspace)
     return workspace
@@ -109,36 +104,9 @@ def manage_membership(membership_id: int, payload: MembershipUpdate, access: Wor
     membership = db.query(models.WorkspaceMembership).filter_by(id=membership_id, workspace_id=access.workspace.id).first()
     if membership is None:
         raise HTTPException(status_code=404, detail="Membership not found.")
-    member = db.query(models.User).filter_by(id=membership.user_id).first()
-    if member is None:
-        raise HTTPException(status_code=404, detail="User not found.")
-    if member.status == "suspended":
-        raise HTTPException(status_code=409, detail="Suspended users cannot have memberships changed.")
-    allowed = {
-        ("pending", "active"),
-        ("pending", "rejected"),
-        ("active", "inactive"),
-    }
-    if (membership.status, payload.status) not in allowed:
-        raise HTTPException(status_code=409, detail="Invalid membership status transition.")
-    removes_admin = membership.status == "active" and membership.role == "clinic_admin" and (
-        payload.status != "active" or (payload.role is not None and payload.role != "clinic_admin")
-    )
-    if membership.user_id == access.user.id and removes_admin:
-        raise HTTPException(status_code=409, detail="Clinic administrators cannot demote themselves.")
-    if removes_admin:
-        admin_count = db.query(models.WorkspaceMembership).filter_by(
-            workspace_id=access.workspace.id, status="active", role="clinic_admin"
-        ).count()
-        if admin_count <= 1:
-            raise HTTPException(status_code=409, detail="The workspace must retain an active clinic administrator.")
     membership.status = payload.status
-    if payload.status == "active" and payload.role:
+    if payload.role:
         membership.role = payload.role
-    elif payload.role and payload.role != membership.role:
-        raise HTTPException(status_code=409, detail="Roles can only be assigned when approving a pending membership.")
-    if payload.status == "active" and member.status == "pending":
-        member.status = "active"
     membership.approved_by_id = access.user.id
     membership.approved_at = datetime.now(UTC).replace(tzinfo=None)
     db.commit()
