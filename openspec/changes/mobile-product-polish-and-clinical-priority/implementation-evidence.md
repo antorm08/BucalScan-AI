@@ -84,16 +84,16 @@ Final hardening results:
 ## Release APK
 
 - Build command: `flutter build apk --release`.
-- Version: `1.2.1+5` (`versionName=1.2.1`, `versionCode=5`).
+- Version: `1.2.2+6` (`versionName=1.2.2`, `versionCode=6`).
 - Android application id: `com.bucalscan.ai`.
 - File: `frontend/build/app/outputs/flutter-apk/app-release.apk`.
-- Size: `56,526,624` bytes (`53.9 MB`).
-- SHA-256: `11F6AF3064C5BB78548AECC3D0348018FA6BC2F395F3923F9C8134704FFB964D`.
-- Build timestamp: `2026-07-13 15:58:32` local workspace time.
+- Size: `56,526,616` bytes (`53.9 MB`).
+- SHA-256: `755811545D2EDEE6E0F94755A7C24F9898A6CA7B8F05D33DF790567608820DDA`.
+- Build timestamp: `2026-07-13 18:57:19` local workspace time.
 - Release certificate: `CN=BucalScan AI, OU=Mobile, O=BucalScan AI, L=Lima, ST=Lima, C=PE`.
 - Release certificate SHA-256: `C28E497BC23DF335D85205A708A55D4A1939B08297C219E1D293E9C828B73CC2`.
-- Source revision at build: `b29b29500d7d6e5e15170341ee92de32a3aa608a` with the documented dirty worktree.
-- Clean-install guidance: uninstall the old `com.example.oral_lesion_detector` debug-signed build, install this exact release-signed APK, and verify version `1.2.1` before testing. Preserve the ignored release keystore securely for future upgrades.
+- Source revision at build: `ec82ccf` with the version bump documented in the working tree.
+- Upgrade guidance: install this exact release-signed APK over `1.2.1+5` and verify version `1.2.2`; both releases use the same application id and certificate. Preserve the ignored release keystore securely for future upgrades.
 
 APK generation is recorded evidence only; no installation, production connectivity, camera/gallery, or physical-device behavior is claimed.
 

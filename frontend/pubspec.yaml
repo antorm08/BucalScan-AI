@@ -2,7 +2,7 @@ name: bucalscan_ai
 description: "AI-powered oral lesion detection app for early cancer screening."
 publish_to: 'none'
 
-version: 1.2.1+5
+version: 1.2.2+6
 
 environment:
   sdk: ^3.11.5
