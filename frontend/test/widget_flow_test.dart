@@ -95,7 +95,9 @@ void main() {
     expect(find.text('Paciente Maligno'), findsOneWidget);
   });
 
-  testWidgets('history filter shows only malignant analyses', (tester) async {
+  testWidgets('history keeps model output visible without a model filter', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -109,10 +111,7 @@ void main() {
     expect(find.text('Paciente Benigno'), findsOneWidget);
     expect(find.text('Paciente Maligno'), findsOneWidget);
 
-    await tester.tap(find.widgetWithText(FilterChip, 'Patrón maligno'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Paciente Benigno'), findsNothing);
+    expect(find.byType(FilterChip), findsNothing);
     expect(find.text('Paciente Maligno'), findsOneWidget);
   });
 }

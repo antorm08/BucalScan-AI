@@ -9,6 +9,7 @@ import 'package:bucalscan_ai/features/clinical/presentation/viewmodels/clinical_
 import 'package:bucalscan_ai/features/clinical/presentation/viewmodels/patient_follow_up_controller.dart';
 import 'package:bucalscan_ai/features/clinical/presentation/views/lesion_detail_view.dart';
 import 'package:bucalscan_ai/features/clinical/presentation/views/patient_detail_view.dart';
+import 'package:bucalscan_ai/features/clinical/presentation/views/patient_lesion_picker.dart';
 import 'package:bucalscan_ai/features/home/presentation/views/home_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -80,6 +81,30 @@ class _ImmediateFollowUpRepository extends _FollowUpRepository {
   Future<List<Patient>> searchPatients(String query) async => const [_patient];
 }
 
+class _CreatePatientRepository extends _FollowUpRepository {
+  final created = Completer<Patient>();
+
+  @override
+  Future<Patient> createPatient({
+    required String clinicalCode,
+    required String fullName,
+    String? identityDocument,
+  }) => created.future;
+}
+
+class _CreateLesionRepository extends _FollowUpRepository {
+  final created = Completer<OralLesion>();
+
+  @override
+  Future<OralLesion> createLesion({
+    required String patientId,
+    required String anatomicalSite,
+    DateTime? observedAt,
+    String? estimatedDuration,
+    String? notes,
+  }) => created.future;
+}
+
 Map<String, dynamic> _detailJson() => {
   'lesion': {
     'id': 1,
@@ -138,6 +163,158 @@ void main() {
       expect(detail.evaluations.last.consentAttestedAt, isNotNull);
     },
   );
+
+  test('newly created patient is inserted without a manual refresh', () {
+    final repository = _ImmediateFollowUpRepository();
+    final container = ProviderContainer(
+      overrides: [clinicalRepositoryProvider.overrideWithValue(repository)],
+    );
+    addTearDown(container.dispose);
+
+    container
+        .read(patientFollowUpControllerProvider.notifier)
+        .registerCreatedPatient(_patient);
+
+    expect(
+      container.read(patientFollowUpControllerProvider).patients.single,
+      _patient,
+    );
+  });
+
+  testWidgets('patient form validates digits and shows progress while saving', (
+    tester,
+  ) async {
+    final repository = _CreatePatientRepository();
+    final container = ProviderContainer(
+      overrides: [clinicalRepositoryProvider.overrideWithValue(repository)],
+    );
+    addTearDown(container.dispose);
+    container
+        .read(clinicalControllerProvider.notifier)
+        .selectWorkspace(_workspace);
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(child: PatientLesionPicker()),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Registrar nuevo paciente'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('newPatientClinicalCode')),
+      '123',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Nombre completo *'),
+      'Ana',
+    );
+    await tester.enterText(
+      find.byKey(const Key('newPatientDocument')),
+      '123456',
+    );
+    await tester.tap(find.byKey(const Key('createPatientSubmit')));
+    await tester.pump();
+
+    expect(find.text('Ingrese exactamente 6 dígitos.'), findsOneWidget);
+    expect(
+      find.text('Ingrese al menos 7 dígitos o déjelo vacío.'),
+      findsOneWidget,
+    );
+
+    await tester.enterText(
+      find.byKey(const Key('newPatientClinicalCode')),
+      '123456',
+    );
+    await tester.enterText(
+      find.byKey(const Key('newPatientDocument')),
+      '1234567',
+    );
+    await tester.tap(find.byKey(const Key('createPatientSubmit')));
+    await tester.pump();
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('createPatientSubmit')),
+        matching: find.byType(CircularProgressIndicator),
+      ),
+      findsOneWidget,
+    );
+
+    repository.created.complete(
+      const Patient(
+        id: 'patient-new',
+        workspaceId: 'workspace-1',
+        clinicalCode: '123456',
+        fullName: 'Ana',
+        identityDocument: '1234567',
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Paciente registrado correctamente.'), findsOneWidget);
+    expect(
+      container.read(patientFollowUpControllerProvider).patients.single.id,
+      'patient-new',
+    );
+  });
+
+  testWidgets('lesion form explains notes and shows progress while saving', (
+    tester,
+  ) async {
+    final repository = _CreateLesionRepository();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [clinicalRepositoryProvider.overrideWithValue(repository)],
+        child: MaterialApp(
+          home: PatientDetailView(
+            patientId: _patient.id,
+            onRepeatAnalysis: (_, _) {},
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('addLesionButton')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Notas para seguimiento (opcional)'), findsOneWidget);
+    expect(find.textContaining('evolución general'), findsOneWidget);
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Sitio anatómico *'),
+      'Labio',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Duración estimada'),
+      'Una semana',
+    );
+    await tester.tap(find.byKey(const Key('registerLesionSubmit')));
+    await tester.pump();
+
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('registerLesionSubmit')),
+        matching: find.byType(CircularProgressIndicator),
+      ),
+      findsOneWidget,
+    );
+    repository.created.complete(
+      const OralLesion(
+        id: 'lesion-new',
+        patientId: 'patient-1',
+        anatomicalSite: 'Labio',
+        status: 'active',
+        estimatedDuration: 'Una semana',
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Lesión registrada correctamente.'), findsOneWidget);
+    expect(find.byKey(const Key('lesion-lesion-new')), findsOneWidget);
+  });
 
   test(
     'follow-up controller rejects an older patient search completion',

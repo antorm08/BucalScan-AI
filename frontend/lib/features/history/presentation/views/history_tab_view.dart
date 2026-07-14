@@ -159,6 +159,20 @@ class _HistoryTabViewState extends ConsumerState<HistoryTabView> {
               style: Theme.of(context).textTheme.headlineSmall,
             ),
             const SizedBox(height: 16),
+            if (analysis.imageUrl?.trim().isNotEmpty == true) ...[
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: AspectRatio(
+                  aspectRatio: 4 / 3,
+                  child: Image.network(
+                    analysis.imageUrl!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => const _HistoryImageFallback(),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+            ],
             _Detail(
               label: 'Fecha de evaluación',
               value: _date(analysis.evaluatedAt ?? analysis.timestamp),
@@ -297,21 +311,6 @@ class _HistoryTabViewState extends ConsumerState<HistoryTabView> {
                     scrollDirection: Axis.horizontal,
                     child: Row(
                       children: [
-                        _Choice(
-                          label: 'Todos los modelos',
-                          selected: state.criteria.modelLabel == null,
-                          onTap: () => notifier.setModelLabel(null),
-                        ),
-                        _Choice(
-                          label: 'Patrón benigno',
-                          selected: state.criteria.modelLabel == 'benign',
-                          onTap: () => notifier.setModelLabel('benign'),
-                        ),
-                        _Choice(
-                          label: 'Patrón maligno',
-                          selected: state.criteria.modelLabel == 'malignant',
-                          onTap: () => notifier.setModelLabel('malignant'),
-                        ),
                         if (state.priorityFilterEnabled)
                           PopupMenuButton<String?>(
                             key: const Key('historyPriorityFilter'),
@@ -557,23 +556,20 @@ class _HistoryTabViewState extends ConsumerState<HistoryTabView> {
   }
 }
 
-class _Choice extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-  const _Choice({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
+class _HistoryImageFallback extends StatelessWidget {
+  const _HistoryImageFallback();
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(right: 8),
-    child: FilterChip(
-      label: Text(label),
-      selected: selected,
-      onSelected: (_) => onTap(),
+  Widget build(BuildContext context) => Container(
+    color: AppColors.surfaceContainerHigh,
+    alignment: Alignment.center,
+    child: const Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.broken_image_outlined, color: AppColors.onSurfaceVariant),
+        SizedBox(height: 6),
+        Text('Imagen no disponible'),
+      ],
     ),
   );
 }

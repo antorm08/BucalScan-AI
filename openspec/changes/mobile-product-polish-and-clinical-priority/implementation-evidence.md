@@ -78,22 +78,31 @@ Final command results are recorded below after the hardening changes are verifie
 Final hardening results:
 
 - `cd backend; pytest -q` -> 102 passed in 25.21s; one third-party `python_multipart` deprecation warning. This includes migration, admin/security, tenant, priority, and unchanged-inference tests. The repository has no separately configured Python formatter/static-check command.
-- `cd frontend; flutter analyze` -> no issues in 12.7s.
-- `cd frontend; flutter test --concurrency=1` -> 204 passed in 81s.
+- `cd frontend; flutter analyze` -> no issues after the `1.2.3+7` product-polish pass.
+- `cd frontend; flutter test` -> 208 passed after history, patient, lesion, loading, and localization regressions were added.
+
+APK-final verification pass on 2026-07-13:
+
+- Clean Architecture/Riverpod audit: `ApiService` remains confined to DI/data-source/repository wiring; changed clinical/history/prediction presentation code uses Riverpod providers and use cases/controllers rather than direct HTTP calls.
+- `cd frontend; flutter analyze` -> no issues in 12.2s.
+- `cd frontend; flutter test` -> 208 passed.
+- `cd backend; pytest -q` -> 102 passed in 36.19s; one third-party `python_multipart` deprecation warning.
+- `cd frontend; flutter build apk --release` -> built `build\app\outputs\flutter-apk\app-release.apk` successfully.
 
 ## Release APK
 
 - Build command: `flutter build apk --release`.
-- Version: `1.2.2+6` (`versionName=1.2.2`, `versionCode=6`).
+- Version: `1.2.3+7` (`versionName=1.2.3`, `versionCode=7`).
 - Android application id: `com.bucalscan.ai`.
 - File: `frontend/build/app/outputs/flutter-apk/app-release.apk`.
-- Size: `56,526,616` bytes (`53.9 MB`).
-- SHA-256: `755811545D2EDEE6E0F94755A7C24F9898A6CA7B8F05D33DF790567608820DDA`.
-- Build timestamp: `2026-07-13 18:57:19` local workspace time.
+- Size: `56,592,192` bytes (`54.0 MB`).
+- SHA-256: `ED7E3362865D39536C86BC2B01BBDE899091557B7C859D6C2D2A73BD1EA638B4`.
+- Build timestamp after final APK verification pass: `2026-07-13 20:30:08` local workspace time.
 - Release certificate: `CN=BucalScan AI, OU=Mobile, O=BucalScan AI, L=Lima, ST=Lima, C=PE`.
 - Release certificate SHA-256: `C28E497BC23DF335D85205A708A55D4A1939B08297C219E1D293E9C828B73CC2`.
-- Source revision at build: `ec82ccf` with the version bump documented in the working tree.
-- Upgrade guidance: install this exact release-signed APK over `1.2.1+5` and verify version `1.2.2`; both releases use the same application id and certificate. Preserve the ignored release keystore securely for future upgrades.
+- Signature verification: `apksigner verify --verbose --print-certs` -> verifies using APK Signature Scheme v2 with one signer and the expected certificate SHA-256.
+- Source revision at build: `8d5af92` with the product-polish changes and version bump documented in the working tree.
+- Upgrade guidance: install this exact release-signed APK over `1.2.2+6` and verify version `1.2.3`; both releases use the same application id and certificate. Preserve the ignored release keystore securely for future upgrades.
 
 APK generation is recorded evidence only; no installation, production connectivity, camera/gallery, or physical-device behavior is claimed.
 

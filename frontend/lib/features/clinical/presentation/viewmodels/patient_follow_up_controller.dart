@@ -84,6 +84,16 @@ class PatientFollowUpController extends Notifier<PatientFollowUpState> {
     }
   }
 
+  void registerCreatedPatient(Patient patient) {
+    state = state.copyWith(
+      status: FollowUpStatus.data,
+      patients: [
+        patient,
+        ...state.patients.where((item) => item.id != patient.id),
+      ],
+    );
+  }
+
   Future<void> loadPatient(String patientId) async {
     final generation = ++_generation;
     final workspaceId = _workspaceId;

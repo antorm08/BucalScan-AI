@@ -37,100 +37,171 @@ class _PatientDetailViewState extends ConsumerState<PatientDetailView> {
     final notes = TextEditingController();
     final formKey = GlobalKey<FormState>();
     DateTime? observedAt;
-    final submit = await showDialog<bool>(
+    var submitting = false;
+    String? submitError;
+    var saved = false;
+    await showDialog<void>(
       context: context,
+      barrierDismissible: false,
       builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Registrar lesión'),
-          content: Form(
-            key: formKey,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(
-                    controller: site,
-                    decoration: const InputDecoration(
-                      labelText: 'Sitio anatómico *',
-                      hintText: 'Ej.: mucosa yugal derecha',
-                    ),
-                    validator: (value) => value?.trim().isEmpty == true
-                        ? 'Ingrese el sitio anatómico.'
-                        : null,
+        builder: (dialogContext, setDialogState) => PopScope(
+          canPop: !submitting,
+          child: AlertDialog(
+            insetPadding: const EdgeInsets.symmetric(
+              horizontal: 20,
+              vertical: 24,
+            ),
+            title: const Text('Registrar lesión'),
+            content: SizedBox(
+              width: 440,
+              child: Form(
+                key: formKey,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      TextFormField(
+                        controller: site,
+                        enabled: !submitting,
+                        decoration: const InputDecoration(
+                          labelText: 'Sitio anatómico *',
+                          hintText: 'Ej.: mucosa yugal derecha',
+                        ),
+                        validator: (value) => value?.trim().isNotEmpty == true
+                            ? null
+                            : 'Ingrese el sitio anatómico.',
+                      ),
+                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        onPressed: submitting
+                            ? null
+                            : () async {
+                                final value = await showDatePicker(
+                                  context: dialogContext,
+                                  firstDate: DateTime(1900),
+                                  lastDate: DateTime.now(),
+                                  initialDate: observedAt ?? DateTime.now(),
+                                );
+                                if (value != null) {
+                                  setDialogState(() => observedAt = value);
+                                }
+                              },
+                        icon: const Icon(Icons.calendar_today_outlined),
+                        label: Text(
+                          observedAt == null
+                              ? 'Fecha de primera observación'
+                              : 'Observada el ${observedAt!.day}/${observedAt!.month}/${observedAt!.year}',
+                        ),
+                      ),
+                      TextFormField(
+                        controller: duration,
+                        enabled: !submitting,
+                        decoration: const InputDecoration(
+                          labelText: 'Duración estimada',
+                          hintText: 'Ej.: cerca de 2 semanas',
+                          helperText:
+                              'Registre una fecha, una duración o ambas.',
+                          helperMaxLines: 2,
+                        ),
+                        validator: (value) =>
+                            observedAt == null && value!.trim().isEmpty
+                            ? 'Indique una fecha o una duración.'
+                            : null,
+                      ),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Notas para seguimiento (opcional)',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Describa la evolución general de la lesión. Los hallazgos de una evaluación puntual se registran durante el análisis.',
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: notes,
+                        enabled: !submitting,
+                        minLines: 3,
+                        maxLines: 5,
+                        decoration: const InputDecoration(
+                          hintText:
+                              'Ej.: lesión estable desde la consulta anterior',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      if (submitError != null) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          submitError!,
+                          style: const TextStyle(color: AppColors.error),
+                        ),
+                      ],
+                    ],
                   ),
-                  const SizedBox(height: 12),
-                  OutlinedButton.icon(
-                    onPressed: () async {
-                      final value = await showDatePicker(
-                        context: context,
-                        firstDate: DateTime(1900),
-                        lastDate: DateTime.now(),
-                        initialDate: observedAt ?? DateTime.now(),
-                      );
-                      if (value != null) {
-                        setDialogState(() => observedAt = value);
-                      }
-                    },
-                    icon: const Icon(Icons.calendar_today_outlined),
-                    label: Text(
-                      observedAt == null
-                          ? 'Fecha de primera observación'
-                          : 'Observada el ${observedAt!.day}/${observedAt!.month}/${observedAt!.year}',
-                    ),
-                  ),
-                  TextFormField(
-                    controller: duration,
-                    decoration: const InputDecoration(
-                      labelText: 'Duración estimada',
-                      hintText: 'Ej.: cerca de 2 semanas',
-                      helperText: 'Puede registrar fecha, duración o ambas.',
-                    ),
-                    validator: (value) =>
-                        observedAt == null && value!.trim().isEmpty
-                        ? 'Indique una fecha o una duración.'
-                        : null,
-                  ),
-                  TextField(
-                    controller: notes,
-                    maxLines: 3,
-                    decoration: const InputDecoration(
-                      labelText: 'Notas longitudinales de la lesión',
-                      helperText:
-                          'Evolución general; los hallazgos actuales se registran al analizar.',
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
+            actions: [
+              TextButton(
+                onPressed: submitting
+                    ? null
+                    : () => Navigator.pop(dialogContext),
+                child: const Text('Cancelar'),
+              ),
+              FilledButton(
+                key: const Key('registerLesionSubmit'),
+                onPressed: submitting
+                    ? null
+                    : () async {
+                        if (!formKey.currentState!.validate()) return;
+                        setDialogState(() {
+                          submitting = true;
+                          submitError = null;
+                        });
+                        saved = await ref
+                            .read(patientFollowUpControllerProvider.notifier)
+                            .addLesion(
+                              anatomicalSite: site.text.trim(),
+                              observedAt: observedAt,
+                              estimatedDuration: duration.text.trim().isEmpty
+                                  ? null
+                                  : duration.text.trim(),
+                              notes: notes.text.trim().isEmpty
+                                  ? null
+                                  : notes.text.trim(),
+                            );
+                        if (!dialogContext.mounted) return;
+                        if (saved) {
+                          Navigator.pop(dialogContext);
+                        } else {
+                          setDialogState(() {
+                            submitting = false;
+                            submitError =
+                                'No se pudo registrar la lesión. Inténtelo nuevamente.';
+                          });
+                        }
+                      },
+                child: submitting
+                    ? const SizedBox.square(
+                        dimension: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text('Registrar'),
+              ),
+            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancelar'),
-            ),
-            FilledButton(
-              onPressed: () {
-                if (formKey.currentState!.validate()) {
-                  Navigator.pop(context, true);
-                }
-              },
-              child: const Text('Registrar'),
-            ),
-          ],
         ),
       ),
     );
-    if (submit != true) return;
-    await ref
-        .read(patientFollowUpControllerProvider.notifier)
-        .addLesion(
-          anatomicalSite: site.text.trim(),
-          observedAt: observedAt,
-          estimatedDuration: duration.text.trim().isEmpty
-              ? null
-              : duration.text.trim(),
-          notes: notes.text.trim().isEmpty ? null : notes.text.trim(),
-        );
+    if (saved && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Lesión registrada correctamente.')),
+      );
+    }
   }
 
   @override

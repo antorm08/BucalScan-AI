@@ -114,6 +114,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Salida desconocida'), findsOneWidget);
+      expect(find.byKey(const Key('historyImage-1')), findsOneWidget);
       await tester.tap(find.byKey(const Key('historyCard-1')));
       await tester.pumpAndSettle();
       expect(find.text('Salida no disponible'), findsOneWidget);
@@ -190,17 +191,21 @@ void main() {
     expect(find.text('Ficha del paciente'), findsNothing);
   });
 
-  testWidgets('filters show a summary and clear returns to no filters', (
+  testWidgets('hides model filters and clear returns to no filters', (
     tester,
   ) async {
     final repository = _Repository([_analysis()]);
     await tester.pumpWidget(_app(repository));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Patrón maligno'));
+
+    expect(find.byType(FilterChip), findsNothing);
+    expect(find.text('Todos los modelos'), findsNothing);
+    await tester.enterText(find.byKey(const Key('historySearch')), 'Paciente');
+    await tester.pump(const Duration(milliseconds: 400));
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('historyFilterSummary')), findsOneWidget);
-    expect(repository.seen.last.modelLabel, 'malignant');
+    expect(repository.seen.last.search, 'Paciente');
     await tester.tap(find.byKey(const Key('clearHistoryFilters')));
     await tester.pumpAndSettle();
     expect(repository.seen.last.hasFilters, false);

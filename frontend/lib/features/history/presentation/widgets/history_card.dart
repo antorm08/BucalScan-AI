@@ -39,103 +39,143 @@ class HistoryCard extends StatelessWidget {
         child: InkWell(
           key: Key('historyCard-${analysis.id}'),
           onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SizedBox(
+                width: 108,
+                child: _HistoryThumbnail(
+                  key: Key('historyImage-${analysis.id}'),
+                  imageUrl: analysis.imageUrl,
+                ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
                         _date(analysis.evaluatedAt ?? analysis.timestamp),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.labelMedium,
                       ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: style.$1,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(style.$3, size: 15, color: style.$2),
-                          const SizedBox(width: 4),
-                          Text(
+                      const SizedBox(height: 4),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: style.$1,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
                             _predictionLabel(prediction),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               color: style.$2,
                               fontWeight: FontWeight.w600,
-                              fontSize: 12,
+                              fontSize: 11,
                             ),
                           ),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        analysis.patientName ?? 'Paciente no disponible',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        [
+                              if (analysis.patientId?.trim().isNotEmpty == true)
+                                analysis.patientId!,
+                              if (analysis.lesionSite?.trim().isNotEmpty ==
+                                  true)
+                                analysis.lesionSite!,
+                            ].isEmpty
+                            ? 'Código y sitio no disponibles'
+                            : [
+                                if (analysis.patientId?.trim().isNotEmpty ==
+                                    true)
+                                  analysis.patientId!,
+                                if (analysis.lesionSite?.trim().isNotEmpty ==
+                                    true)
+                                  analysis.lesionSite!,
+                              ].join(' · '),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const Spacer(),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Confianza del clasificador ${(analysis.confidence.clamp(0, 1) * 100).toStringAsFixed(0)}%',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ),
+                          if (analysis.priority case final priority?)
+                            Text(
+                              localizedPriorityStatus(
+                                priority.priorityCode,
+                              ).label,
+                              style: Theme.of(context).textTheme.labelMedium,
+                            ),
                         ],
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  analysis.patientName ?? 'Paciente no disponible',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  [
-                        if (analysis.patientId?.trim().isNotEmpty == true)
-                          analysis.patientId!,
-                        if (analysis.lesionSite?.trim().isNotEmpty == true)
-                          analysis.lesionSite!,
-                      ].isEmpty
-                      ? 'Código y sitio no disponibles'
-                      : [
-                          if (analysis.patientId?.trim().isNotEmpty == true)
-                            analysis.patientId!,
-                          if (analysis.lesionSite?.trim().isNotEmpty == true)
-                            analysis.lesionSite!,
-                        ].join(' · '),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const Spacer(),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Confianza del clasificador ${(analysis.confidence.clamp(0, 1) * 100).toStringAsFixed(0)}%',
+                      const SizedBox(height: 3),
+                      Text(
+                        'Profesional: ${analysis.professionalName ?? analysis.createdByName ?? 'No disponible'}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
-                    ),
-                    if (analysis.priority case final priority?)
-                      Text(
-                        localizedPriorityStatus(priority.priorityCode).label,
-                        style: Theme.of(context).textTheme.labelMedium,
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  'Profesional: ${analysis.professionalName ?? analysis.createdByName ?? 'No disponible'}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
+}
+
+class _HistoryThumbnail extends StatelessWidget {
+  final String? imageUrl;
+
+  const _HistoryThumbnail({super.key, this.imageUrl});
+
+  @override
+  Widget build(BuildContext context) {
+    if (imageUrl?.trim().isNotEmpty != true) return _fallback();
+    return Image.network(
+      imageUrl!,
+      fit: BoxFit.cover,
+      errorBuilder: (_, _, _) => _fallback(),
+    );
+  }
+
+  Widget _fallback() => Container(
+    color: AppColors.surfaceContainerHigh,
+    alignment: Alignment.center,
+    child: const Icon(
+      Icons.image_outlined,
+      color: AppColors.onSurfaceVariant,
+      size: 32,
+    ),
+  );
 }
 
 String _predictionLabel(String value) => localizedModelOutput(value).label;

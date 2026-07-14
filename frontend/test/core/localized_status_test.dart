@@ -9,7 +9,18 @@ void main() {
     expect(localizedMembershipStatus('inactive').label, 'Inactivo');
     expect(localizedLesionStatus('monitoring').label, 'En seguimiento');
     expect(localizedModelOutput('malignant').label, 'Patrón maligno');
-    expect(localizedPriorityStatus('emergency').label, 'Atención de emergencia');
+    expect(
+      localizedPriorityStatus('emergency').label,
+      'Atención de emergencia',
+    );
+    expect(
+      localizedModelRecommendation('benign'),
+      contains('Continúe la evaluación profesional'),
+    );
+    expect(
+      localizedModelRecommendation('malignant'),
+      contains('no establece un diagnóstico'),
+    );
   });
 
   test('unsupported and null values are always neutral and non-success', () {

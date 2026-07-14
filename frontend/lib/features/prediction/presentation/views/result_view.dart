@@ -178,23 +178,6 @@ class _ResultViewState extends ConsumerState<ResultView> {
     return '${milliseconds.toStringAsFixed(1)} ms';
   }
 
-  String _translateRecommendation(String recommendation) {
-    final normalized = recommendation.trim().toLowerCase();
-
-    if (normalized.contains('no immediate concern') ||
-        normalized.contains('regular check-ups recommended')) {
-      return 'Continúe la evaluación profesional; la salida del modelo no descarta preocupación clínica.';
-    }
-
-    if (normalized.contains('malignant lesion suspected') ||
-        normalized.contains('immediate medical attention required') ||
-        normalized.contains('consult a specialist immediately')) {
-      return 'Se recomienda derivacion o evaluacion por especialista lo antes posible.';
-    }
-
-    return recommendation.trim();
-  }
-
   List<MapEntry<String, double?>> _orderedProbabilities(
     Map<String, double>? probabilities,
   ) {
@@ -385,8 +368,8 @@ class _ResultViewState extends ConsumerState<ResultView> {
       result.confidence,
       result.prediction,
     );
-    final translatedRecommendation = _translateRecommendation(
-      result.recommendation,
+    final translatedRecommendation = localizedModelRecommendation(
+      result.prediction,
     );
     final orderedProbabilities = _orderedProbabilities(result.probabilities);
 
@@ -934,7 +917,7 @@ class _AnalysisLoadingCardState extends State<_AnalysisLoadingCard>
                 ),
                 const SizedBox(height: 12),
                 _ProgressStep(
-                  title: 'Comparando con base de datos clinica',
+                  title: 'Procesando con el modelo de análisis',
                   state: thirdStepActive
                       ? _ProgressStepStateType.active
                       : _ProgressStepStateType.pending,
