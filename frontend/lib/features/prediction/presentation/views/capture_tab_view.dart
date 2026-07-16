@@ -197,7 +197,6 @@ class _CaptureTabViewState extends ConsumerState<CaptureTabView> {
               const PatientLesionPicker(),
               const SizedBox(height: 16),
               const _StepHeading(
-                step: '2',
                 title: 'Imagen clínica',
                 description:
                     'Tome una fotografía o elija una imagen de la lesión seleccionada.',
@@ -245,7 +244,6 @@ class _CaptureTabViewState extends ConsumerState<CaptureTabView> {
               if (hasImage) ...[
                 const SizedBox(height: 20),
                 const _StepHeading(
-                  step: '3',
                   title: 'Evaluación y autorización',
                   description:
                       'Complete los datos requeridos antes de enviar la imagen.',
@@ -353,18 +351,25 @@ class _AnalysisProgress extends StatelessWidget {
       label: 'Progreso del análisis en tres pasos',
       child: Row(
         children: [
-          _ProgressItem(label: 'Contexto', complete: hasContext, active: true),
-          const _ProgressLine(),
           _ProgressItem(
-            label: 'Imagen',
-            complete: hasImage,
-            active: hasContext,
+            number: 1,
+            label: 'Contexto',
+            complete: hasContext,
+            active: !hasContext,
           ),
           const _ProgressLine(),
           _ProgressItem(
+            number: 2,
+            label: 'Imagen',
+            complete: hasImage,
+            active: hasContext && !hasImage,
+          ),
+          const _ProgressLine(),
+          _ProgressItem(
+            number: 3,
             label: 'Evaluación',
             complete: hasImage && assessmentComplete,
-            active: hasImage,
+            active: hasImage && !assessmentComplete,
           ),
         ],
       ),
@@ -373,11 +378,13 @@ class _AnalysisProgress extends StatelessWidget {
 }
 
 class _ProgressItem extends StatelessWidget {
+  final int number;
   final String label;
   final bool complete;
   final bool active;
 
   const _ProgressItem({
+    required this.number,
     required this.label,
     required this.complete,
     required this.active,
@@ -385,23 +392,44 @@ class _ProgressItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = active ? AppColors.primary : AppColors.onSurfaceVariant;
+    final emphasized = active || complete;
+    final color = emphasized ? AppColors.primary : AppColors.onSurfaceVariant;
     return Expanded(
       child: Column(
         children: [
-          Icon(
-            complete ? Icons.check_circle_rounded : Icons.circle_outlined,
-            color: color,
-            size: 22,
+          AnimatedContainer(
+            key: Key('analysisProgressStep$number'),
+            duration: const Duration(milliseconds: 180),
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: emphasized
+                  ? AppColors.primary
+                  : AppColors.surfaceContainerLow,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: emphasized ? AppColors.primary : AppColors.outline,
+              ),
+            ),
+            alignment: Alignment.center,
+            child: complete
+                ? const Icon(Icons.check_rounded, color: Colors.white, size: 19)
+                : Text(
+                    '$number',
+                    style: TextStyle(
+                      color: active ? Colors.white : AppColors.onSurfaceVariant,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           Text(
             label,
             textAlign: TextAlign.center,
             style: TextStyle(
               color: color,
               fontSize: 12,
-              fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+              fontWeight: emphasized ? FontWeight.w700 : FontWeight.w500,
             ),
           ),
         ],
@@ -417,57 +445,32 @@ class _ProgressLine extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     width: 24,
     height: 2,
-    margin: const EdgeInsets.only(bottom: 20),
+    margin: const EdgeInsets.only(bottom: 22),
     color: AppColors.outlineVariant,
   );
 }
 
 class _StepHeading extends StatelessWidget {
-  final String step;
   final String title;
   final String description;
 
-  const _StepHeading({
-    required this.step,
-    required this.title,
-    required this.description,
-  });
+  const _StepHeading({required this.title, required this.description});
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        CircleAvatar(
-          radius: 16,
-          backgroundColor: AppColors.primaryFixed,
-          foregroundColor: AppColors.primary,
-          child: Text(
-            step,
-            style: const TextStyle(fontWeight: FontWeight.w800),
-          ),
+        Text(
+          title,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                description,
-                style: const TextStyle(
-                  color: AppColors.onSurfaceVariant,
-                  height: 1.35,
-                ),
-              ),
-            ],
+        const SizedBox(height: 4),
+        Text(
+          description,
+          style: const TextStyle(
+            color: AppColors.onSurfaceVariant,
+            height: 1.35,
           ),
         ),
       ],

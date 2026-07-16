@@ -117,8 +117,6 @@ class _ResultViewState extends ConsumerState<ResultView> {
     return 'Baja';
   }
 
-  Color _getConfidenceAccent(double confidence) => AppColors.secondary;
-
   String _getConfidenceMessage(double confidence, String prediction) {
     final label = _getDisplayLabel(prediction).toLowerCase();
 
@@ -323,7 +321,6 @@ class _ResultViewState extends ConsumerState<ResultView> {
     final displayLabel = _getDisplayLabel(result.prediction);
     final clinicalHeadline = _getClinicalHeadline(result.prediction);
     final confidenceLevel = _getConfidenceLevel(result.confidence);
-    final confidenceAccent = _getConfidenceAccent(result.confidence);
     final confidenceMessage = _getConfidenceMessage(
       result.confidence,
       result.prediction,
@@ -342,239 +339,51 @@ class _ResultViewState extends ConsumerState<ResultView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _AnalyzedImageCard(
-                imageFile: widget.imageFile,
-                heatmapUrl: result.heatmapUrl,
-              ),
-              const SizedBox(height: 16),
-              Card(
-                color: color.withValues(alpha: 0.1),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  side: BorderSide(color: color.withValues(alpha: 0.2)),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Icon(icon, size: 64, color: color),
-                      const SizedBox(height: 16),
-                      if (viewModel.patientName != null) ...[
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.person_outline,
-                                size: 14,
-                                color: AppColors.onSurfaceVariant,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                [
-                                  if (viewModel.patientName != null)
-                                    viewModel.patientName!,
-                                  if (viewModel.clinicalCode != null)
-                                    'Código: ${viewModel.clinicalCode!}',
-                                ].join(' · '),
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  color: AppColors.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                      ],
-                      if (viewModel.lesionSite != null) ...[
-                        Text(
-                          'Lesión: ${viewModel.lesionSite}',
-                          style: const TextStyle(
-                            color: AppColors.onSurfaceVariant,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                      ],
-                      const Text(
-                        'Clasificacion estimada',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        displayLabel.toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: color,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        clinicalHeadline,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.onSurface,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Confianza del modelo: ${(result.confidence * 100).toStringAsFixed(1)}%',
-                        style: const TextStyle(fontSize: 18),
-                      ),
-                      if (result.processingTimeMs != null) ...[
-                        const SizedBox(height: 8),
-                        Text(
-                          'Tiempo de inferencia: ${_formatProcessingTime(result.processingTimeMs!)}',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: AppColors.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: confidenceAccent.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: Text(
-                          'Nivel de confianza: $confidenceLevel',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: confidenceAccent,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      LinearProgressIndicator(
-                        value: result.confidence,
-                        backgroundColor: AppColors.surfaceContainerHighest,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          confidenceAccent,
-                        ),
-                        borderRadius: BorderRadius.circular(999),
-                        minHeight: 10,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        confidenceMessage,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: AppColors.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              _ResultSummaryCard(
+                color: color,
+                icon: icon,
+                displayLabel: displayLabel,
+                clinicalHeadline: clinicalHeadline,
+                confidence: result.confidence,
+                confidenceLevel: confidenceLevel,
+                patientName: viewModel.patientName,
+                clinicalCode: viewModel.clinicalCode,
+                lesionSite: viewModel.lesionSite,
               ),
               const SizedBox(height: 16),
               if (result.priority case final priority?) ...[
                 ClinicalPriorityResultCard(priority: priority),
                 const SizedBox(height: 16),
               ],
-              Card(
-                color: AppColors.surfaceContainerLowest,
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Orientación de la salida del modelo',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        translatedRecommendation,
-                        style: const TextStyle(fontSize: 16),
-                      ),
-                    ],
-                  ),
-                ),
+              _GuidanceCard(message: translatedRecommendation),
+              const SizedBox(height: 20),
+              const _ResultSectionHeading(
+                icon: Icons.image_outlined,
+                title: 'Imagen analizada',
+                subtitle:
+                    'Revise la fotografía y, si está disponible, la superposición CAM.',
+              ),
+              const SizedBox(height: 10),
+              _AnalyzedImageCard(
+                imageFile: widget.imageFile,
+                heatmapUrl: result.heatmapUrl,
               ),
               const SizedBox(height: 16),
-              Card(
-                color: AppColors.surfaceContainerLowest,
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Distribución de la salida del modelo',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
+              _TechnicalDetailsCard(
+                confidenceMessage: confidenceMessage,
+                modelVersion: result.modelVersion,
+                processingTime: result.processingTimeMs == null
+                    ? null
+                    : _formatProcessingTime(result.processingTimeMs!),
+                probabilityRows: orderedProbabilities
+                    .map(
+                      (entry) => _ProbabilityRow(
+                        label: _getDisplayLabel(entry.key).toUpperCase(),
+                        value: entry.value,
+                        color: _getPredictionColor(entry.key),
                       ),
-                      const SizedBox(height: 12),
-                      ...orderedProbabilities.map(
-                        (entry) => Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: Row(
-                            children: [
-                              SizedBox(
-                                width: 100,
-                                child: Text(
-                                  _getDisplayLabel(entry.key).toUpperCase(),
-                                  style: const TextStyle(fontSize: 14),
-                                ),
-                              ),
-                              Expanded(
-                                child: LinearProgressIndicator(
-                                  value: entry.value ?? 0,
-                                  backgroundColor:
-                                      AppColors.surfaceContainerHighest,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    _getPredictionColor(entry.key),
-                                  ),
-                                  borderRadius: BorderRadius.circular(999),
-                                  minHeight: 10,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              SizedBox(
-                                width: 56,
-                                child: Text(
-                                  entry.value == null
-                                      ? 'N/D'
-                                      : '${(entry.value! * 100).toStringAsFixed(1)}%',
-                                  textAlign: TextAlign.right,
-                                  style: const TextStyle(fontSize: 14),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                    )
+                    .toList(),
               ),
               const SizedBox(height: 16),
               Card(
@@ -592,6 +401,7 @@ class _ResultViewState extends ConsumerState<ResultView> {
                           style: TextStyle(
                             fontSize: 14,
                             color: AppColors.onSurfaceVariant,
+                            height: 1.4,
                           ),
                         ),
                       ),
@@ -614,6 +424,419 @@ class _ResultViewState extends ConsumerState<ResultView> {
   }
 }
 
+class _ResultSummaryCard extends StatelessWidget {
+  final Color color;
+  final IconData icon;
+  final String displayLabel;
+  final String clinicalHeadline;
+  final double confidence;
+  final String confidenceLevel;
+  final String? patientName;
+  final String? clinicalCode;
+  final String? lesionSite;
+
+  const _ResultSummaryCard({
+    required this.color,
+    required this.icon,
+    required this.displayLabel,
+    required this.clinicalHeadline,
+    required this.confidence,
+    required this.confidenceLevel,
+    this.patientName,
+    this.clinicalCode,
+    this.lesionSite,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final normalizedConfidence = confidence.clamp(0, 1).toDouble();
+    return Container(
+      key: const Key('resultSummaryCard'),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.28)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x1200355F),
+            blurRadius: 18,
+            offset: Offset(0, 7),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (patientName != null || lesionSite != null) ...[
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                if (patientName != null)
+                  _ContextChip(
+                    icon: Icons.person_outline,
+                    text: [
+                      patientName!,
+                      if (clinicalCode != null) 'Código: $clinicalCode',
+                    ].join(' · '),
+                  ),
+                if (lesionSite != null)
+                  _ContextChip(icon: Icons.adjust, text: 'Lesión: $lesionSite'),
+              ],
+            ),
+            const SizedBox(height: 18),
+          ],
+          const Text(
+            'Clasificación estimada',
+            style: TextStyle(
+              color: AppColors.onSurfaceVariant,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: 54,
+                height: 54,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.11),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(icon, color: color, size: 30),
+              ),
+              const SizedBox(width: 13),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      displayLabel,
+                      style: TextStyle(
+                        color: color,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      clinicalHeadline,
+                      style: const TextStyle(
+                        color: AppColors.onSurfaceVariant,
+                        fontSize: 13,
+                        height: 1.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Confianza del clasificador',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ),
+              Text(
+                '${(normalizedConfidence * 100).toStringAsFixed(1)}%',
+                style: const TextStyle(
+                  color: AppColors.primary,
+                  fontSize: 19,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          LinearProgressIndicator(
+            value: normalizedConfidence,
+            minHeight: 7,
+            color: AppColors.primary,
+            backgroundColor: AppColors.surfaceContainerHigh,
+            borderRadius: BorderRadius.circular(999),
+          ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+              'Nivel $confidenceLevel',
+              style: const TextStyle(
+                color: AppColors.onSurfaceVariant,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ContextChip extends StatelessWidget {
+  final IconData icon;
+  final String text;
+
+  const _ContextChip({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+    decoration: BoxDecoration(
+      color: AppColors.surfaceContainerLow,
+      borderRadius: BorderRadius.circular(10),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 16, color: AppColors.primary),
+        const SizedBox(width: 6),
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 260),
+          child: Text(
+            text,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: AppColors.onSurfaceVariant,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _GuidanceCard extends StatelessWidget {
+  final String message;
+
+  const _GuidanceCard({required this.message});
+
+  @override
+  Widget build(BuildContext context) => Container(
+    key: const Key('resultGuidanceCard'),
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: AppColors.primaryFixed,
+      borderRadius: BorderRadius.circular(16),
+    ),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Icon(Icons.route_outlined, color: AppColors.primary),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Orientación profesional',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 6),
+              Text(message, style: const TextStyle(height: 1.4)),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _ResultSectionHeading extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  const _ResultSectionHeading({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) => Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Container(
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          color: AppColors.primaryFixed,
+          borderRadius: BorderRadius.circular(11),
+        ),
+        child: Icon(icon, size: 21, color: AppColors.primary),
+      ),
+      const SizedBox(width: 11),
+      Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 3),
+            Text(
+              subtitle,
+              style: const TextStyle(
+                color: AppColors.onSurfaceVariant,
+                fontSize: 13,
+                height: 1.35,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ],
+  );
+}
+
+class _TechnicalDetailsCard extends StatelessWidget {
+  final String confidenceMessage;
+  final String? modelVersion;
+  final String? processingTime;
+  final List<Widget> probabilityRows;
+
+  const _TechnicalDetailsCard({
+    required this.confidenceMessage,
+    required this.modelVersion,
+    required this.processingTime,
+    required this.probabilityRows,
+  });
+
+  @override
+  Widget build(BuildContext context) => Card(
+    key: const Key('resultTechnicalDetails'),
+    clipBehavior: Clip.antiAlias,
+    child: ExpansionTile(
+      leading: const Icon(Icons.analytics_outlined),
+      title: const Text('Detalles técnicos'),
+      subtitle: const Text('Distribución, modelo y procesamiento'),
+      childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
+      children: [
+        const Divider(),
+        const SizedBox(height: 8),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            'Distribución de la salida',
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+        ),
+        const SizedBox(height: 12),
+        ...probabilityRows,
+        const SizedBox(height: 8),
+        _TechnicalDatum(
+          label: 'Versión del modelo',
+          value: modelVersion?.trim().isNotEmpty == true
+              ? modelVersion!
+              : 'No disponible',
+        ),
+        if (processingTime != null)
+          _TechnicalDatum(
+            label: 'Tiempo de inferencia',
+            value: processingTime!,
+          ),
+        const SizedBox(height: 6),
+        Text(
+          confidenceMessage,
+          style: const TextStyle(
+            color: AppColors.onSurfaceVariant,
+            fontSize: 13,
+            height: 1.4,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _ProbabilityRow extends StatelessWidget {
+  final String label;
+  final double? value;
+  final Color color;
+
+  const _ProbabilityRow({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 12),
+    child: Row(
+      children: [
+        SizedBox(
+          width: 92,
+          child: Text(
+            label,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+          ),
+        ),
+        Expanded(
+          child: LinearProgressIndicator(
+            value: value ?? 0,
+            minHeight: 8,
+            color: color,
+            backgroundColor: AppColors.surfaceContainerHigh,
+            borderRadius: BorderRadius.circular(999),
+          ),
+        ),
+        const SizedBox(width: 8),
+        SizedBox(
+          width: 52,
+          child: Text(
+            value == null ? 'N/D' : '${(value! * 100).toStringAsFixed(1)}%',
+            textAlign: TextAlign.right,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _TechnicalDatum extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _TechnicalDatum({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 8),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: const TextStyle(color: AppColors.onSurfaceVariant),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Flexible(
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
 class _ResultActions extends StatelessWidget {
   final VoidCallback onNewAnalysis;
   final VoidCallback onHistory;
@@ -632,16 +855,17 @@ class _ResultActions extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        ElevatedButton.icon(
-          onPressed: onNewAnalysis,
-          icon: const Icon(Icons.add_a_photo_outlined),
-          label: const Text('Nuevo analisis'),
-        ),
-        const SizedBox(height: 10),
-        OutlinedButton.icon(
+        FilledButton.icon(
+          key: const Key('anotherImagePrimaryAction'),
           onPressed: onAnotherImage,
           icon: const Icon(Icons.photo_camera_back_outlined),
           label: const Text('Otra imagen para esta lesión'),
+        ),
+        const SizedBox(height: 10),
+        OutlinedButton.icon(
+          onPressed: onNewAnalysis,
+          icon: const Icon(Icons.add_a_photo_outlined),
+          label: const Text('Nuevo análisis'),
         ),
         const SizedBox(height: 10),
         Row(

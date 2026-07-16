@@ -716,6 +716,20 @@ void main() {
     expect(find.text('Imagen clínica'), findsOneWidget);
     expect(find.byKey(const Key('selectedClinicalContext')), findsOneWidget);
     expect(
+      find.descendant(
+        of: find.byKey(const Key('analysisProgressStep1')),
+        matching: find.byIcon(Icons.check_rounded),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('analysisProgressStep2')),
+        matching: find.text('2'),
+      ),
+      findsOneWidget,
+    );
+    expect(
       Navigator.of(tester.element(find.byType(HomeView))).canPop(),
       isFalse,
     );
