@@ -6,7 +6,7 @@ import uuid
 from pathlib import Path
 from typing import Optional
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from PIL import Image, UnidentifiedImageError
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
@@ -55,6 +55,7 @@ def _quality_rejection_message(result: ImageQualityResult) -> str:
 
 @router.post("/predict", response_model=PredictionResponse)
 async def predict(
+    request: Request,
     file: UploadFile = File(...),
     consent_to_store: bool = Form(False),
     patient_id: int = Form(...),
@@ -140,7 +141,7 @@ async def predict(
 
     try:
         _t0 = time.perf_counter()
-        result = classifier.predict(image)
+        result = classifier.predict_with_heatmap(image)
         processing_time_ms = round((time.perf_counter() - _t0) * 1000, 1)
     except Exception as exc:
         logger.exception("Inference error for user_id=%s", access.user.id)
@@ -148,8 +149,9 @@ async def predict(
             status_code=500, detail="Model inference failed. Please try again later."
         ) from exc
 
+    file_id = uuid.uuid4().hex
     ext = Path(file.filename or "image.jpg").suffix or ".jpg"
-    stored_filename = f"{uuid.uuid4().hex}{ext}"
+    stored_filename = f"{file_id}{ext}"
     image_path = upload_image(
         contents,
         filename=stored_filename,
@@ -162,6 +164,23 @@ async def predict(
         _UPLOADS_DIR.mkdir(exist_ok=True)
         image_path = str(_UPLOADS_DIR / stored_filename)
         Path(image_path).write_bytes(contents)
+
+    heatmap_filename = f"{file_id}_cam.png"
+    heatmap_path = upload_image(
+        result["heatmap_png"],
+        filename=heatmap_filename,
+        content_type="image/png",
+    )
+    if heatmap_path is None:
+        if settings.environment == "production":
+            raise HTTPException(status_code=503, detail="Durable heatmap storage is unavailable.")
+        _UPLOADS_DIR.mkdir(exist_ok=True)
+        heatmap_path = str(_UPLOADS_DIR / heatmap_filename)
+        Path(heatmap_path).write_bytes(result["heatmap_png"])
+
+    heatmap_url = heatmap_path
+    if not heatmap_url.startswith(("http://", "https://")):
+        heatmap_url = str(request.url_for("uploads", path=Path(heatmap_url).name))
 
     evaluation = models.ClinicalEvaluation(
         workspace_id=access.workspace.id,
@@ -190,6 +209,7 @@ async def predict(
         benign_probability=probabilities["benign"],
         malignant_probability=probabilities["malignant"],
         processing_time_ms=processing_time_ms,
+        heatmap_url=heatmap_path,
     ))
     db.add(models.ConsentAttestation(
         evaluation_id=evaluation.id,
@@ -223,6 +243,7 @@ async def predict(
         processing_time_ms=processing_time_ms,
         model_version=_MODEL_VERSION,
         evaluation_id=evaluation.id,
+        heatmap_url=heatmap_url,
         priority=(
             result_dict(priority_result, priority_snapshot.completion_status)
             if priority_result is not None else None

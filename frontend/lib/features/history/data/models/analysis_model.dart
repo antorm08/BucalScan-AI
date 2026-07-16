@@ -8,6 +8,7 @@ class AnalysisModel {
   final double confidence;
   final String timestamp;
   final String? imageUrl;
+  final String? heatmapUrl;
   final String? patientId;
   final String? patientName;
   final String? modelVersion;
@@ -35,6 +36,7 @@ class AnalysisModel {
     required this.confidence,
     required this.timestamp,
     this.imageUrl,
+    this.heatmapUrl,
     this.patientId,
     this.patientName,
     this.modelVersion,
@@ -64,6 +66,7 @@ class AnalysisModel {
       confidence: (json['confidence'] as num).toDouble(),
       timestamp: json['timestamp'] as String,
       imageUrl: json['image_url'] as String?,
+      heatmapUrl: json['heatmap_url'] as String?,
       patientId: json['patient_id'] as String?,
       patientName: json['patient_name'] as String?,
       modelVersion: json['model_version'] as String?,
@@ -97,6 +100,7 @@ class AnalysisModel {
       confidence: confidence,
       timestamp: parsedTimestamp,
       imageUrl: imageUrl,
+      heatmapUrl: heatmapUrl,
       patientId: patientId,
       patientName: patientName,
       modelVersion: modelVersion,

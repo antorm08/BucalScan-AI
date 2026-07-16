@@ -6,6 +6,7 @@ class Analysis {
   final double confidence;
   final DateTime timestamp;
   final String? imageUrl;
+  final String? heatmapUrl;
   final String? patientId;
   final String? patientName;
   final String? modelVersion;
@@ -33,6 +34,7 @@ class Analysis {
     required this.confidence,
     required this.timestamp,
     this.imageUrl,
+    this.heatmapUrl,
     this.patientId,
     this.patientName,
     this.modelVersion,

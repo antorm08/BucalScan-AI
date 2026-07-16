@@ -10,6 +10,7 @@ class PredictionResultModel {
   final double? processingTimeMs;
   final String? modelVersion;
   final String? evaluationId;
+  final String? heatmapUrl;
   final ClinicalPriorityResult? priority;
 
   const PredictionResultModel({
@@ -20,6 +21,7 @@ class PredictionResultModel {
     this.processingTimeMs,
     this.modelVersion,
     this.evaluationId,
+    this.heatmapUrl,
     this.priority,
   });
 
@@ -56,6 +58,7 @@ class PredictionResultModel {
           : null,
       modelVersion: json['model_version']?.toString(),
       evaluationId: json['evaluation_id']?.toString(),
+      heatmapUrl: json['heatmap_url']?.toString(),
       priority: ClinicalPriorityResultModel.fromJson(json['priority']),
     );
   }
@@ -69,6 +72,7 @@ class PredictionResultModel {
       processingTimeMs: processingTimeMs,
       modelVersion: modelVersion,
       evaluationId: evaluationId,
+      heatmapUrl: heatmapUrl,
       priority: priority,
     );
   }

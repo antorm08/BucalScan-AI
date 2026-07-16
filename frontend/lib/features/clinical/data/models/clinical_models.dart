@@ -115,6 +115,7 @@ class LesionDetailModel {
               processingTimeMs: predictionJson['processing_time_ms'] is num
                   ? (predictionJson['processing_time_ms'] as num).toDouble()
                   : null,
+              heatmapUrl: predictionJson['heatmap_url']?.toString(),
               createdAt: _date(predictionJson['created_at'])!,
             ),
       consentAttestedAt: _date(json['consent_attested_at']),

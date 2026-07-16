@@ -186,6 +186,7 @@ class ModelPrediction(Base):
     benign_probability = Column(Float, nullable=False)
     malignant_probability = Column(Float, nullable=False)
     processing_time_ms = Column(Float, nullable=True)
+    heatmap_url = Column(String, nullable=True)
     created_at = Column(DateTime, nullable=False, default=_utcnow_naive)
 
     evaluation = relationship("ClinicalEvaluation", back_populates="prediction")

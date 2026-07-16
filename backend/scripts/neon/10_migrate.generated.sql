@@ -197,5 +197,66 @@ CREATE TEMP TABLE migration_user_workspaces(user_id INTEGER PRIMARY KEY, workspa
 
 UPDATE alembic_version SET version_num='0003_legacy_backfill' WHERE alembic_version.version_num = '0002_clinical_schema';
 
+-- Running upgrade 0003_legacy_backfill -> 0004_clinical_priority
+
+CREATE TABLE clinical_assessment_snapshots (
+    id SERIAL NOT NULL,
+    workspace_id INTEGER NOT NULL,
+    patient_id INTEGER NOT NULL,
+    lesion_id INTEGER NOT NULL,
+    evaluation_id INTEGER NOT NULL,
+    assessor_id INTEGER NOT NULL,
+    schema_version VARCHAR NOT NULL,
+    ruleset_version VARCHAR NOT NULL,
+    canonical_payload JSON NOT NULL,
+    completion_status VARCHAR NOT NULL,
+    assessed_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    PRIMARY KEY (id),
+    CONSTRAINT uq_assessment_evaluation UNIQUE (evaluation_id),
+    FOREIGN KEY(workspace_id) REFERENCES clinical_workspaces (id),
+    FOREIGN KEY(patient_id) REFERENCES patients (id),
+    FOREIGN KEY(lesion_id) REFERENCES oral_lesions (id),
+    FOREIGN KEY(evaluation_id) REFERENCES clinical_evaluations (id) ON DELETE CASCADE,
+    FOREIGN KEY(assessor_id) REFERENCES users (id)
+);
+
+CREATE INDEX ix_assessments_workspace_assessed ON clinical_assessment_snapshots (workspace_id, assessed_at);
+
+CREATE INDEX ix_assessments_lesion ON clinical_assessment_snapshots (lesion_id);
+
+CREATE TABLE clinical_priority_results (
+    id SERIAL NOT NULL,
+    assessment_id INTEGER NOT NULL,
+    workspace_id INTEGER NOT NULL,
+    evaluation_id INTEGER NOT NULL,
+    priority_code VARCHAR NOT NULL,
+    reason_codes JSON NOT NULL,
+    rendered_reasons JSON NOT NULL,
+    ruleset_id VARCHAR NOT NULL,
+    ruleset_version VARCHAR NOT NULL,
+    engine_version VARCHAR NOT NULL,
+    evaluated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    PRIMARY KEY (id),
+    CONSTRAINT uq_priority_assessment UNIQUE (assessment_id),
+    CONSTRAINT uq_priority_evaluation UNIQUE (evaluation_id),
+    FOREIGN KEY(assessment_id) REFERENCES clinical_assessment_snapshots (id) ON DELETE CASCADE,
+    FOREIGN KEY(workspace_id) REFERENCES clinical_workspaces (id),
+    FOREIGN KEY(evaluation_id) REFERENCES clinical_evaluations (id) ON DELETE CASCADE
+);
+
+CREATE INDEX ix_priority_workspace_evaluated ON clinical_priority_results (workspace_id, evaluated_at);
+
+CREATE INDEX ix_priority_code ON clinical_priority_results (priority_code);
+
+UPDATE alembic_version SET version_num='0004_clinical_priority' WHERE alembic_version.version_num = '0003_legacy_backfill';
+
+-- Running upgrade 0004_clinical_priority -> 0005_model_prediction_heatmap
+
+ALTER TABLE model_predictions ADD COLUMN heatmap_url VARCHAR;
+
+UPDATE alembic_version SET version_num='0005_model_prediction_heatmap' WHERE alembic_version.version_num = '0004_clinical_priority';
+
 COMMIT;
 

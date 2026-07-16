@@ -17,6 +17,10 @@ WHERE confidence<0 OR confidence>1 OR benign_probability<0 OR benign_probability
    OR abs((benign_probability+malignant_probability)-1)>0.00001
    OR model_version IS NULL OR created_at IS NULL;
 SELECT COUNT(*) AS missing_image_references FROM lesion_images WHERE storage_url IS NULL OR storage_url='';
+SELECT COUNT(*) AS invalid_heatmap_references FROM model_predictions
+WHERE heatmap_url IS NOT NULL AND btrim(heatmap_url)='';
+SELECT COUNT(*) AS heatmap_column_count FROM information_schema.columns
+WHERE table_schema=current_schema() AND table_name='model_predictions' AND column_name='heatmap_url';
 SELECT a.id, a.prediction, a.confidence, a.timestamp, a.model_version,
        p.predicted_label, p.confidence AS normalized_confidence, p.created_at
 FROM analyses a JOIN clinical_evaluations e ON e.id=a.evaluation_id

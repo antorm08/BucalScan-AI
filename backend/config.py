@@ -64,6 +64,12 @@ class Settings:
             str(BASE_DIR / "models" / "resnet50_oral.onnx"),
         )
     )
+    cam_model_path: str = _resolve_model_path(
+        os.getenv(
+            "CAM_MODEL_PATH",
+            str(BASE_DIR / "models" / "resnet50_oral_cam.onnx"),
+        )
+    )
     model_architecture: str = os.getenv("MODEL_ARCHITECTURE", "ResNet50")
     model_version: str = os.getenv("MODEL_VERSION", Path(model_path).stem)
     image_min_width: int = int(os.getenv("IMAGE_MIN_WIDTH", "224"))

@@ -129,6 +129,9 @@ def lesion_detail(lesion_id: int, request: Request, access: WorkspaceAccess = De
             }
         prediction = None
         if item.prediction:
+            heatmap_url = item.prediction.heatmap_url
+            if heatmap_url and not heatmap_url.startswith(("http://", "https://")):
+                heatmap_url = str(request.url_for("uploads", path=Path(heatmap_url).name))
             prediction = {
                 "id": item.prediction.id,
                 "label": item.prediction.predicted_label,
@@ -139,6 +142,7 @@ def lesion_detail(lesion_id: int, request: Request, access: WorkspaceAccess = De
                 },
                 "model_version": item.prediction.model_version,
                 "processing_time_ms": item.prediction.processing_time_ms,
+                "heatmap_url": heatmap_url,
                 "created_at": item.prediction.created_at,
             }
         evaluations.append({

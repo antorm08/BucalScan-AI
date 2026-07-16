@@ -10,6 +10,7 @@ void main() {
         'recommendation': 'Control periodico.',
         'probabilities': {'benign': 0.88, 'malignant': 0.12},
         'processing_time_ms': 512.3,
+        'heatmap_url': 'https://cdn.example.com/cam.png',
       };
 
       final model = PredictionResultModel.fromJson(json);
@@ -19,6 +20,7 @@ void main() {
       expect(model.recommendation, 'Control periodico.');
       expect(model.probabilities, {'benign': 0.88, 'malignant': 0.12});
       expect(model.processingTimeMs, 512.3);
+      expect(model.heatmapUrl, 'https://cdn.example.com/cam.png');
     });
 
     test('acepta claves alternativas class/score y label/probability', () {
@@ -70,6 +72,7 @@ void main() {
         recommendation: 'Control periodico.',
         probabilities: {'benign': 0.88, 'malignant': 0.12},
         processingTimeMs: 512.3,
+        heatmapUrl: 'https://cdn.example.com/cam.png',
       );
 
       final entity = model.toEntity();
@@ -79,6 +82,7 @@ void main() {
       expect(entity.recommendation, 'Control periodico.');
       expect(entity.probabilities, {'benign': 0.88, 'malignant': 0.12});
       expect(entity.processingTimeMs, 512.3);
+      expect(entity.heatmapUrl, 'https://cdn.example.com/cam.png');
     });
   });
 }

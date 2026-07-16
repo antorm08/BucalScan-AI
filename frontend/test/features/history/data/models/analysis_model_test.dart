@@ -10,6 +10,7 @@ void main() {
         'confidence': 0.87,
         'timestamp': '2026-01-01T09:00:00.000Z',
         'image_url': 'https://cdn.example.com/img.jpg',
+        'heatmap_url': 'https://cdn.example.com/cam.png',
         'patient_id': 'P-001',
         'patient_name': 'Paciente Prueba',
         'model_version': 'resnet50-v2',
@@ -27,6 +28,7 @@ void main() {
       expect(model.confidence, 0.87);
       expect(model.timestamp, '2026-01-01T09:00:00.000Z');
       expect(model.imageUrl, 'https://cdn.example.com/img.jpg');
+      expect(model.heatmapUrl, 'https://cdn.example.com/cam.png');
       expect(model.patientId, 'P-001');
       expect(model.patientName, 'Paciente Prueba');
       expect(model.modelVersion, 'resnet50-v2');
@@ -48,6 +50,7 @@ void main() {
       final model = AnalysisModel.fromJson(json);
 
       expect(model.imageUrl, isNull);
+      expect(model.heatmapUrl, isNull);
       expect(model.patientId, isNull);
       expect(model.processingTimeMs, isNull);
       expect(model.createdById, isNull);
@@ -63,6 +66,7 @@ void main() {
         timestamp: '2026-01-01T09:00:00.000Z',
         patientId: 'P-001',
         patientName: 'Paciente Benigno',
+        heatmapUrl: 'https://cdn.example.com/cam.png',
       );
 
       final entity = model.toEntity();
@@ -73,6 +77,7 @@ void main() {
       expect(entity.timestamp, DateTime.parse('2026-01-01T09:00:00.000Z'));
       expect(entity.patientId, 'P-001');
       expect(entity.patientName, 'Paciente Benigno');
+      expect(entity.heatmapUrl, 'https://cdn.example.com/cam.png');
     });
 
     test('usa la fecha actual cuando el timestamp no es parseable', () {

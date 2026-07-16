@@ -134,6 +134,7 @@ Map<String, dynamic> _detailJson() => {
         'probabilities': {'benign': 0.9, 'malignant': 0.1},
         'model_version': 'resnet50-v1',
         'processing_time_ms': 11,
+        'heatmap_url': 'https://cdn.example.com/cam.png',
         'created_at': '2026-02-02T10:00:01',
       },
       'consent_attested_at': '2026-02-02T10:00:00',
@@ -156,6 +157,10 @@ void main() {
       expect(detail.evaluations.map((item) => item.id), ['10', '20']);
       expect(detail.evaluations.last.clinicalObservations, 'Sin cambios');
       expect(detail.evaluations.last.prediction?.modelVersion, 'resnet50-v1');
+      expect(
+        detail.evaluations.last.prediction?.heatmapUrl,
+        'https://cdn.example.com/cam.png',
+      );
       expect(
         detail.evaluations.last.prediction?.probabilities['malignant'],
         0.1,

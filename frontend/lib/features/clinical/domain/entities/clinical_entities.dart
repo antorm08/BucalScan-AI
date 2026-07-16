@@ -123,6 +123,7 @@ class EvaluationPrediction {
   final Map<String, double> probabilities;
   final String modelVersion;
   final double? processingTimeMs;
+  final String? heatmapUrl;
   final DateTime createdAt;
 
   const EvaluationPrediction({
@@ -133,6 +134,7 @@ class EvaluationPrediction {
     required this.modelVersion,
     required this.createdAt,
     this.processingTimeMs,
+    this.heatmapUrl,
   });
 }
 

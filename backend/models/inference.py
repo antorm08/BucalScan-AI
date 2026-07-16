@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import cv2
 import numpy as np
 try:
     import onnxruntime as ort
@@ -15,7 +16,9 @@ class OralLesionClassifier:
     def __init__(self, model_path: str = None):
         self.model = None
         self.input_name = None
-        self.model_path = Path(model_path or settings.model_path)
+        self.output_name = None
+        self.cam_output_names = None
+        self.model_path = Path(model_path or settings.cam_model_path)
 
         if self.model_path.exists():
             self.load_model(str(self.model_path))
@@ -27,6 +30,11 @@ class OralLesionClassifier:
         self.model_path = Path(model_path)
         self.model = ort.InferenceSession(str(self.model_path), providers=["CPUExecutionProvider"])
         self.input_name = self.model.get_inputs()[0].name
+        outputs = self.model.get_outputs()
+        self.output_name = outputs[0].name
+        output_names = {output.name for output in outputs}
+        if {"cam_activations", "cam_weights"} <= output_names:
+            self.cam_output_names = ("cam_activations", "cam_weights")
 
     def validate_contract(self) -> None:
         if self.model is None:
@@ -43,6 +51,12 @@ class OralLesionClassifier:
         output_shape = tuple(outputs[0].shape)
         if not output_shape or output_shape[-1] not in (1, 2):
             raise RuntimeError("Expected one binary logit or two class logits.")
+        if self.cam_output_names:
+            output_shapes = {output.name: tuple(output.shape) for output in outputs}
+            if output_shapes["cam_activations"][1:] != (2048, 7, 7):
+                raise RuntimeError("Expected CAM activations with shape [batch, 2048, 7, 7].")
+            if output_shapes["cam_weights"] != (1, 2048):
+                raise RuntimeError("Expected CAM classifier weights with shape [1, 2048].")
 
     def _preprocess(self, image: Image.Image) -> np.ndarray:
         """Convert a PIL image to a normalized float32 tensor [1, 3, 224, 224].
@@ -67,16 +81,18 @@ class OralLesionClassifier:
         image_array = np.transpose(image_array, (2, 0, 1))
         return np.expand_dims(image_array, axis=0)
 
-    def predict(self, image: Image.Image) -> dict:
-        if self.model is None or self.input_name is None:
+    def _require_model(self) -> None:
+        if (
+            self.model is None
+            or self.input_name is None
+            or getattr(self, "output_name", None) is None
+        ):
             raise RuntimeError(
-                f"Model file not loaded. Place the ONNX model at {self.model_path} or set MODEL_PATH in backend/.env."
+                f"Model file not loaded. Place the ONNX model at {self.model_path} or set CAM_MODEL_PATH in backend/.env."
             )
 
-        image_tensor = self._preprocess(image)
-        outputs = self.model.run(None, {self.input_name: image_tensor})
-        raw_output = np.asarray(outputs[0], dtype=np.float32).squeeze()
-        values = np.atleast_1d(raw_output)
+    def _prediction_result(self, raw_output: np.ndarray) -> dict:
+        values = np.atleast_1d(np.asarray(raw_output, dtype=np.float32).squeeze())
 
         if values.shape[0] == 1:
             malignant_probability = float(1.0 / (1.0 + np.exp(-values[0])))
@@ -105,3 +121,58 @@ class OralLesionClassifier:
             "confidence": float(confidence),
             "probabilities": probabilities,
         }
+
+    def predict(self, image: Image.Image) -> dict:
+        self._require_model()
+        image_tensor = self._preprocess(image)
+        raw_output = self.model.run(
+            [self.output_name], {self.input_name: image_tensor}
+        )[0]
+        return self._prediction_result(raw_output)
+
+    def predict_with_heatmap(self, image: Image.Image) -> dict:
+        self._require_model()
+        if not self.cam_output_names:
+            raise RuntimeError("The loaded ONNX model does not expose CAM outputs.")
+
+        image_tensor = self._preprocess(image)
+        output_names = [self.output_name, *self.cam_output_names]
+        raw_output, activations, weights = self.model.run(
+            output_names, {self.input_name: image_tensor}
+        )
+        result = self._prediction_result(raw_output)
+        result["heatmap_png"] = self._build_heatmap_png(
+            image,
+            result["prediction"],
+            np.asarray(activations, dtype=np.float32),
+            np.asarray(weights, dtype=np.float32),
+        )
+        return result
+
+    @staticmethod
+    def _build_heatmap_png(
+        image: Image.Image,
+        prediction: str,
+        activations: np.ndarray,
+        weights: np.ndarray,
+    ) -> bytes:
+        class_weights = weights.reshape(-1)
+        if prediction == "benign":
+            class_weights = -class_weights
+        cam = np.tensordot(class_weights, activations[0], axes=(0, 0))
+        cam = np.maximum(cam, 0)
+        maximum = float(cam.max())
+        if maximum > 0:
+            cam = cam / maximum
+
+        width, height = image.size
+        resized = cv2.resize(cam, (width, height), interpolation=cv2.INTER_CUBIC)
+        resized = np.clip(resized, 0, 1)
+        intensity = np.uint8(resized * 255)
+        color = cv2.applyColorMap(intensity, cv2.COLORMAP_JET)
+        alpha = np.uint8(resized * 190)
+        overlay = np.dstack((color, alpha))
+        encoded, buffer = cv2.imencode(".png", overlay)
+        if not encoded:
+            raise RuntimeError("Could not encode CAM heatmap as PNG.")
+        return buffer.tobytes()

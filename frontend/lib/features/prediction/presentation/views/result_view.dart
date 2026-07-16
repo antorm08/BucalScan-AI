@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:bucalscan_ai/core/widgets/heatmap_overlay_image.dart';
 import 'package:bucalscan_ai/core/presentation/localized_status.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
@@ -380,7 +381,10 @@ class _ResultViewState extends ConsumerState<ResultView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _AnalyzedImageCard(imageFile: widget.imageFile),
+            _AnalyzedImageCard(
+              imageFile: widget.imageFile,
+              heatmapUrl: result.heatmapUrl,
+            ),
             const SizedBox(height: 16),
             Card(
               color: color.withValues(alpha: 0.1),
@@ -764,9 +768,14 @@ class _PriorityResultCard extends StatelessWidget {
 
 class _AnalyzedImageCard extends StatelessWidget {
   final File imageFile;
+  final String? heatmapUrl;
   final bool compact;
 
-  const _AnalyzedImageCard({required this.imageFile, this.compact = false});
+  const _AnalyzedImageCard({
+    required this.imageFile,
+    this.heatmapUrl,
+    this.compact = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -781,8 +790,10 @@ class _AnalyzedImageCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Imagen analizada',
+            Text(
+              heatmapUrl == null
+                  ? 'Imagen analizada'
+                  : 'Imagen y mapa de activación CAM',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -790,15 +801,27 @@ class _AnalyzedImageCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.file(
-                imageFile,
-                height: compact ? 120 : 220,
-                width: double.infinity,
-                fit: BoxFit.cover,
+            SizedBox(
+              height: compact ? 120 : 220,
+              width: double.infinity,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: HeatmapOverlayImage(
+                  baseImage: FileImage(imageFile),
+                  heatmapUrl: heatmapUrl,
+                ),
               ),
             ),
+            if (heatmapUrl != null) ...[
+              const SizedBox(height: 8),
+              const Text(
+                'El color resalta regiones que influyeron en la salida; no localiza ni confirma una lesión.',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.onSurfaceVariant,
+                ),
+              ),
+            ],
           ],
         ),
       ),

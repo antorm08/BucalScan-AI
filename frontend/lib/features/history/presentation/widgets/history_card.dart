@@ -1,6 +1,7 @@
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
 import 'package:bucalscan_ai/core/presentation/localized_status.dart';
 import 'package:bucalscan_ai/features/history/domain/entities/analysis.dart';
+import 'package:bucalscan_ai/core/widgets/heatmap_overlay_image.dart';
 import 'package:flutter/material.dart';
 
 class HistoryCard extends StatelessWidget {
@@ -47,6 +48,7 @@ class HistoryCard extends StatelessWidget {
                 child: _HistoryThumbnail(
                   key: Key('historyImage-${analysis.id}'),
                   imageUrl: analysis.imageUrl,
+                  heatmapUrl: analysis.heatmapUrl,
                 ),
               ),
               Expanded(
@@ -154,16 +156,17 @@ class HistoryCard extends StatelessWidget {
 
 class _HistoryThumbnail extends StatelessWidget {
   final String? imageUrl;
+  final String? heatmapUrl;
 
-  const _HistoryThumbnail({super.key, this.imageUrl});
+  const _HistoryThumbnail({super.key, this.imageUrl, this.heatmapUrl});
 
   @override
   Widget build(BuildContext context) {
     if (imageUrl?.trim().isNotEmpty != true) return _fallback();
-    return Image.network(
-      imageUrl!,
-      fit: BoxFit.cover,
-      errorBuilder: (_, _, _) => _fallback(),
+    return HeatmapOverlayImage(
+      baseImage: NetworkImage(imageUrl!),
+      heatmapUrl: heatmapUrl,
+      errorFallback: _fallback(),
     );
   }
 

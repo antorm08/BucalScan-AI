@@ -8,6 +8,7 @@ class PredictionResult {
   final double? processingTimeMs;
   final String? modelVersion;
   final String? evaluationId;
+  final String? heatmapUrl;
   final ClinicalPriorityResult? priority;
 
   const PredictionResult({
@@ -18,6 +19,7 @@ class PredictionResult {
     this.processingTimeMs,
     this.modelVersion,
     this.evaluationId,
+    this.heatmapUrl,
     this.priority,
   });
 }

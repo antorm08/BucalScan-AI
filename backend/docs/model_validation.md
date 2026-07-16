@@ -13,6 +13,12 @@ El sistema utiliza un modelo ONNX configurable para clasificacion binaria de les
 
 El resultado es una herramienta de apoyo clinico y no reemplaza el diagnostico profesional.
 
+## Mapa de activacion CAM
+
+El grafo derivado `resnet50_oral_cam.onnx` conserva exactamente los logits del modelo aprobado y expone la activacion final `2048x7x7` junto con los pesos de su cabeza lineal. El backend combina ambos valores para producir un mapa CAM especifico de la clase elegida en la misma inferencia ONNX. No se carga PyTorch en produccion y no se modifica el archivo ONNX aprobado.
+
+El mapa resalta regiones que influyeron en la salida del clasificador. No es Grad-CAM, segmentacion, localizacion diagnostica ni evidencia de malignidad por si mismo.
+
 ## Entrada Y Salida
 
 | Elemento | Detalle |

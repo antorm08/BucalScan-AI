@@ -34,6 +34,9 @@ def test_migrations_initialize_empty_sqlite(tmp_path):
     tables = set(inspect(create_engine(url)).get_table_names())
     assert {"users", "analyses", "patients", "model_predictions", "clinical_assessment_snapshots", "clinical_priority_results"} <= tables
     inspector = inspect(create_engine(url))
+    assert "heatmap_url" in {
+        column["name"] for column in inspector.get_columns("model_predictions")
+    }
     assert {index["name"] for index in inspector.get_indexes("clinical_priority_results")} >= {
         "ix_priority_code", "ix_priority_workspace_evaluated"
     }
@@ -59,6 +62,9 @@ def test_migrations_preserve_and_backfill_legacy_rows(tmp_path):
         assert connection.execute(text("SELECT COUNT(*) FROM clinical_assessment_snapshots")).scalar_one() == 0
         assert connection.execute(text("SELECT COUNT(*) FROM clinical_priority_results")).scalar_one() == 0
         assert connection.execute(text("SELECT prediction, confidence FROM analyses WHERE id=1")).one() == ("benign", 0.9)
+        assert connection.execute(
+            text("SELECT heatmap_url FROM model_predictions WHERE id=1")
+        ).scalar_one() is None
 
 
 def test_empty_priority_revision_can_downgrade_and_upgrade(tmp_path):
@@ -69,3 +75,19 @@ def test_empty_priority_revision_can_downgrade_and_upgrade(tmp_path):
     assert "clinical_priority_results" not in inspect(create_engine(url)).get_table_names()
     command.upgrade(config, "head")
     assert "clinical_priority_results" in inspect(create_engine(url)).get_table_names()
+
+
+def test_heatmap_revision_can_downgrade_and_upgrade(tmp_path):
+    url = f"sqlite:///{(tmp_path / 'heatmap-rollback.db').as_posix()}"
+    config = _config(url)
+    command.upgrade(config, "head")
+    command.downgrade(config, "0004_clinical_priority")
+    assert "heatmap_url" not in {
+        column["name"]
+        for column in inspect(create_engine(url)).get_columns("model_predictions")
+    }
+    command.upgrade(config, "head")
+    assert "heatmap_url" in {
+        column["name"]
+        for column in inspect(create_engine(url)).get_columns("model_predictions")
+    }

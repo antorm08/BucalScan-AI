@@ -11,6 +11,7 @@ import 'package:bucalscan_ai/features/history/domain/entities/history_query.dart
 import 'package:bucalscan_ai/features/history/presentation/viewmodels/history_viewmodel.dart';
 import 'package:bucalscan_ai/features/history/presentation/widgets/history_card.dart';
 import 'package:flutter/material.dart';
+import 'package:bucalscan_ai/core/widgets/heatmap_overlay_image.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class HistoryTabView extends ConsumerStatefulWidget {
@@ -164,10 +165,10 @@ class _HistoryTabViewState extends ConsumerState<HistoryTabView> {
                 borderRadius: BorderRadius.circular(16),
                 child: AspectRatio(
                   aspectRatio: 4 / 3,
-                  child: Image.network(
-                    analysis.imageUrl!,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => const _HistoryImageFallback(),
+                  child: HeatmapOverlayImage(
+                    baseImage: NetworkImage(analysis.imageUrl!),
+                    heatmapUrl: analysis.heatmapUrl,
+                    errorFallback: const _HistoryImageFallback(),
                   ),
                 ),
               ),

@@ -11,6 +11,7 @@ class PredictionResponse(BaseModel):
     processing_time_ms: Optional[float] = None
     model_version: Optional[str] = None
     evaluation_id: Optional[int] = None
+    heatmap_url: Optional[str] = None
     notice: str = "AI decision support only; this result is not a diagnosis."
     priority: Optional["ClinicalPriorityResponse"] = None
 
@@ -59,6 +60,7 @@ class AnalysisHistory(BaseModel):
     confidence: float
     timestamp: datetime
     image_url: Optional[str] = None
+    heatmap_url: Optional[str] = None
     patient_id: Optional[str] = None
     patient_name: Optional[str] = None
     model_version: Optional[str] = None
@@ -327,6 +329,7 @@ class EvaluationPredictionResponse(BaseModel):
     probabilities: dict[str, float]
     model_version: str
     processing_time_ms: Optional[float] = None
+    heatmap_url: Optional[str] = None
     created_at: datetime
 
 

@@ -35,6 +35,7 @@ Content-Type: multipart/form-data
   "prediction": "benign",
   "confidence": 0.9312,
   "recommendation": "No immediate concern. Regular check-ups recommended.",
+  "heatmap_url": "https://cdn.example.com/analysis_cam.png",
   "processing_time_ms": 124.5,
   "probabilities": {
     "benign": 0.9312,
@@ -48,6 +49,7 @@ Content-Type: multipart/form-data
 | `prediction` | `"benign"` \| `"malignant"` | — | Clase predicha por el modelo |
 | `confidence` | `float` | [0.0, 1.0] | Probabilidad de la clase predicha |
 | `recommendation` | `string` | — | Texto de recomendación clínica |
+| `heatmap_url` | `string` | — | Mapa de activación CAM; es una explicación orientativa, no localización diagnóstica |
 | `processing_time_ms` | `float` | — | Tiempo de inferencia medido por el backend |
 | `probabilities` | `object` | — | Probabilidades por clase |
 | `probabilities.benign` | `float` | [0.0, 1.0] | Probabilidad de lesión benigna |

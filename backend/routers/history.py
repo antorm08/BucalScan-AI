@@ -57,6 +57,7 @@ async def get_history(
         models.Patient,
         models.OralLesion,
         models.User,
+        models.ModelPrediction,
         models.ClinicalPriorityResult,
         models.ClinicalAssessmentSnapshot,
     ).join(
@@ -71,6 +72,9 @@ async def get_history(
     ).join(
         models.User,
         models.User.id == models.ClinicalEvaluation.professional_id,
+    ).outerjoin(
+        models.ModelPrediction,
+        models.ModelPrediction.evaluation_id == models.ClinicalEvaluation.id,
     ).outerjoin(
         models.ClinicalPriorityResult,
         models.ClinicalPriorityResult.evaluation_id == models.ClinicalEvaluation.id,
@@ -148,7 +152,7 @@ async def get_history(
     rows = query.offset((page - 1) * page_size).limit(page_size).all()
 
     serialized = []
-    for analysis, evaluation, patient, lesion, professional, priority_result, snapshot in rows:
+    for analysis, evaluation, patient, lesion, professional, prediction, priority_result, snapshot in rows:
         image_url = None
         if analysis.image_path:
             if analysis.image_path.startswith(("http://", "https://")):
@@ -156,6 +160,13 @@ async def get_history(
             else:
                 filename = Path(analysis.image_path).name
                 image_url = str(request.url_for("uploads", path=filename))
+        heatmap_url = None
+        if prediction and prediction.heatmap_url:
+            if prediction.heatmap_url.startswith(("http://", "https://")):
+                heatmap_url = prediction.heatmap_url
+            else:
+                filename = Path(prediction.heatmap_url).name
+                heatmap_url = str(request.url_for("uploads", path=filename))
 
         serialized.append(
             {
@@ -164,6 +175,7 @@ async def get_history(
                 "confidence": analysis.confidence,
                 "timestamp": _as_utc(analysis.timestamp),
                 "image_url": image_url,
+                "heatmap_url": heatmap_url,
                 "patient_id": analysis.patient_id,
                 "patient_name": analysis.patient_name,
                 "model_version": analysis.model_version,

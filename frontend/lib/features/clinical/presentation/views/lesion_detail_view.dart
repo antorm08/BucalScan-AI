@@ -3,6 +3,7 @@ import 'package:bucalscan_ai/core/presentation/localized_status.dart';
 import 'package:bucalscan_ai/features/clinical/domain/entities/clinical_entities.dart';
 import 'package:bucalscan_ai/features/clinical/presentation/viewmodels/patient_follow_up_controller.dart';
 import 'package:flutter/material.dart';
+import 'package:bucalscan_ai/core/widgets/heatmap_overlay_image.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class LesionDetailView extends ConsumerStatefulWidget {
@@ -252,16 +253,17 @@ class _EvaluationCard extends StatelessWidget {
             ),
             if (evaluation.image != null) ...[
               const SizedBox(height: 12),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  evaluation.image!.url,
-                  height: 180,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => const SizedBox(
-                    height: 90,
-                    child: Center(child: Icon(Icons.broken_image_outlined)),
+              SizedBox(
+                height: 180,
+                width: double.infinity,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: HeatmapOverlayImage(
+                    baseImage: NetworkImage(evaluation.image!.url),
+                    heatmapUrl: prediction?.heatmapUrl,
+                    errorFallback: const Center(
+                      child: Icon(Icons.broken_image_outlined),
+                    ),
                   ),
                 ),
               ),

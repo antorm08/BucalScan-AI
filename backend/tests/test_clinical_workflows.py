@@ -157,9 +157,10 @@ def test_multiple_lesions_and_repeated_evaluations(client, db_session, monkeypat
     assert lesion_one.status_code == lesion_two.status_code == 201
     assert len(client.get(f"/api/v1/patients/{patient['id']}/lesions", headers=headers).json()) == 2
 
-    monkeypatch.setattr("routers.predict.classifier.predict", lambda image: {
+    monkeypatch.setattr("routers.predict.classifier.predict_with_heatmap", lambda image: {
         "prediction": "benign", "confidence": 0.8,
         "probabilities": {"benign": 0.8, "malignant": 0.2},
+        "heatmap_png": b"heatmap",
     })
     monkeypatch.setattr("routers.predict.upload_image", lambda *args, **kwargs: "https://images.example.test/test.png")
     form = {
@@ -172,6 +173,7 @@ def test_multiple_lesions_and_repeated_evaluations(client, db_session, monkeypat
     first = client.post("/api/v1/predict", headers=headers, data=form, files=files)
     second = client.post("/api/v1/predict", headers=headers, data=form, files=files)
     assert first.status_code == second.status_code == 200
+    assert first.json()["heatmap_url"] == "https://images.example.test/test.png"
     evaluations = db_session.query(models.ClinicalEvaluation).order_by(models.ClinicalEvaluation.id).all()
     evaluations[0].evaluated_at = datetime(2026, 1, 3, 10, 0)
     evaluations[1].evaluated_at = datetime(2026, 1, 2, 10, 0)
@@ -190,18 +192,26 @@ def test_multiple_lesions_and_repeated_evaluations(client, db_session, monkeypat
         "label": "benign",
         "confidence": 0.8,
         "probabilities": {"benign": 0.8, "malignant": 0.2},
-        "model_version": item["prediction"]["model_version"],
-        "processing_time_ms": item["prediction"]["processing_time_ms"],
-        "created_at": item["prediction"]["created_at"],
+            "model_version": item["prediction"]["model_version"],
+            "processing_time_ms": item["prediction"]["processing_time_ms"],
+            "heatmap_url": "https://images.example.test/test.png",
+            "created_at": item["prediction"]["created_at"],
     }
     assert item["consent_attested_at"] is not None
     assert db_session.query(models.ModelPrediction).count() == 2
+    assert all(
+        prediction.heatmap_url == "https://images.example.test/test.png"
+        for prediction in db_session.query(models.ModelPrediction).all()
+    )
     assert db_session.query(models.ConsentAttestation).count() == 2
 
     history = client.get("/api/v1/history", headers=headers).json()["items"]
     assert {entry["evaluation_id"] for entry in history} == {value.id for value in evaluations}
     assert {entry["patient_record_id"] for entry in history} == {patient["id"]}
     assert {entry["lesion_id"] for entry in history} == {lesion_one.json()["id"]}
+    assert {entry["heatmap_url"] for entry in history} == {
+        "https://images.example.test/test.png"
+    }
 
 
 def test_active_prediction_ignores_legacy_patient_name_and_writes_canonical_history(client, db_session, monkeypatch):
@@ -216,9 +226,10 @@ def test_active_prediction_ignores_legacy_patient_name_and_writes_canonical_hist
         f"/api/v1/patients/{patient['id']}/lesions", headers=headers,
         json={"anatomical_site": "tongue", "observed_at": "2026-07-13"},
     ).json()
-    monkeypatch.setattr("routers.predict.classifier.predict", lambda image: {
+    monkeypatch.setattr("routers.predict.classifier.predict_with_heatmap", lambda image: {
         "prediction": "benign", "confidence": 0.8,
         "probabilities": {"benign": 0.8, "malignant": 0.2},
+        "heatmap_png": b"heatmap",
     })
     monkeypatch.setattr("routers.predict.upload_image", lambda *args, **kwargs: "https://images.example.test/active.png")
 

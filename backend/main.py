@@ -78,7 +78,25 @@ def _check_readiness() -> None:
         }
         if tables != {"clinical_assessment_snapshots", "clinical_priority_results"}:
             raise RuntimeError("Database schema is not at the required revision")
+        heatmap_columns = {
+            row[0]
+            for row in db.execute(
+                text(
+                    "SELECT column_name FROM information_schema.columns "
+                    "WHERE table_schema = current_schema() "
+                    "AND table_name = 'model_predictions' "
+                    "AND column_name = 'heatmap_url'"
+                )
+            )
+        } if db.get_bind().dialect.name == "postgresql" else {
+            row[1]
+            for row in db.execute(text("PRAGMA table_info(model_predictions)"))
+        }
+        if "heatmap_url" not in heatmap_columns:
+            raise RuntimeError("Database schema is missing model prediction heatmaps")
     classifier.validate_contract()
+    if not classifier.cam_output_names:
+        raise RuntimeError("The configured model does not expose CAM outputs")
 
 
 @app.get("/ready")

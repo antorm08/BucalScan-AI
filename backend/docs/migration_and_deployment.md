@@ -4,7 +4,7 @@
 
 1. Back up the target PostgreSQL database and run `scripts/neon/00_baseline.sql` read-only.
 2. Install pinned dependencies and validate `alembic upgrade head` plus downgrade on disposable SQLite and PostgreSQL databases.
-3. Set `DATABASE_URL` to a non-secret, dialect-only PostgreSQL URL and run `alembic upgrade head --sql > scripts/neon/10_migrate.generated.sql`. Offline mode does not connect. Review the transaction-wrapped output through the current head revision, including `0004_clinical_priority`, and store it without credentials.
+3. Set `DATABASE_URL` to a non-secret, dialect-only PostgreSQL URL and run `alembic upgrade head --sql > scripts/neon/10_migrate.generated.sql`. Offline mode does not connect. Review the transaction-wrapped output through the current head revision, including `0005_model_prediction_heatmap`, and store it without credentials.
 4. The project owner manually executes the reviewed SQL in Neon. The application never runs migrations at startup.
 5. Run `scripts/neon/20_verify.sql`. User and analysis counts must equal the recorded baseline, normalized prediction/evaluation counts must equal analysis count, and all orphan/invalid queries must return zero.
 6. Deploy only after verification. Before cutover, `scripts/neon/30_rollback.sql` or Alembic downgrade can remove normalized structures while preserving legacy `users` and `analyses`. After normalized writes begin, use a forward fix rather than rollback.
@@ -19,8 +19,8 @@ This academic phase provides decision support, not diagnosis. It does not includ
 
 ## Render and local use
 
-Production requires `ENVIRONMENT=production`, a PostgreSQL `DATABASE_URL`, complete Cloudinary credentials, the approved ResNet50 files, and a strong `JWT_SECRET`. Build with `pip install -r requirements.txt`, migrate manually before deployment, and start with `uvicorn main:app --host 0.0.0.0 --port $PORT`. Configure the liveness probe as `/live` and readiness as `/ready`.
+Production requires `ENVIRONMENT=production`, a PostgreSQL `DATABASE_URL`, complete Cloudinary credentials, the approved ResNet50 data file, the derived CAM graph configured by `CAM_MODEL_PATH`, and a strong `JWT_SECRET`. Build with `pip install -r requirements.txt`, migrate manually before deployment, and start with `uvicorn main:app --host 0.0.0.0 --port $PORT`. Configure the liveness probe as `/live` and readiness as `/ready`.
 
-For revision `0004_clinical_priority`, run `alembic current`, then `alembic upgrade head`, and confirm that `alembic current` reports `0004_clinical_priority (head)`. Until both priority tables exist, `/ready` returns `503` and history or lesion-detail requests from the matching application release must not be served.
+For revision `0005_model_prediction_heatmap`, run `alembic current`, then `alembic upgrade head`, and confirm that `alembic current` reports `0005_model_prediction_heatmap (head)`. Until both priority tables and `model_predictions.heatmap_url` exist, `/ready` returns `503` and matching application requests must not be served.
 
 Local development uses `ENVIRONMENT=development` and SQLite. Initialize it with `alembic upgrade head`; tests may use isolated `Base.metadata.create_all()` databases. Filesystem image fallback is development-only.
