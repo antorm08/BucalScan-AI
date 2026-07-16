@@ -10,6 +10,7 @@ import 'package:bucalscan_ai/features/auth/domain/entities/auth_session.dart';
 import 'package:bucalscan_ai/features/auth/domain/entities/auth_user.dart';
 import 'package:bucalscan_ai/features/auth/domain/repositories/auth_repository.dart';
 import 'package:bucalscan_ai/features/auth/presentation/viewmodels/auth_viewmodel.dart';
+import 'package:bucalscan_ai/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -29,6 +30,27 @@ const _requester = AdminRequester(
   doctorId: 'DOC-2',
   profession: 'Odontóloga',
   specialty: 'Patología oral',
+);
+
+const _managedUser = AdminUser(
+  id: 10,
+  fullName: 'Dr. Usuario Activo',
+  doctorId: 'DOC-10',
+  email: 'usuario@example.org',
+  status: 'active',
+  role: 'professional',
+  profession: 'Odontólogo',
+  specialty: 'Medicina oral',
+  memberships: [
+    AdminUserMembership(
+      id: 7,
+      workspaceId: 1,
+      workspaceName: 'Centro Norte',
+      workspaceType: 'clinic',
+      role: 'professional',
+      status: 'active',
+    ),
+  ],
 );
 
 class _AuthRepository implements AuthRepository {
@@ -90,7 +112,7 @@ class _Repository implements AdminRepository {
   @override
   Future<AdminPage<AdminUser>> getUsersPage(AdminQuery query) async =>
       const AdminPage(
-        items: [],
+        items: [_managedUser],
         page: 1,
         pageSize: 25,
         total: 0,
@@ -108,7 +130,10 @@ class _Repository implements AdminRepository {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-Future<ProviderContainer> _pump(WidgetTester tester) async {
+Future<ProviderContainer> _pump(
+  WidgetTester tester, {
+  double textScale = 1,
+}) async {
   final container = ProviderContainer(
     overrides: [
       authRepositoryProvider.overrideWithValue(_AuthRepository()),
@@ -121,7 +146,13 @@ Future<ProviderContainer> _pump(WidgetTester tester) async {
   await tester.pumpWidget(
     UncontrolledProviderScope(
       container: container,
-      child: const MaterialApp(home: AdminUsersView()),
+      child: MaterialApp(
+        theme: AppTheme.light,
+        home: MediaQuery(
+          data: MediaQueryData(textScaler: TextScaler.linear(textScale)),
+          child: const AdminUsersView(),
+        ),
+      ),
     ),
   );
   await tester.pumpAndSettle();
@@ -179,17 +210,25 @@ void main() {
     await tester.tap(find.text('Centro Norte').first);
     await tester.pumpAndSettle();
 
-    expect(find.byType(DraggableScrollableSheet), findsOneWidget);
+    expect(find.byKey(const Key('adminDetailScroll')), findsOneWidget);
+    expect(find.byKey(const Key('adminDetailActionFooter')), findsOneWidget);
+    expect(find.byKey(const Key('rejectAdminAction')), findsOneWidget);
+    expect(find.text('Aprobar'), findsOneWidget);
+    final footerTop = tester
+        .getTopLeft(find.byKey(const Key('adminDetailActionFooter')))
+        .dy;
     expect(find.text('Av. Central 123'), findsOneWidget);
     expect(find.text('Dra. Solicitante'), findsOneWidget);
     await tester.drag(
-      find.byType(CustomScrollView).last,
-      const Offset(0, -600),
+      find.byKey(const Key('adminDetailScroll')),
+      const Offset(0, -700),
     );
     await tester.pumpAndSettle();
     expect(find.textContaining('No verifica identidad'), findsOneWidget);
-    expect(find.byKey(const Key('rejectAdminAction')), findsOneWidget);
-    expect(find.text('Aprobar'), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.byKey(const Key('adminDetailActionFooter'))).dy,
+      footerTop,
+    );
   });
 
   testWidgets(
@@ -207,11 +246,78 @@ void main() {
       expect(find.text('Odontóloga'), findsOneWidget);
       expect(find.text('Patología oral'), findsOneWidget);
       await tester.drag(
-        find.byType(CustomScrollView).last,
-        const Offset(0, -500),
+        find.byKey(const Key('adminDetailScroll')),
+        const Offset(0, -700),
       );
       await tester.pumpAndSettle();
       expect(find.textContaining('competencia clínica'), findsOneWidget);
     },
   );
+
+  testWidgets('admin header and resource cards expose visual hierarchy', (
+    tester,
+  ) async {
+    final container = await _pump(tester);
+    addTearDown(container.dispose);
+
+    expect(
+      tester.widget<Text>(find.text('Administración')).style?.color,
+      Colors.white,
+    );
+    expect(find.text('Gestión de centros'), findsOneWidget);
+    expect(find.text('CENTRO CLÍNICO'), findsOneWidget);
+    expect(find.text('Clínica'), findsOneWidget);
+    expect(find.text('Quito'), findsOneWidget);
+
+    await tester.tap(find.text('Usuarios').last);
+    await tester.pumpAndSettle();
+    expect(find.text('Gestión de usuarios'), findsOneWidget);
+    expect(find.text('PROFESIONAL'), findsOneWidget);
+    expect(find.text('Odontólogo · Medicina oral'), findsOneWidget);
+    expect(find.text('usuario@example.org'), findsOneWidget);
+  });
+
+  testWidgets('user detail keeps its account action visible', (tester) async {
+    final container = await _pump(tester);
+    addTearDown(container.dispose);
+
+    await tester.tap(find.text('Usuarios').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Dr. Usuario Activo'));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('adminDetailActionFooter')), findsOneWidget);
+    expect(find.text('Suspender cuenta'), findsOneWidget);
+    expect(find.text('Cuenta y perfil'), findsOneWidget);
+    expect(find.text('Membresía · Centro Norte'), findsOneWidget);
+  });
+
+  testWidgets('admin hierarchy remains usable on narrow large-text screens', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 760);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final container = await _pump(tester, textScale: 1.6);
+    addTearDown(container.dispose);
+
+    expect(find.text('Gestión de centros'), findsOneWidget);
+    final listScrollable = find
+        .descendant(
+          of: find.byType(ListView).first,
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    final listPosition = tester.state<ScrollableState>(listScrollable).position;
+    listPosition.jumpTo(listPosition.maxScrollExtent);
+    await tester.pumpAndSettle();
+    await tester.tapAt(const Offset(160, 620));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('adminDetailActionFooter')), findsOneWidget);
+    expect(find.byKey(const Key('rejectAdminAction')), findsOneWidget);
+    expect(find.text('Aprobar'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }

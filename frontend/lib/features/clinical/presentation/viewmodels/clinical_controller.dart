@@ -118,6 +118,14 @@ class ClinicalController extends Notifier<ClinicalState> {
     );
   }
 
+  void clearLesionSelection() {
+    state = ClinicalState(
+      workspaces: state.workspaces,
+      activeWorkspace: state.activeWorkspace,
+      patient: state.patient,
+    );
+  }
+
   void clearPatientSelection() {
     state = ClinicalState(
       workspaces: state.workspaces,

@@ -114,9 +114,7 @@ class _PatientsViewState extends ConsumerState<PatientsView> {
                         child: Icon(Icons.person_outline),
                       ),
                       title: Text(patient.fullName),
-                      subtitle: Text(
-                        '${patient.clinicalCode}${patient.identityDocument == null ? '' : ' · ${patient.identityDocument}'}',
-                      ),
+                      subtitle: _PatientIdentifiers(patient: patient),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () => _open(patient),
                     ),
@@ -128,6 +126,73 @@ class _PatientsViewState extends ConsumerState<PatientsView> {
       ),
     );
   }
+}
+
+class _PatientIdentifiers extends StatelessWidget {
+  final Patient patient;
+
+  const _PatientIdentifiers({required this.patient});
+
+  @override
+  Widget build(BuildContext context) {
+    final document = patient.identityDocument?.trim();
+    return Padding(
+      padding: const EdgeInsets.only(top: 5),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 6,
+        children: [
+          _IdentifierChip(
+            icon: Icons.badge_outlined,
+            label: 'Código clínico',
+            value: patient.clinicalCode,
+          ),
+          if (document?.isNotEmpty == true)
+            _IdentifierChip(
+              icon: Icons.credit_card_outlined,
+              label: 'Documento',
+              value: document!,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _IdentifierChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _IdentifierChip({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+    decoration: BoxDecoration(
+      color: AppColors.surfaceContainerLow,
+      borderRadius: BorderRadius.circular(8),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 14, color: AppColors.onSurfaceVariant),
+        const SizedBox(width: 5),
+        Text(
+          '$label: $value',
+          style: const TextStyle(
+            fontSize: 12,
+            color: AppColors.onSurfaceVariant,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 class _Message extends StatelessWidget {

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
+import 'package:bucalscan_ai/core/widgets/responsive_content.dart';
 import 'package:bucalscan_ai/features/admin/di/admin_providers.dart';
 import 'package:bucalscan_ai/features/admin/domain/entities/admin_query.dart';
 import 'package:bucalscan_ai/features/admin/domain/entities/admin_request.dart';
@@ -23,6 +24,10 @@ class AdminCentersView extends ConsumerWidget {
     final state = ref.watch(adminCentersControllerProvider);
     return _AdminList<AdminWorkspaceRequest>(
       storageKey: 'admin-centers-list',
+      title: 'Gestión de centros',
+      description:
+          'Revisa solicitudes, datos institucionales y estado de cada centro.',
+      icon: Icons.domain_outlined,
       state: state,
       searchHint: 'Buscar centro, ciudad, ID o solicitante',
       statuses: const ['pending', 'active', 'rejected'],
@@ -43,9 +48,10 @@ class AdminCentersView extends ConsumerWidget {
       onLoadMore: ref.read(adminCentersControllerProvider.notifier).loadMore,
       card: (item) => _ResourceCard(
         icon: Icons.domain_outlined,
+        eyebrow: 'Centro clínico',
         title: item.name,
-        subtitle:
-            '${_workspaceType(item.workspaceType)} · ${item.city ?? 'Ciudad no indicada'}',
+        primaryDetail: _workspaceType(item.workspaceType),
+        secondaryDetail: item.city ?? 'Ciudad no indicada',
         status: item.status,
         onTap: () => _showAdminSheet(context, _CenterDetail(item: item)),
       ),
@@ -61,6 +67,9 @@ class AdminAccessView extends ConsumerWidget {
     final state = ref.watch(adminAccessControllerProvider);
     return _AdminList<AdminMembershipRequest>(
       storageKey: 'admin-access-list',
+      title: 'Solicitudes de acceso',
+      description: 'Evalúa quién solicita acceso, a qué centro y con qué rol.',
+      icon: Icons.badge_outlined,
       state: state,
       searchHint: 'Buscar profesional, correo, ID o centro',
       statuses: const ['pending', 'active', 'rejected', 'inactive'],
@@ -83,8 +92,10 @@ class AdminAccessView extends ConsumerWidget {
       onLoadMore: ref.read(adminAccessControllerProvider.notifier).loadMore,
       card: (item) => _ResourceCard(
         icon: Icons.badge_outlined,
+        eyebrow: 'Profesional solicitante',
         title: item.requester.fullName,
-        subtitle: '${item.workspaceName} · ${_role(item.role)}',
+        primaryDetail: item.workspaceName,
+        secondaryDetail: '${_role(item.role)} · ${item.requester.email}',
         status: item.status,
         warning: item.requester.isSuspended ? 'Solicitante suspendido' : null,
         onTap: () => _showAdminSheet(context, _AccessDetail(item: item)),
@@ -101,6 +112,10 @@ class AdminUsersDestinationView extends ConsumerWidget {
     final state = ref.watch(adminUsersPageControllerProvider);
     return _AdminList<AdminUser>(
       storageKey: 'admin-users-list',
+      title: 'Gestión de usuarios',
+      description:
+          'Consulta perfiles, roles, membresías y estado de las cuentas.',
+      icon: Icons.people_outline,
       state: state,
       searchHint: 'Buscar nombre, correo, ID o profesión',
       statuses: const ['pending', 'active', 'suspended'],
@@ -115,8 +130,13 @@ class AdminUsersDestinationView extends ConsumerWidget {
       onLoadMore: ref.read(adminUsersPageControllerProvider.notifier).loadMore,
       card: (user) => _ResourceCard(
         icon: user.isAdmin ? Icons.shield_outlined : Icons.person_outline,
+        eyebrow: _role(user.role),
         title: user.fullName,
-        subtitle: '${_role(user.role)} · ${user.email}',
+        primaryDetail: [
+          user.profession,
+          user.specialty,
+        ].whereType<String>().where((value) => value.isNotEmpty).join(' · '),
+        secondaryDetail: user.email,
         status: user.status,
         onTap: () => _showAdminSheet(context, _UserDetail(user: user)),
       ),
@@ -126,6 +146,9 @@ class AdminUsersDestinationView extends ConsumerWidget {
 
 class _AdminList<T> extends StatefulWidget {
   final String storageKey;
+  final String title;
+  final String description;
+  final IconData icon;
   final AdminListState<T> state;
   final String searchHint;
   final List<String> statuses;
@@ -139,6 +162,9 @@ class _AdminList<T> extends StatefulWidget {
 
   const _AdminList({
     required this.storageKey,
+    required this.title,
+    required this.description,
+    required this.icon,
     required this.state,
     required this.searchHint,
     this.statuses = const [],
@@ -184,135 +210,168 @@ class _AdminListState<T> extends State<_AdminList<T>> {
   @override
   Widget build(BuildContext context) {
     final state = widget.state;
-    return Column(
-      children: [
-        Material(
-          color: AppColors.surfaceContainerLowest,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-            child: Column(
-              children: [
-                TextField(
-                  controller: _search,
-                  onChanged: _searchChanged,
-                  textInputAction: TextInputAction.search,
-                  decoration: InputDecoration(
-                    hintText: widget.searchHint,
-                    prefixIcon: const Icon(Icons.search),
-                    suffixIcon: _search.text.isEmpty
-                        ? null
-                        : IconButton(
-                            tooltip: 'Limpiar búsqueda',
-                            onPressed: () {
-                              _search.clear();
-                              widget.onQuery(state.query.copyWith(search: ''));
-                              setState(() {});
-                            },
-                            icon: const Icon(Icons.close),
-                          ),
-                    border: const OutlineInputBorder(),
-                    isDense: true,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
+    return ResponsiveContent(
+      maxWidth: 960,
+      child: Column(
+        children: [
+          Material(
+            color: AppColors.surfaceContainerLowest,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _FilterMenu(
-                        label: 'Estado',
-                        value: state.query.status,
-                        values: widget.statuses,
-                        labelFor: _status,
-                        onChanged: (value) => widget.onQuery(
-                          state.query.copyWith(
-                            status: value,
-                            clearStatus: value == null,
-                          ),
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryFixed,
+                          borderRadius: BorderRadius.circular(12),
                         ),
+                        child: Icon(widget.icon, color: AppColors.primary),
                       ),
-                      if (widget.types.isNotEmpty) ...[
-                        const SizedBox(width: 8),
-                        _FilterMenu(
-                          label: 'Tipo',
-                          value: state.query.type,
-                          values: widget.types,
-                          labelFor: _workspaceType,
-                          onChanged: (value) => widget.onQuery(
-                            state.query.copyWith(
-                              type: value,
-                              clearType: value == null,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.title,
+                              style: Theme.of(context).textTheme.titleLarge,
                             ),
-                          ),
-                        ),
-                      ],
-                      if (widget.roles.isNotEmpty) ...[
-                        const SizedBox(width: 8),
-                        _FilterMenu(
-                          label: 'Rol',
-                          value: state.query.role,
-                          values: widget.roles,
-                          labelFor: _role,
-                          onChanged: (value) => widget.onQuery(
-                            state.query.copyWith(
-                              role: value,
-                              clearRole: value == null,
+                            const SizedBox(height: 3),
+                            Text(
+                              widget.description,
+                              style: Theme.of(context).textTheme.bodySmall,
                             ),
-                          ),
-                        ),
-                      ],
-                      const SizedBox(width: 8),
-                      PopupMenuButton<String>(
-                        tooltip: 'Ordenar resultados',
-                        onSelected: (value) {
-                          final parts = value.split(':');
-                          widget.onQuery(
-                            state.query.copyWith(
-                              sortBy: parts.first,
-                              sortDirection: parts.last,
-                            ),
-                          );
-                        },
-                        itemBuilder: (_) => widget.sorts.entries
-                            .map(
-                              (entry) => PopupMenuItem(
-                                value: entry.key,
-                                child: Text(entry.value),
+                            const SizedBox(height: 6),
+                            Text(
+                              '${state.total} ${state.total == 1 ? 'registro' : 'registros'}',
+                              style: const TextStyle(
+                                color: AppColors.primary,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
                               ),
-                            )
-                            .toList(),
-                        child: _ControlChip(
-                          icon: Icons.sort,
-                          label:
-                              widget
-                                  .sorts['${state.query.sortBy}:${state.query.sortDirection}'] ??
-                              'Ordenar',
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                ),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 7),
-                    child: Text(
-                      '${state.total} resultados',
-                      style: const TextStyle(
-                        color: AppColors.onSurfaceVariant,
-                        fontSize: 12,
-                      ),
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: _search,
+                    onChanged: _searchChanged,
+                    textInputAction: TextInputAction.search,
+                    decoration: InputDecoration(
+                      hintText: widget.searchHint,
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: _search.text.isEmpty
+                          ? null
+                          : IconButton(
+                              tooltip: 'Limpiar búsqueda',
+                              onPressed: () {
+                                _search.clear();
+                                widget.onQuery(
+                                  state.query.copyWith(search: ''),
+                                );
+                                setState(() {});
+                              },
+                              icon: const Icon(Icons.close),
+                            ),
+                      border: const OutlineInputBorder(),
+                      isDense: true,
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 8),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _FilterMenu(
+                          label: 'Estado',
+                          value: state.query.status,
+                          values: widget.statuses,
+                          labelFor: _status,
+                          onChanged: (value) => widget.onQuery(
+                            state.query.copyWith(
+                              status: value,
+                              clearStatus: value == null,
+                            ),
+                          ),
+                        ),
+                        if (widget.types.isNotEmpty) ...[
+                          const SizedBox(width: 8),
+                          _FilterMenu(
+                            label: 'Tipo',
+                            value: state.query.type,
+                            values: widget.types,
+                            labelFor: _workspaceType,
+                            onChanged: (value) => widget.onQuery(
+                              state.query.copyWith(
+                                type: value,
+                                clearType: value == null,
+                              ),
+                            ),
+                          ),
+                        ],
+                        if (widget.roles.isNotEmpty) ...[
+                          const SizedBox(width: 8),
+                          _FilterMenu(
+                            label: 'Rol',
+                            value: state.query.role,
+                            values: widget.roles,
+                            labelFor: _role,
+                            onChanged: (value) => widget.onQuery(
+                              state.query.copyWith(
+                                role: value,
+                                clearRole: value == null,
+                              ),
+                            ),
+                          ),
+                        ],
+                        const SizedBox(width: 8),
+                        PopupMenuButton<String>(
+                          tooltip: 'Ordenar resultados',
+                          onSelected: (value) {
+                            final parts = value.split(':');
+                            widget.onQuery(
+                              state.query.copyWith(
+                                sortBy: parts.first,
+                                sortDirection: parts.last,
+                              ),
+                            );
+                          },
+                          itemBuilder: (_) => widget.sorts.entries
+                              .map(
+                                (entry) => PopupMenuItem(
+                                  value: entry.key,
+                                  child: Text(entry.value),
+                                ),
+                              )
+                              .toList(),
+                          child: _ControlChip(
+                            icon: Icons.sort,
+                            label:
+                                widget
+                                    .sorts['${state.query.sortBy}:${state.query.sortDirection}'] ??
+                                'Ordenar',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-        if (state.loading && state.items.isNotEmpty)
-          const LinearProgressIndicator(minHeight: 2),
-        Expanded(child: _body(state)),
-      ],
+          if (state.loading && state.items.isNotEmpty)
+            const LinearProgressIndicator(minHeight: 2),
+          Expanded(child: _body(state)),
+        ],
+      ),
     );
   }
 
@@ -430,7 +489,7 @@ class _ControlChip extends StatelessWidget {
     padding: const EdgeInsets.symmetric(horizontal: 12),
     decoration: BoxDecoration(
       color: active ? AppColors.primaryFixed : AppColors.surfaceContainerLow,
-      border: Border.all(color: AppColors.outlineVariant),
+      border: Border.all(color: AppColors.outline),
       borderRadius: BorderRadius.circular(12),
     ),
     child: Row(
@@ -448,16 +507,20 @@ class _ControlChip extends StatelessWidget {
 
 class _ResourceCard extends StatelessWidget {
   final IconData icon;
+  final String eyebrow;
   final String title;
-  final String subtitle;
+  final String primaryDetail;
+  final String? secondaryDetail;
   final String status;
   final String? warning;
   final VoidCallback onTap;
 
   const _ResourceCard({
     required this.icon,
+    required this.eyebrow,
     required this.title,
-    required this.subtitle,
+    required this.primaryDetail,
+    this.secondaryDetail,
     required this.status,
     this.warning,
     required this.onTap,
@@ -465,67 +528,146 @@ class _ResourceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Card(
-    margin: const EdgeInsets.only(bottom: 9),
+    margin: const EdgeInsets.only(bottom: 12),
     elevation: 0,
     color: AppColors.surfaceContainerLowest,
     shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(14),
-      side: const BorderSide(color: AppColors.outlineVariant),
+      borderRadius: BorderRadius.circular(16),
+      side: const BorderSide(color: AppColors.outline),
     ),
     clipBehavior: Clip.antiAlias,
     child: InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(16),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            CircleAvatar(
-              backgroundColor: AppColors.primaryFixed,
-              foregroundColor: AppColors.primary,
-              child: Icon(icon),
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                color: AppColors.primaryFixed,
+                borderRadius: BorderRadius.circular(13),
+              ),
+              alignment: Alignment.center,
+              child: Icon(icon, color: AppColors.primary),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                    eyebrow.toUpperCase(),
                     style: const TextStyle(
-                      color: AppColors.onSurfaceVariant,
-                      fontSize: 12,
+                      color: AppColors.primary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.7,
                     ),
                   ),
+                  const SizedBox(height: 4),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      const Icon(
+                        Icons.chevron_right,
+                        color: AppColors.onSurfaceVariant,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  _StatusBadge(status),
+                  const SizedBox(height: 10),
+                  _MetadataLine(
+                    icon: Icons.info_outline,
+                    text: primaryDetail.trim().isEmpty
+                        ? 'Información no declarada'
+                        : primaryDetail,
+                  ),
+                  if (secondaryDetail?.trim().isNotEmpty == true) ...[
+                    const SizedBox(height: 6),
+                    _MetadataLine(
+                      icon: Icons.subdirectory_arrow_right,
+                      text: secondaryDetail!,
+                    ),
+                  ],
                   if (warning != null) ...[
-                    const SizedBox(height: 5),
-                    Text(
-                      warning!,
-                      style: const TextStyle(
-                        color: AppColors.error,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 7,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.errorContainer,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.warning_amber_rounded,
+                            size: 16,
+                            color: AppColors.error,
+                          ),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              warning!,
+                              style: const TextStyle(
+                                color: AppColors.onErrorContainer,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ],
               ),
             ),
-            const SizedBox(width: 8),
-            _StatusBadge(status),
-            const Icon(Icons.chevron_right),
           ],
         ),
       ),
     ),
+  );
+}
+
+class _MetadataLine extends StatelessWidget {
+  final IconData icon;
+  final String text;
+
+  const _MetadataLine({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) => Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Icon(icon, size: 16, color: AppColors.onSurfaceVariant),
+      const SizedBox(width: 7),
+      Expanded(
+        child: Text(
+          text,
+          style: const TextStyle(
+            color: AppColors.onSurfaceVariant,
+            fontSize: 13,
+          ),
+        ),
+      ),
+    ],
   );
 }
 
@@ -673,12 +815,13 @@ class _DetailLayout extends StatelessWidget {
     top: false,
     child: Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: CustomScrollView(
-        controller: PrimaryScrollController.maybeOf(context),
-        slivers: [
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-            sliver: SliverToBoxAdapter(
+      child: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              key: const Key('adminDetailScroll'),
+              controller: PrimaryScrollController.maybeOf(context),
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -715,14 +858,30 @@ class _DetailLayout extends StatelessWidget {
                     const SizedBox(height: 12),
                     _Notice(text: disclaimer!),
                   ],
-                  if (actions != null) ...[
-                    const SizedBox(height: 20),
-                    actions!,
-                  ],
                 ],
               ),
             ),
           ),
+          if (actions != null)
+            Container(
+              key: const Key('adminDetailActionFooter'),
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+              decoration: const BoxDecoration(
+                color: AppColors.surfaceContainerLowest,
+                border: Border(
+                  top: BorderSide(color: AppColors.outlineVariant),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Color(0x14000000),
+                    blurRadius: 12,
+                    offset: Offset(0, -3),
+                  ),
+                ],
+              ),
+              child: actions,
+            ),
         ],
       ),
     ),
@@ -741,30 +900,55 @@ class _DetailSection extends StatelessWidget {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
-        const Divider(height: 18),
-        ...fields.map(
-          (field) => Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  field.label,
-                  style: const TextStyle(
-                    color: AppColors.onSurfaceVariant,
-                    fontSize: 12,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                SelectableText(
-                  field.value?.trim().isNotEmpty == true
-                      ? field.value!
-                      : 'No disponible',
-                ),
-              ],
-            ),
-          ),
+        Text(title, style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 10),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final itemWidth = constraints.maxWidth >= 560
+                ? (constraints.maxWidth - 10) / 2
+                : constraints.maxWidth;
+            return Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: fields
+                  .map<Widget>(
+                    (field) => SizedBox(
+                      width: itemWidth,
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceContainerLow,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.outlineVariant),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              field.label,
+                              style: const TextStyle(
+                                color: AppColors.onSurfaceVariant,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            SelectableText(
+                              field.value?.trim().isNotEmpty == true
+                                  ? field.value!
+                                  : 'No disponible',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  )
+                  .toList(),
+            );
+          },
         ),
       ],
     ),
@@ -1011,13 +1195,9 @@ Future<void> _showAdminSheet(BuildContext context, Widget child) =>
         maxWidth: 720,
         maxHeight: MediaQuery.sizeOf(context).height * 0.94,
       ),
-      builder: (_) => DraggableScrollableSheet(
-        expand: false,
-        initialChildSize: 0.94,
-        minChildSize: 0.6,
-        maxChildSize: 0.98,
-        builder: (context, controller) =>
-            PrimaryScrollController(controller: controller, child: child),
+      builder: (sheetContext) => SizedBox(
+        height: MediaQuery.sizeOf(sheetContext).height * 0.94,
+        child: child,
       ),
     );
 
@@ -1054,7 +1234,7 @@ Future<void> _decideCenter(
   if (!context.mounted) {
     return;
   }
-  Navigator.pop(context);
+  if (ok) Navigator.pop(context);
   _showResult(context, ok, approve ? 'Centro aprobado.' : 'Centro rechazado.');
 }
 
@@ -1109,7 +1289,7 @@ Future<void> _decideAccess(
   }
   await _refreshAdmin(ref);
   if (!context.mounted) return;
-  Navigator.pop(context);
+  if (ok) Navigator.pop(context);
   _showResult(context, ok, approve ? 'Acceso aprobado.' : 'Acceso rechazado.');
 }
 
@@ -1172,7 +1352,7 @@ Future<void> _toggleUser(
   }
   await _refreshAdmin(ref);
   if (!context.mounted) return;
-  Navigator.pop(context);
+  if (ok) Navigator.pop(context);
   _showResult(
     context,
     ok,

@@ -110,6 +110,12 @@ class _PatientLesionPickerState extends ConsumerState<PatientLesionPicker> {
         builder: (context, updateDialog) => PopScope(
           canPop: !submitting,
           child: AlertDialog(
+            insetPadding: const EdgeInsets.symmetric(
+              horizontal: 20,
+              vertical: 24,
+            ),
+            contentPadding: const EdgeInsets.fromLTRB(24, 18, 24, 8),
+            actionsPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
             title: const Text('Nuevo paciente'),
             content: SizedBox(
               width: 420,
@@ -119,6 +125,7 @@ class _PatientLesionPickerState extends ConsumerState<PatientLesionPicker> {
                 child: SingleChildScrollView(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       TextFormField(
                         key: const Key('newPatientClinicalCode'),
@@ -139,7 +146,9 @@ class _PatientLesionPickerState extends ConsumerState<PatientLesionPicker> {
                             ? null
                             : 'Ingrese exactamente 6 dígitos.',
                       ),
+                      const SizedBox(height: 18),
                       TextFormField(
+                        key: const Key('newPatientFullName'),
                         controller: name,
                         enabled: !submitting,
                         textCapitalization: TextCapitalization.words,
@@ -150,6 +159,7 @@ class _PatientLesionPickerState extends ConsumerState<PatientLesionPicker> {
                             ? null
                             : 'Ingrese el nombre completo.',
                       ),
+                      const SizedBox(height: 18),
                       TextFormField(
                         key: const Key('newPatientDocument'),
                         controller: document,
@@ -454,7 +464,7 @@ class _PatientLesionPickerState extends ConsumerState<PatientLesionPicker> {
               ..._patients.map(
                 (item) => ListTile(
                   title: Text(item.fullName),
-                  subtitle: Text(item.clinicalCode),
+                  subtitle: _PatientMetadata(patient: item),
                   onTap: () => _choosePatient(item),
                 ),
               ),
@@ -472,7 +482,7 @@ class _PatientLesionPickerState extends ConsumerState<PatientLesionPicker> {
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text(patient.fullName),
-                subtitle: Text(patient.clinicalCode),
+                subtitle: _PatientMetadata(patient: patient),
                 trailing: TextButton(
                   onPressed: () {
                     ref
@@ -487,22 +497,58 @@ class _PatientLesionPickerState extends ConsumerState<PatientLesionPicker> {
                   child: const Text('Cambiar'),
                 ),
               ),
-              ..._lesions.map(
-                (lesion) => ListTile(
-                  leading: Icon(
-                    clinical.lesion?.id == lesion.id
-                        ? Icons.radio_button_checked
-                        : Icons.radio_button_off,
+              if (clinical.lesion != null)
+                Container(
+                  key: const Key('selectedClinicalContext'),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  title: Text(lesion.anatomicalSite),
-                  subtitle: Text(
-                    '${lesion.temporalDescription} · ${localizedLesionStatus(lesion.status).label}',
+                  child: Row(
+                    children: [
+                      const Icon(Icons.check_circle_outline),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Lesión seleccionada',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              clinical.lesion!.anatomicalSite,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => ref
+                            .read(clinicalControllerProvider.notifier)
+                            .clearLesionSelection(),
+                        child: const Text('Cambiar'),
+                      ),
+                    ],
                   ),
-                  onTap: () => ref
-                      .read(clinicalControllerProvider.notifier)
-                      .selectLesion(lesion),
                 ),
-              ),
+              if (clinical.lesion == null)
+                ..._lesions.map(
+                  (lesion) => ListTile(
+                    leading: const Icon(Icons.radio_button_off),
+                    title: Text(lesion.anatomicalSite),
+                    subtitle: Text(
+                      '${lesion.temporalDescription} · ${localizedLesionStatus(lesion.status).label}',
+                    ),
+                    onTap: () => ref
+                        .read(clinicalControllerProvider.notifier)
+                        .selectLesion(lesion),
+                  ),
+                ),
               if (_lesions.isEmpty && !_loading && _error == null)
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 8),
@@ -534,6 +580,28 @@ class _PatientLesionPickerState extends ConsumerState<PatientLesionPicker> {
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _PatientMetadata extends StatelessWidget {
+  final Patient patient;
+
+  const _PatientMetadata({required this.patient});
+
+  @override
+  Widget build(BuildContext context) {
+    final document = patient.identityDocument?.trim();
+    return Padding(
+      padding: const EdgeInsets.only(top: 3),
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 4,
+        children: [
+          Text('Código clínico: ${patient.clinicalCode}'),
+          if (document?.isNotEmpty == true) Text('Documento: $document'),
+        ],
       ),
     );
   }

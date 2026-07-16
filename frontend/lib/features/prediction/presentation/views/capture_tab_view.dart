@@ -177,6 +177,7 @@ class _CaptureTabViewState extends ConsumerState<CaptureTabView> {
     final hasImage = _selectedImage != null;
     final clinical = ref.watch(clinicalControllerProvider);
     final priority = ref.watch(clinicalPriorityControllerProvider);
+    final hasContext = clinical.patient != null && clinical.lesion != null;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -187,46 +188,20 @@ class _CaptureTabViewState extends ConsumerState<CaptureTabView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              _AnalysisProgress(
+                hasContext: hasContext,
+                hasImage: hasImage,
+                assessmentComplete: !priority.available || priority.complete,
+              ),
+              const SizedBox(height: 16),
               const PatientLesionPicker(),
-              const SizedBox(height: 12),
-              if (clinical.patient != null && clinical.lesion != null) ...[
-                Container(
-                  key: const Key('selectedClinicalContext'),
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryFixed,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.link, color: AppColors.primary),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          '${clinical.patient!.fullName} · ${clinical.patient!.clinicalCode}\nLesión: ${clinical.lesion!.anatomicalSite}',
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                      IconButton(
-                        tooltip: 'Limpiar paciente y lesión',
-                        onPressed: _startClean,
-                        icon: const Icon(Icons.close),
-                      ),
-                    ],
-                  ),
-                ),
-                const Padding(
-                  padding: EdgeInsets.only(top: 8),
-                  child: Text(
-                    'Una imagen corresponde a una sola lesión y evaluación. Use otro análisis para una lesión o imagen diferente.',
-                    style: TextStyle(color: AppColors.onSurfaceVariant),
-                  ),
-                ),
-                const SizedBox(height: 12),
-              ],
-              _CaptureHeroCard(hasImage: hasImage),
-              const SizedBox(height: 12),
-              _CaptureTipsCard(hasImage: hasImage),
+              const SizedBox(height: 16),
+              const _StepHeading(
+                step: '2',
+                title: 'Imagen clínica',
+                description:
+                    'Tome una fotografía o elija una imagen de la lesión seleccionada.',
+              ),
               const SizedBox(height: 12),
               _CapturePreviewCard(selectedImage: _selectedImage),
               const SizedBox(height: 12),
@@ -234,7 +209,7 @@ class _CaptureTabViewState extends ConsumerState<CaptureTabView> {
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: viewModel.isLoading
+                      onPressed: viewModel.isLoading || !hasContext
                           ? null
                           : () => _pickImage(ImageSource.camera),
                       icon: const Icon(Icons.camera_alt_outlined, size: 18),
@@ -249,7 +224,7 @@ class _CaptureTabViewState extends ConsumerState<CaptureTabView> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: viewModel.isLoading
+                      onPressed: viewModel.isLoading || !hasContext
                           ? null
                           : () => _pickImage(ImageSource.gallery),
                       icon: const Icon(Icons.photo_library_outlined, size: 18),
@@ -265,64 +240,56 @@ class _CaptureTabViewState extends ConsumerState<CaptureTabView> {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceContainerLowest,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.outlineVariant),
+              const SizedBox(height: 8),
+              const _CaptureTipsCard(),
+              if (hasImage) ...[
+                const SizedBox(height: 20),
+                const _StepHeading(
+                  step: '3',
+                  title: 'Evaluación y autorización',
+                  description:
+                      'Complete los datos requeridos antes de enviar la imagen.',
                 ),
-                child: Row(
-                  children: [
-                    Icon(
-                      _selectedImage == null
-                          ? Icons.info_outline
-                          : Icons.check_circle_outline,
-                      color: _selectedImage == null
-                          ? AppColors.secondary
-                          : AppColors.primary,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        _selectedImage == null
-                            ? 'Elija una foto clara de la cavidad oral para habilitar el análisis.'
-                            : 'Imagen lista. Confirme que la lesión sea visible antes de continuar.',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: AppColors.onSurfaceVariant,
+                const SizedBox(height: 12),
+                Card(
+                  clipBehavior: Clip.antiAlias,
+                  child: ExpansionTile(
+                    key: const Key('clinicalObservationsSection'),
+                    leading: const Icon(Icons.notes_outlined),
+                    title: const Text('Agregar hallazgos'),
+                    subtitle: const Text('Opcional'),
+                    childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
+                    children: [
+                      TextField(
+                        key: const Key('clinicalObservationsField'),
+                        controller: _clinicalObservationsController,
+                        minLines: 3,
+                        maxLines: 5,
+                        decoration: const InputDecoration(
+                          labelText: 'Hallazgos de esta evaluación',
+                          hintText:
+                              'Ej.: bordes, color, superficie y síntomas observados hoy',
+                          helperText:
+                              'Se guardan separados de las notas longitudinales.',
+                          helperMaxLines: 2,
+                          border: OutlineInputBorder(),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                key: const Key('clinicalObservationsField'),
-                controller: _clinicalObservationsController,
-                maxLines: 4,
-                decoration: const InputDecoration(
-                  labelText: 'Hallazgos de la evaluación actual (opcional)',
-                  hintText:
-                      'Ej.: bordes, color, superficie y síntomas observados hoy',
-                  helperText:
-                      'Se guardan en esta evaluación, separados de las notas longitudinales de la lesión.',
-                  border: OutlineInputBorder(),
+                const SizedBox(height: 12),
+                const ClinicalAssessmentCard(),
+                const SizedBox(height: 12),
+                _ConsentCard(
+                  isEnabled: !viewModel.isLoading,
+                  value: _hasStorageConsent,
+                  onChanged: (value) {
+                    setState(() => _hasStorageConsent = value ?? false);
+                  },
                 ),
-              ),
-              const SizedBox(height: 12),
-              const ClinicalAssessmentCard(),
-              const SizedBox(height: 12),
-              _ConsentCard(
-                isEnabled: hasImage && !viewModel.isLoading,
-                value: _hasStorageConsent,
-                onChanged: (value) {
-                  setState(() => _hasStorageConsent = value ?? false);
-                },
-              ),
-              const SizedBox(height: 12),
+                const SizedBox(height: 12),
+              ],
               ElevatedButton.icon(
                 onPressed:
                     _selectedImage == null ||
@@ -330,6 +297,7 @@ class _CaptureTabViewState extends ConsumerState<CaptureTabView> {
                         clinical.patient == null ||
                         clinical.lesion == null ||
                         !_hasStorageConsent ||
+                        priority.loading ||
                         (priority.available && !priority.complete)
                     ? null
                     : _analyzeImage,
@@ -343,6 +311,8 @@ class _CaptureTabViewState extends ConsumerState<CaptureTabView> {
                 label: Text(
                   viewModel.isLoading
                       ? 'Preparando análisis...'
+                      : priority.loading
+                      ? 'Consultando evaluación clínica...'
                       : priority.available && !priority.complete
                       ? 'Complete la evaluación estructurada'
                       : hasImage
@@ -362,6 +332,145 @@ class _CaptureTabViewState extends ConsumerState<CaptureTabView> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _AnalysisProgress extends StatelessWidget {
+  final bool hasContext;
+  final bool hasImage;
+  final bool assessmentComplete;
+
+  const _AnalysisProgress({
+    required this.hasContext,
+    required this.hasImage,
+    required this.assessmentComplete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: 'Progreso del análisis en tres pasos',
+      child: Row(
+        children: [
+          _ProgressItem(label: 'Contexto', complete: hasContext, active: true),
+          const _ProgressLine(),
+          _ProgressItem(
+            label: 'Imagen',
+            complete: hasImage,
+            active: hasContext,
+          ),
+          const _ProgressLine(),
+          _ProgressItem(
+            label: 'Evaluación',
+            complete: hasImage && assessmentComplete,
+            active: hasImage,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProgressItem extends StatelessWidget {
+  final String label;
+  final bool complete;
+  final bool active;
+
+  const _ProgressItem({
+    required this.label,
+    required this.complete,
+    required this.active,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = active ? AppColors.primary : AppColors.onSurfaceVariant;
+    return Expanded(
+      child: Column(
+        children: [
+          Icon(
+            complete ? Icons.check_circle_rounded : Icons.circle_outlined,
+            color: color,
+            size: 22,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: color,
+              fontSize: 12,
+              fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProgressLine extends StatelessWidget {
+  const _ProgressLine();
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: 24,
+    height: 2,
+    margin: const EdgeInsets.only(bottom: 20),
+    color: AppColors.outlineVariant,
+  );
+}
+
+class _StepHeading extends StatelessWidget {
+  final String step;
+  final String title;
+  final String description;
+
+  const _StepHeading({
+    required this.step,
+    required this.title,
+    required this.description,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CircleAvatar(
+          radius: 16,
+          backgroundColor: AppColors.primaryFixed,
+          foregroundColor: AppColors.primary,
+          child: Text(
+            step,
+            style: const TextStyle(fontWeight: FontWeight.w800),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                description,
+                style: const TextStyle(
+                  color: AppColors.onSurfaceVariant,
+                  height: 1.35,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -428,129 +537,34 @@ class _ConsentCard extends StatelessWidget {
   }
 }
 
-class _CaptureHeroCard extends StatelessWidget {
-  final bool hasImage;
-
-  const _CaptureHeroCard({required this.hasImage});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: AppColors.primaryContainer,
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.16),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(
-              hasImage ? Icons.check_circle_outline : Icons.center_focus_strong,
-              color: Colors.white,
-              size: 26,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  hasImage ? 'Revise antes de enviar' : 'Captura guiada',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  hasImage
-                      ? 'La imagen está cargada. Verifique nitidez, encuadre y datos opcionales antes del análisis.'
-                      : 'Primero seleccione una imagen clínica. Luego podrá confirmar la vista previa y registrar metadata opcional.',
-                  style: const TextStyle(
-                    color: AppColors.primaryFixed,
-                    fontSize: 14,
-                    height: 1.35,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _CaptureTipsCard extends StatelessWidget {
-  final bool hasImage;
-
-  const _CaptureTipsCard({required this.hasImage});
+  const _CaptureTipsCard();
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: AppColors.surfaceContainerLowest,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: const BorderSide(color: AppColors.outlineVariant),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  hasImage
-                      ? Icons.fact_check_outlined
-                      : Icons.tips_and_updates_outlined,
-                  color: AppColors.primary,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  hasImage ? 'Control previo' : 'Indicaciones de captura',
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.onSurface,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            _TipRow(
-              icon: Icons.light_mode_outlined,
-              text: hasImage
-                  ? 'La zona debe verse iluminada y sin sombras fuertes.'
-                  : 'Busque luz uniforme sobre la cavidad oral.',
-            ),
-            const SizedBox(height: 8),
-            _TipRow(
-              icon: Icons.crop_free_outlined,
-              text: hasImage
-                  ? 'La lesión debe quedar centrada y completa en la imagen.'
-                  : 'Centre la lesión y evite recortes innecesarios.',
-            ),
-            const SizedBox(height: 8),
-            _TipRow(
-              icon: Icons.privacy_tip_outlined,
-              text:
-                  'El resultado es apoyo clínico y no reemplaza evaluación profesional.',
-            ),
-          ],
-        ),
+      clipBehavior: Clip.antiAlias,
+      child: ExpansionTile(
+        leading: const Icon(Icons.tips_and_updates_outlined),
+        title: const Text('Consejos para una buena captura'),
+        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        children: const [
+          _TipRow(
+            icon: Icons.light_mode_outlined,
+            text: 'Busque luz uniforme y evite sombras fuertes.',
+          ),
+          SizedBox(height: 10),
+          _TipRow(
+            icon: Icons.crop_free_outlined,
+            text: 'Centre la lesión y muéstrela completa.',
+          ),
+          SizedBox(height: 10),
+          _TipRow(
+            icon: Icons.privacy_tip_outlined,
+            text:
+                'El resultado es apoyo clínico y no reemplaza evaluación profesional.',
+          ),
+        ],
       ),
     );
   }

@@ -86,7 +86,7 @@ void main() {
 
     await tester.tap(find.text('Analizar'));
     await tester.pumpAndSettle();
-    expect(find.text('Captura guiada'), findsOneWidget);
+    expect(find.text('Imagen clínica'), findsOneWidget);
     expect(find.text('Seleccione una imagen para continuar'), findsOneWidget);
 
     await tester.tap(find.text('Historial'));

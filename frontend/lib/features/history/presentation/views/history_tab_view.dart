@@ -130,143 +130,133 @@ class _HistoryTabViewState extends ConsumerState<HistoryTabView> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (sheetContext) => DraggableScrollableSheet(
-        expand: false,
-        initialChildSize: 0.88,
-        minChildSize: 0.55,
-        maxChildSize: 0.96,
-        builder: (_, controller) => ListView(
-          key: const Key('historyDetailSheet'),
-          controller: controller,
-          padding: EdgeInsets.fromLTRB(
-            20,
-            12,
-            20,
-            24 + MediaQuery.viewInsetsOf(sheetContext).bottom,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => FractionallySizedBox(
+        heightFactor: 0.94,
+        child: Material(
+          color: AppColors.background,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            children: [
+              _EvaluationDetailHeader(
+                date: _date(analysis.evaluatedAt ?? analysis.timestamp),
+                onClose: () => Navigator.pop(sheetContext),
+              ),
+              Expanded(
+                child: ListView(
+                  key: const Key('historyDetailSheet'),
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
+                  children: [
+                    if (analysis.imageUrl?.trim().isNotEmpty == true) ...[
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(18),
+                        child: AspectRatio(
+                          aspectRatio: 4 / 3,
+                          child: HeatmapOverlayImage(
+                            baseImage: NetworkImage(analysis.imageUrl!),
+                            heatmapUrl: analysis.heatmapUrl,
+                            errorFallback: const _HistoryImageFallback(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    _DetailSection(
+                      icon: Icons.person_outline,
+                      title: 'Paciente y lesión',
+                      children: [
+                        _Detail(
+                          label: 'Paciente',
+                          value: _available(analysis.patientName),
+                        ),
+                        _Detail(
+                          label: 'Código clínico',
+                          value: _available(analysis.patientId),
+                        ),
+                        _Detail(
+                          label: 'Sitio de la lesión',
+                          value: _available(analysis.lesionSite),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    _DetailSection(
+                      icon: Icons.fact_check_outlined,
+                      title: 'Hallazgos clínicos',
+                      children: [
+                        _Detail(
+                          label: 'Observaciones de esta evaluación',
+                          value: _available(analysis.clinicalObservations),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    _ModelResultCard(analysis: analysis),
+                    if (analysis.priority case final priority?) ...[
+                      const SizedBox(height: 12),
+                      _DetailSection(
+                        icon: Icons.traffic_outlined,
+                        title: 'Prioridad orientativa',
+                        accent: true,
+                        children: [
+                          _Detail(
+                            label: 'Semáforo orientativo de atención',
+                            value: localizedPriorityStatus(
+                              priority.priorityCode,
+                            ).label,
+                          ),
+                          _Detail(
+                            label: 'Motivos registrados',
+                            value: localizedPriorityReasons(priority).isEmpty
+                                ? 'No disponibles'
+                                : localizedPriorityReasons(priority).join('\n'),
+                          ),
+                          _Detail(
+                            label: 'Proveniencia de prioridad',
+                            value:
+                                'Reglas ${priority.rulesetVersion}; motor ${priority.engineVersion}; resultado histórico no recalculado.',
+                          ),
+                        ],
+                      ),
+                    ],
+                    const SizedBox(height: 12),
+                    _DetailSection(
+                      icon: Icons.medical_information_outlined,
+                      title: 'Profesional responsable',
+                      children: [
+                        _Detail(
+                          label: 'Profesional',
+                          value: _professional(analysis),
+                        ),
+                        _Detail(
+                          label: 'Código profesional',
+                          value: _available(
+                            analysis.professionalDoctorId ??
+                                analysis.createdByDoctorId,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              _EvaluationDetailActions(
+                canOpenPatient: analysis.patientRecordId != null,
+                canOpenLesion:
+                    analysis.patientRecordId != null &&
+                    analysis.lesionId != null,
+                onOpenPatient: () {
+                  Navigator.pop(sheetContext);
+                  _openPatient(analysis);
+                },
+                onOpenLesion: () {
+                  Navigator.pop(sheetContext);
+                  _openLesion(analysis);
+                },
+              ),
+            ],
           ),
-          children: [
-            Center(
-              child: Container(
-                width: 44,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.outlineVariant,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              'Detalle de la evaluación',
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            const SizedBox(height: 16),
-            if (analysis.imageUrl?.trim().isNotEmpty == true) ...[
-              ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: AspectRatio(
-                  aspectRatio: 4 / 3,
-                  child: HeatmapOverlayImage(
-                    baseImage: NetworkImage(analysis.imageUrl!),
-                    heatmapUrl: analysis.heatmapUrl,
-                    errorFallback: const _HistoryImageFallback(),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 18),
-            ],
-            _Detail(
-              label: 'Fecha de evaluación',
-              value: _date(analysis.evaluatedAt ?? analysis.timestamp),
-            ),
-            _Detail(label: 'Paciente', value: _available(analysis.patientName)),
-            _Detail(
-              label: 'Código clínico',
-              value: _available(analysis.patientId),
-            ),
-            _Detail(
-              label: 'Sitio de la lesión',
-              value: _available(analysis.lesionSite),
-            ),
-            _Detail(
-              label: 'Hallazgos de esta evaluación',
-              value: _available(analysis.clinicalObservations),
-            ),
-            _Detail(label: 'Profesional', value: _professional(analysis)),
-            _Detail(
-              label: 'Código profesional',
-              value: _available(
-                analysis.professionalDoctorId ?? analysis.createdByDoctorId,
-              ),
-            ),
-            _Detail(
-              label: 'Salida del modelo',
-              value: _predictionLabel(analysis.prediction),
-            ),
-            _Detail(
-              label: 'Confianza del clasificador',
-              value:
-                  '${(analysis.confidence.clamp(0, 1) * 100).toStringAsFixed(1)}%. No expresa diagnóstico ni probabilidad de cáncer.',
-            ),
-            _Detail(
-              label: 'Versión del modelo',
-              value: _available(analysis.modelVersion),
-            ),
-            if (analysis.priority case final priority?) ...[
-              const Divider(height: 28),
-              _Detail(
-                label: 'Semáforo orientativo de atención',
-                value: localizedPriorityStatus(priority.priorityCode).label,
-              ),
-              _Detail(
-                label: 'Motivos registrados',
-                value: localizedPriorityReasons(priority).isEmpty
-                    ? 'No disponibles'
-                    : localizedPriorityReasons(priority).join('\n'),
-              ),
-              _Detail(
-                label: 'Proveniencia de prioridad',
-                value:
-                    'Reglas ${priority.rulesetVersion}; motor ${priority.engineVersion}; resultado histórico no recalculado.',
-              ),
-            ],
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                OutlinedButton.icon(
-                  key: const Key('openHistoryPatient'),
-                  onPressed: analysis.patientRecordId == null
-                      ? null
-                      : () {
-                          Navigator.pop(sheetContext);
-                          _openPatient(analysis);
-                        },
-                  icon: const Icon(Icons.person_outline),
-                  label: const Text('Abrir paciente'),
-                ),
-                OutlinedButton.icon(
-                  key: const Key('openHistoryLesion'),
-                  onPressed:
-                      analysis.patientRecordId == null ||
-                          analysis.lesionId == null
-                      ? null
-                      : () {
-                          Navigator.pop(sheetContext);
-                          _openLesion(analysis);
-                        },
-                  icon: const Icon(Icons.adjust),
-                  label: const Text('Abrir lesión'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            FilledButton(
-              onPressed: () => Navigator.pop(sheetContext),
-              child: const Text('Cerrar'),
-            ),
-          ],
         ),
       ),
     );
@@ -558,6 +548,300 @@ class _HistoryTabViewState extends ConsumerState<HistoryTabView> {
   }
 }
 
+class _EvaluationDetailHeader extends StatelessWidget {
+  final String date;
+  final VoidCallback onClose;
+
+  const _EvaluationDetailHeader({required this.date, required this.onClose});
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.fromLTRB(20, 16, 10, 14),
+    decoration: const BoxDecoration(
+      color: AppColors.surfaceContainerLowest,
+      border: Border(bottom: BorderSide(color: AppColors.outlineVariant)),
+    ),
+    child: Row(
+      children: [
+        Container(
+          width: 46,
+          height: 46,
+          decoration: BoxDecoration(
+            color: AppColors.primaryFixed,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: const Icon(
+            Icons.assignment_outlined,
+            color: AppColors.primary,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Detalle de la evaluación',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                date,
+                style: const TextStyle(color: AppColors.onSurfaceVariant),
+              ),
+            ],
+          ),
+        ),
+        IconButton(
+          tooltip: 'Cerrar detalle',
+          onPressed: onClose,
+          icon: const Icon(Icons.close_rounded),
+        ),
+      ],
+    ),
+  );
+}
+
+class _DetailSection extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final List<Widget> children;
+  final bool accent;
+
+  const _DetailSection({
+    required this.icon,
+    required this.title,
+    required this.children,
+    this.accent = false,
+  });
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: accent ? AppColors.primaryFixed : AppColors.surfaceContainerLowest,
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(
+        color: accent ? AppColors.primaryFixedDim : AppColors.outlineVariant,
+      ),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 20, color: AppColors.primary),
+            const SizedBox(width: 9),
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        ...children,
+      ],
+    ),
+  );
+}
+
+class _ModelResultCard extends StatelessWidget {
+  final Analysis analysis;
+
+  const _ModelResultCard({required this.analysis});
+
+  @override
+  Widget build(BuildContext context) {
+    final status = localizedModelOutput(analysis.prediction);
+    final confidence = analysis.confidence.clamp(0, 1).toDouble();
+    return Container(
+      key: const Key('historyModelResultSection'),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.primaryContainer,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Text(
+            'Resultado del modelo',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(status.icon, color: Colors.white),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Salida del modelo',
+                      style: TextStyle(color: AppColors.primaryFixedDim),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _predictionLabel(analysis.prediction),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  const Text(
+                    'Confianza',
+                    style: TextStyle(color: AppColors.primaryFixedDim),
+                  ),
+                  Text(
+                    '${(confidence * 100).toStringAsFixed(1)}%',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          LinearProgressIndicator(
+            value: confidence,
+            minHeight: 6,
+            color: AppColors.primaryFixedDim,
+            backgroundColor: Colors.white24,
+            borderRadius: BorderRadius.circular(999),
+          ),
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 16,
+            runSpacing: 6,
+            children: [
+              _ModelMetadata(
+                label: 'Versión del modelo',
+                value: _available(analysis.modelVersion),
+              ),
+              if (analysis.processingTimeMs != null)
+                _ModelMetadata(
+                  label: 'Procesamiento',
+                  value: '${analysis.processingTimeMs!.toStringAsFixed(0)} ms',
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'La confianza describe la salida del clasificador. No expresa diagnóstico ni probabilidad de cáncer.',
+            style: TextStyle(
+              color: AppColors.primaryFixed,
+              fontSize: 12,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ModelMetadata extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _ModelMetadata({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        label,
+        style: const TextStyle(color: AppColors.primaryFixedDim, fontSize: 11),
+      ),
+      Text(
+        value,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    ],
+  );
+}
+
+class _EvaluationDetailActions extends StatelessWidget {
+  final bool canOpenPatient;
+  final bool canOpenLesion;
+  final VoidCallback onOpenPatient;
+  final VoidCallback onOpenLesion;
+
+  const _EvaluationDetailActions({
+    required this.canOpenPatient,
+    required this.canOpenLesion,
+    required this.onOpenPatient,
+    required this.onOpenLesion,
+  });
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+    decoration: const BoxDecoration(
+      color: AppColors.surfaceContainerLowest,
+      border: Border(top: BorderSide(color: AppColors.outlineVariant)),
+    ),
+    child: SafeArea(
+      top: false,
+      child: Row(
+        children: [
+          Expanded(
+            child: OutlinedButton.icon(
+              key: const Key('openHistoryPatient'),
+              onPressed: canOpenPatient ? onOpenPatient : null,
+              icon: const Icon(Icons.person_outline),
+              label: const Text('Paciente'),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: FilledButton.icon(
+              key: const Key('openHistoryLesion'),
+              onPressed: canOpenLesion ? onOpenLesion : null,
+              icon: const Icon(Icons.adjust),
+              label: const Text('Abrir lesión'),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
 class _HistoryImageFallback extends StatelessWidget {
   const _HistoryImageFallback();
 
@@ -583,13 +867,27 @@ class _Detail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: 14),
+    padding: const EdgeInsets.only(bottom: 12),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: Theme.of(context).textTheme.labelMedium),
-        const SizedBox(height: 3),
-        SelectableText(value),
+        Text(
+          label,
+          style: const TextStyle(
+            color: AppColors.onSurfaceVariant,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 4),
+        SelectableText(
+          value,
+          style: const TextStyle(
+            color: AppColors.onSurface,
+            fontSize: 15,
+            height: 1.35,
+          ),
+        ),
       ],
     ),
   );

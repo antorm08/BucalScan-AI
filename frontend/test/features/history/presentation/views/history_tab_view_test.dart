@@ -117,9 +117,10 @@ void main() {
       expect(find.byKey(const Key('historyImage-1')), findsOneWidget);
       await tester.tap(find.byKey(const Key('historyCard-1')));
       await tester.pumpAndSettle();
+      expect(find.text('Paciente y lesión'), findsOneWidget);
+      expect(find.text('Hallazgos clínicos'), findsOneWidget);
       expect(find.text('Salida no disponible'), findsOneWidget);
       expect(find.text('Hallazgo de evaluación'), findsOneWidget);
-      expect(find.text('Dra. Historia'), findsOneWidget);
       await tester.scrollUntilVisible(
         find.text('Versión del modelo'),
         300,
@@ -131,7 +132,24 @@ void main() {
             .first,
       );
       await tester.pumpAndSettle();
+      expect(
+        find.byKey(const Key('historyModelResultSection')),
+        findsOneWidget,
+      );
+      expect(find.text('Resultado del modelo'), findsOneWidget);
       expect(find.text('resnet-v1'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('Profesional responsable'),
+        300,
+        scrollable: find
+            .descendant(
+              of: find.byKey(const Key('historyDetailSheet')),
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Dra. Historia'), findsOneWidget);
     },
   );
 

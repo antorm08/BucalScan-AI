@@ -38,71 +38,7 @@ class AppAppBar extends StatelessWidget implements PreferredSizeWidget {
           ),
         ],
       ),
-      actions:
-          actions ??
-          [
-            IconButton(
-              icon: const Icon(Icons.settings, color: AppColors.primary),
-              onPressed: () => _showSettingsSheet(context),
-            ),
-          ],
-    );
-  }
-
-  void _showSettingsSheet(BuildContext context) {
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      backgroundColor: AppColors.surfaceContainerLowest,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Configuración',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(
-                    Icons.person_outline,
-                    color: AppColors.primary,
-                  ),
-                  title: const Text('Perfil y cuenta'),
-                  subtitle: const Text(
-                    'Abre Perfil y cuenta desde el menú superior.',
-                  ),
-                  onTap: () => Navigator.pop(context),
-                ),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(
-                    Icons.info_outline,
-                    color: AppColors.primary,
-                  ),
-                  title: const Text('Modelo clínico'),
-                  subtitle: const Text(
-                    'Consulta arquitectura y métricas desde Acerca del modelo.',
-                  ),
-                  onTap: () => Navigator.pop(context),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+      actions: actions ?? const [],
     );
   }
 

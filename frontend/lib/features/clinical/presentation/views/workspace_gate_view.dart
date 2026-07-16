@@ -91,103 +91,129 @@ class _WorkspaceGateViewState extends ConsumerState<WorkspaceGateView>
       child: Scaffold(
         backgroundColor: AppColors.background,
         body: SafeArea(
-          child: RefreshIndicator(
-            onRefresh: _refresh,
-            color: AppColors.primary,
-            child: CustomScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              slivers: [
-                SliverToBoxAdapter(child: _Header(onLogout: _logout)),
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
-                  sliver: SliverList.list(
-                    children: [
-                      if (state.loading && state.workspaces.isEmpty)
-                        const _LoadingState()
-                      else ...[
-                        if (state.error != null) ...[
-                          _ConnectionStatus(onRetry: _refresh),
-                          const SizedBox(height: 20),
-                        ] else ...[
-                          _StatusPanel(
-                            hasAccess: active.isNotEmpty,
-                            status: gateStatus,
+          child: DecoratedBox(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xFFF1F6FF), AppColors.background],
+                stops: [0, 0.42],
+              ),
+            ),
+            child: RefreshIndicator(
+              onRefresh: _refresh,
+              color: AppColors.primary,
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+                    sliver: SliverToBoxAdapter(
+                      child: _Header(onLogout: _logout),
+                    ),
+                  ),
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(24, 32, 24, 36),
+                    sliver: SliverList.list(
+                      children: [
+                        if (state.loading && state.workspaces.isEmpty)
+                          const _LoadingState()
+                        else ...[
+                          if (state.error != null) ...[
+                            _ConnectionStatus(onRetry: _refresh),
+                            const SizedBox(height: 20),
+                          ] else ...[
+                            _StatusPanel(
+                              hasAccess: active.isNotEmpty,
+                              status: gateStatus,
+                            ),
+                            const SizedBox(height: 20),
+                          ],
+                          if (active.length > 1) ...[
+                            const _SectionTitle(
+                              title: 'Elige tu espacio de trabajo',
+                              subtitle:
+                                  'Los pacientes y análisis permanecen separados por centro.',
+                            ),
+                            const SizedBox(height: 12),
+                            ...active.map(
+                              (workspace) => _WorkspaceCard(
+                                workspace: workspace,
+                                onTap: () => ref
+                                    .read(clinicalControllerProvider.notifier)
+                                    .selectWorkspace(workspace),
+                              ),
+                            ),
+                          ],
+                          if (pending.isNotEmpty) ...[
+                            _SectionTitle(
+                              title: active.isEmpty
+                                  ? 'Solicitud en revisión'
+                                  : 'Otros espacios solicitados',
+                              subtitle:
+                                  'Aquí puedes consultar el estado informado por cada centro.',
+                            ),
+                            const SizedBox(height: 12),
+                            ...pending.map(
+                              (workspace) =>
+                                  _WorkspaceCard(workspace: workspace),
+                            ),
+                          ],
+                          if (state.workspaces.isEmpty && state.error == null)
+                            const _EmptyCard(),
+                          const SizedBox(height: 22),
+                          OutlinedButton.icon(
+                            onPressed: state.loading ? null : _refresh,
+                            icon: const Icon(Icons.refresh_rounded),
+                            label: Text(
+                              state.loading
+                                  ? 'Consultando estado...'
+                                  : 'Actualizar estado',
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size.fromHeight(54),
+                              foregroundColor: AppColors.primary,
+                              side: const BorderSide(
+                                color: AppColors.outlineVariant,
+                              ),
+                              backgroundColor: AppColors.surfaceContainerLowest,
+                            ),
                           ),
-                          const SizedBox(height: 20),
-                        ],
-                        if (active.length > 1) ...[
-                          const _SectionTitle(
-                            title: 'Elige tu espacio de trabajo',
-                            subtitle:
-                                'Los pacientes y análisis permanecen separados por centro.',
+                          const SizedBox(height: 10),
+                          const Text(
+                            'El estado se actualiza automáticamente. También puedes deslizar hacia abajo o actualizar manualmente.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: AppColors.onSurfaceVariant,
+                              fontSize: 12,
+                              height: 1.4,
+                            ),
                           ),
-                          const SizedBox(height: 12),
-                          ...active.map(
-                            (workspace) => _WorkspaceCard(
-                              workspace: workspace,
-                              onTap: () => ref
-                                  .read(clinicalControllerProvider.notifier)
-                                  .selectWorkspace(workspace),
+                          const SizedBox(height: 24),
+                          TextButton.icon(
+                            key: const Key(
+                              'workspaceGateSecondaryLogoutButton',
+                            ),
+                            onPressed: _loggingOut ? null : _logout,
+                            icon: _loggingOut
+                                ? const SizedBox.square(
+                                    dimension: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Icon(Icons.logout_rounded),
+                            label: const Text('Cerrar sesión'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: AppColors.error,
                             ),
                           ),
                         ],
-                        if (pending.isNotEmpty) ...[
-                          _SectionTitle(
-                            title: active.isEmpty
-                                ? 'Solicitud en revisión'
-                                : 'Otros espacios solicitados',
-                            subtitle:
-                                'Aquí puedes consultar el estado informado por cada centro.',
-                          ),
-                          const SizedBox(height: 12),
-                          ...pending.map(
-                            (workspace) => _WorkspaceCard(workspace: workspace),
-                          ),
-                        ],
-                        if (state.workspaces.isEmpty && state.error == null)
-                          const _EmptyCard(),
-                        const SizedBox(height: 18),
-                        OutlinedButton.icon(
-                          onPressed: state.loading ? null : _refresh,
-                          icon: const Icon(Icons.refresh_rounded),
-                          label: Text(
-                            state.loading
-                                ? 'Consultando estado...'
-                                : 'Actualizar estado',
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'El estado se actualiza automáticamente. También puedes deslizar hacia abajo o actualizar manualmente.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: AppColors.onSurfaceVariant,
-                            fontSize: 12,
-                            height: 1.4,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        TextButton.icon(
-                          key: const Key('workspaceGateLogoutButton'),
-                          onPressed: _loggingOut ? null : _logout,
-                          icon: _loggingOut
-                              ? const SizedBox.square(
-                                  dimension: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Icon(Icons.logout_rounded),
-                          label: const Text('Cerrar sesión'),
-                          style: TextButton.styleFrom(
-                            foregroundColor: AppColors.error,
-                          ),
-                        ),
                       ],
-                    ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -204,26 +230,35 @@ class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 18, 12, 22),
-      decoration: const BoxDecoration(
+      key: const Key('workspaceGateHeader'),
+      padding: const EdgeInsets.fromLTRB(18, 18, 10, 18),
+      decoration: BoxDecoration(
         color: AppColors.primary,
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x2600355F),
+            blurRadius: 18,
+            offset: Offset(0, 7),
+          ),
+        ],
       ),
       child: Row(
         children: [
           Container(
-            width: 44,
-            height: 44,
+            width: 52,
+            height: 52,
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(16),
             ),
             child: const Icon(
-              Icons.health_and_safety_outlined,
+              Icons.health_and_safety_rounded,
               color: Colors.white,
+              size: 28,
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 14),
           const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -232,18 +267,19 @@ class _Header extends StatelessWidget {
                   'BucalScan AI',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 19,
+                    fontSize: 21,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
                 Text(
                   'Acceso clínico seguro',
-                  style: TextStyle(color: AppColors.onPrimaryContainer),
+                  style: TextStyle(color: Color(0xFFC8DDF8), fontSize: 14),
                 ),
               ],
             ),
           ),
           IconButton(
+            key: const Key('workspaceGateLogoutButton'),
             tooltip: 'Cerrar sesión',
             onPressed: onLogout,
             icon: const Icon(Icons.logout_rounded, color: Colors.white),
@@ -288,13 +324,26 @@ class _StatusPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
+      key: const Key('workspaceGateStatusPanel'),
       children: [
         Container(
-          width: 92,
-          height: 92,
+          width: 96,
+          height: 96,
           decoration: BoxDecoration(
             color: hasAccess ? AppColors.benignBg : AppColors.primaryFixed,
             shape: BoxShape.circle,
+            border: Border.all(
+              color: hasAccess
+                  ? AppColors.benignText.withValues(alpha: 0.12)
+                  : AppColors.primary.withValues(alpha: 0.1),
+            ),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x1200355F),
+                blurRadius: 16,
+                offset: Offset(0, 6),
+              ),
+            ],
           ),
           child: Icon(
             hasAccess ? Icons.domain_verification_outlined : Icons.schedule,
@@ -302,12 +351,17 @@ class _StatusPanel extends StatelessWidget {
             color: hasAccess ? AppColors.benignText : AppColors.primary,
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
           decoration: BoxDecoration(
             color: hasAccess ? AppColors.benignBg : AppColors.primaryFixed,
             borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: hasAccess
+                  ? AppColors.benignText.withValues(alpha: 0.14)
+                  : AppColors.primary.withValues(alpha: 0.12),
+            ),
           ),
           child: Text(
             hasAccess ? 'ACCESO DISPONIBLE' : _badge,
@@ -319,17 +373,18 @@ class _StatusPanel extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
         Text(
           hasAccess ? 'Selecciona dónde atenderás' : _title,
           textAlign: TextAlign.center,
           style: const TextStyle(
             color: AppColors.onSurface,
-            fontSize: 25,
-            fontWeight: FontWeight.w700,
+            fontSize: 27,
+            fontWeight: FontWeight.w800,
+            height: 1.15,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
         Text(
           hasAccess
               ? 'El acceso activo protege el contexto clínico de cada institución.'
@@ -337,7 +392,8 @@ class _StatusPanel extends StatelessWidget {
           textAlign: TextAlign.center,
           style: const TextStyle(
             color: AppColors.onSurfaceVariant,
-            height: 1.45,
+            fontSize: 15,
+            height: 1.5,
           ),
         ),
       ],
@@ -358,14 +414,15 @@ class _SectionTitle extends StatelessWidget {
       children: [
         Text(
           title,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 6),
         Text(
           subtitle,
           style: const TextStyle(
             color: AppColors.onSurfaceVariant,
-            height: 1.4,
+            fontSize: 14,
+            height: 1.45,
           ),
         ),
       ],
@@ -411,27 +468,30 @@ class _WorkspaceCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Material(
+        key: Key('workspaceGateCard-${workspace.id}'),
         color: AppColors.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(16),
+        elevation: 1,
+        shadowColor: const Color(0x1800355F),
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(16),
           child: Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(17),
             decoration: BoxDecoration(
-              border: Border.all(color: AppColors.outlineVariant),
+              border: Border.all(color: AppColors.outline),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
               children: [
                 Container(
-                  width: 46,
-                  height: 46,
+                  width: 50,
+                  height: 50,
                   decoration: BoxDecoration(
                     color: active
                         ? AppColors.benignBg
                         : AppColors.surfaceContainerLow,
-                    borderRadius: BorderRadius.circular(13),
+                    borderRadius: BorderRadius.circular(14),
                   ),
                   child: Icon(
                     workspace.type == 'independent'
@@ -440,32 +500,47 @@ class _WorkspaceCard extends StatelessWidget {
                     color: active ? AppColors.benignText : AppColors.primary,
                   ),
                 ),
-                const SizedBox(width: 13),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         workspace.name,
-                        style: const TextStyle(fontWeight: FontWeight.w700),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                       const SizedBox(height: 3),
                       Text(
                         _typeLabel,
                         style: const TextStyle(
                           color: AppColors.onSurfaceVariant,
-                          fontSize: 12,
+                          fontSize: 13,
                         ),
                       ),
-                      const SizedBox(height: 5),
-                      Text(
-                        _statusLabel,
-                        style: TextStyle(
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 9,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
                           color: active
-                              ? AppColors.benignText
-                              : AppColors.primary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
+                              ? AppColors.benignBg
+                              : AppColors.primaryFixed,
+                          borderRadius: BorderRadius.circular(9),
+                        ),
+                        child: Text(
+                          _statusLabel,
+                          style: TextStyle(
+                            color: active
+                                ? AppColors.benignText
+                                : AppColors.primary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
                     ],

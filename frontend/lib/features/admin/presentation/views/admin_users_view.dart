@@ -76,13 +76,37 @@ class _AdminUsersViewState extends ConsumerState<AdminUsersView> {
       appBar: AppBar(
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.onPrimary,
-        title: const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        centerTitle: false,
+        title: const Row(
           children: [
-            Text('BucalScan AI', style: TextStyle(fontSize: 12)),
-            Text(
-              'Administración',
-              style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700),
+            Icon(Icons.admin_panel_settings_outlined, color: Colors.white),
+            SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'BucalScan AI',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    'Administración',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 19,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),

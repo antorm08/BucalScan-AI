@@ -29,6 +29,7 @@ const _patient = Patient(
   workspaceId: 'workspace-1',
   clinicalCode: 'P-001',
   fullName: 'Ana Pérez',
+  identityDocument: '87654321',
 );
 const _lesionOne = OralLesion(
   id: 'lesion-1',
@@ -255,6 +256,22 @@ void main() {
 
     await tester.tap(find.text('Registrar nuevo paciente'));
     await tester.pumpAndSettle();
+
+    final codeBottom = tester
+        .getBottomLeft(find.byKey(const Key('newPatientClinicalCode')))
+        .dy;
+    final nameTop = tester
+        .getTopLeft(find.byKey(const Key('newPatientFullName')))
+        .dy;
+    final nameBottom = tester
+        .getBottomLeft(find.byKey(const Key('newPatientFullName')))
+        .dy;
+    final documentTop = tester
+        .getTopLeft(find.byKey(const Key('newPatientDocument')))
+        .dy;
+    expect(nameTop - codeBottom, greaterThanOrEqualTo(18));
+    expect(documentTop - nameBottom, greaterThanOrEqualTo(18));
+
     await tester.enterText(
       find.byKey(const Key('newPatientClinicalCode')),
       '123',
@@ -331,7 +348,9 @@ void main() {
     await tester.tap(find.byKey(const Key('addLesionButton')));
     await tester.pumpAndSettle();
 
-    expect(find.text('Notas para seguimiento (opcional)'), findsOneWidget);
+    expect(find.text('Ubicación de la lesión'), findsOneWidget);
+    expect(find.text('Temporalidad'), findsOneWidget);
+    expect(find.text('Seguimiento longitudinal'), findsOneWidget);
     expect(find.textContaining('evolución general'), findsOneWidget);
     await tester.enterText(
       find.widgetWithText(TextFormField, 'Sitio anatómico *'),
@@ -683,6 +702,9 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+
+    expect(find.text('Código clínico: P-001'), findsOneWidget);
+    expect(find.text('Documento: 87654321'), findsOneWidget);
     await tester.tap(find.byKey(const Key('patient-patient-1')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('lesion-lesion-1')));
@@ -691,7 +713,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(HomeView), findsOneWidget);
-    expect(find.text('Captura guiada'), findsOneWidget);
+    expect(find.text('Imagen clínica'), findsOneWidget);
     expect(find.byKey(const Key('selectedClinicalContext')), findsOneWidget);
     expect(
       Navigator.of(tester.element(find.byType(HomeView))).canPop(),
