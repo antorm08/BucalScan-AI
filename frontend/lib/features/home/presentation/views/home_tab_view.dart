@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
+import 'package:bucalscan_ai/core/widgets/responsive_content.dart';
 import 'package:bucalscan_ai/features/dashboard/presentation/viewmodels/summary_viewmodel.dart';
 
 class HomeTabView extends ConsumerStatefulWidget {
@@ -36,109 +37,111 @@ class _HomeTabViewState extends ConsumerState<HomeTabView> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final isCompact = constraints.maxWidth < 720;
+      body: ResponsiveContent(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isCompact = constraints.maxWidth < 720;
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Actividad del centro',
-                        style: TextStyle(
-                          fontSize: isCompact ? 28 : 32,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: -0.01,
-                          color: AppColors.onSurface,
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Actividad del centro',
+                          style: TextStyle(
+                            fontSize: isCompact ? 28 : 32,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: -0.01,
+                            color: AppColors.onSurface,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Continúe el seguimiento de pacientes o registre una nueva evaluación.',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: AppColors.onSurfaceVariant,
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Continúe el seguimiento de pacientes o registre una nueva evaluación.',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: AppColors.onSurfaceVariant,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                if (isCompact) ...[
-                  _PrimaryActionCard(
-                    icon: Icons.add_a_photo,
-                    title: 'Nuevo análisis',
-                    subtitle:
-                        'Paciente, lesión, imagen y evaluación actual en un flujo guiado',
-                    onTap: widget.onStartCapture,
-                  ),
-                  const SizedBox(height: 12),
-                  _SecondaryActionCard(
-                    icon: Icons.history_edu_outlined,
-                    title: 'Últimos análisis',
-                    subtitle:
-                        'Consulte análisis previos, pacientes registrados y resultados recientes',
-                    onTap: widget.onOpenHistory,
-                  ),
-                  const SizedBox(height: 12),
-                  _SecondaryActionCard(
-                    icon: Icons.people_outline,
-                    title: 'Seguimiento de pacientes',
-                    subtitle:
-                        'Consulte lesiones y evaluaciones longitudinales del centro',
-                    onTap: widget.onOpenPatients,
-                  ),
-                  const SizedBox(height: 12),
-                  const _SummaryCard(),
-                ] else ...[
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        flex: 2,
-                        child: Column(
-                          children: [
-                            _PrimaryActionCard(
-                              icon: Icons.add_a_photo,
-                              title: 'Nuevo análisis',
-                              subtitle:
-                                  'Paciente, lesión, imagen y evaluación actual en un flujo guiado',
-                              onTap: widget.onStartCapture,
-                            ),
-                            const SizedBox(height: 12),
-                            _SecondaryActionCard(
-                              icon: Icons.history_edu_outlined,
-                              title: 'Últimos análisis',
-                              subtitle:
-                                  'Consulte análisis previos, pacientes registrados y resultados recientes',
-                              onTap: widget.onOpenHistory,
-                            ),
-                            const SizedBox(height: 12),
-                            _SecondaryActionCard(
-                              icon: Icons.people_outline,
-                              title: 'Seguimiento de pacientes',
-                              subtitle:
-                                  'Consulte lesiones y evaluaciones longitudinales',
-                              onTap: widget.onOpenPatients,
-                            ),
-                          ],
+                  if (isCompact) ...[
+                    _PrimaryActionCard(
+                      icon: Icons.add_a_photo,
+                      title: 'Nuevo análisis',
+                      subtitle:
+                          'Paciente, lesión, imagen y evaluación actual en un flujo guiado',
+                      onTap: widget.onStartCapture,
+                    ),
+                    const SizedBox(height: 12),
+                    _SecondaryActionCard(
+                      icon: Icons.history_edu_outlined,
+                      title: 'Últimos análisis',
+                      subtitle:
+                          'Consulte análisis previos, pacientes registrados y resultados recientes',
+                      onTap: widget.onOpenHistory,
+                    ),
+                    const SizedBox(height: 12),
+                    _SecondaryActionCard(
+                      icon: Icons.people_outline,
+                      title: 'Seguimiento de pacientes',
+                      subtitle:
+                          'Consulte lesiones y evaluaciones longitudinales del centro',
+                      onTap: widget.onOpenPatients,
+                    ),
+                    const SizedBox(height: 12),
+                    const _SummaryCard(),
+                  ] else ...[
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: Column(
+                            children: [
+                              _PrimaryActionCard(
+                                icon: Icons.add_a_photo,
+                                title: 'Nuevo análisis',
+                                subtitle:
+                                    'Paciente, lesión, imagen y evaluación actual en un flujo guiado',
+                                onTap: widget.onStartCapture,
+                              ),
+                              const SizedBox(height: 12),
+                              _SecondaryActionCard(
+                                icon: Icons.history_edu_outlined,
+                                title: 'Últimos análisis',
+                                subtitle:
+                                    'Consulte análisis previos, pacientes registrados y resultados recientes',
+                                onTap: widget.onOpenHistory,
+                              ),
+                              const SizedBox(height: 12),
+                              _SecondaryActionCard(
+                                icon: Icons.people_outline,
+                                title: 'Seguimiento de pacientes',
+                                subtitle:
+                                    'Consulte lesiones y evaluaciones longitudinales',
+                                onTap: widget.onOpenPatients,
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      const Expanded(flex: 1, child: _SummaryCard()),
-                    ],
-                  ),
+                        const SizedBox(width: 12),
+                        const Expanded(flex: 1, child: _SummaryCard()),
+                      ],
+                    ),
+                  ],
                 ],
-              ],
-            ),
-          );
-        },
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -159,78 +162,76 @@ class _PrimaryActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        constraints: const BoxConstraints(minHeight: 160),
-        decoration: BoxDecoration(
-          color: AppColors.primaryContainer,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Stack(
-          children: [
-            Positioned(
-              right: -20,
-              top: -20,
-              child: Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.05),
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Icon(icon, color: Colors.white, size: 32),
-                      ),
-                      const Icon(
-                        Icons.arrow_forward,
-                        color: AppColors.primaryFixed,
-                      ),
-                    ],
+    const radius = BorderRadius.all(Radius.circular(16));
+    return Semantics(
+      button: true,
+      label: title,
+      child: Material(
+        color: AppColors.primaryContainer,
+        borderRadius: radius,
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: radius,
+          child: Container(
+            width: double.infinity,
+            constraints: const BoxConstraints(minHeight: 160),
+            child: Stack(
+              children: [
+                Positioned(
+                  right: -20,
+                  top: -20,
+                  child: Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withValues(alpha: 0.05),
+                    ),
                   ),
-                  const SizedBox(height: 24),
-                  Column(
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(18),
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Icon(icon, color: Colors.white, size: 30),
+                          ),
+                          const Icon(
+                            Icons.arrow_forward,
+                            color: AppColors.primaryFixed,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 22),
                       Text(
                         title,
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(color: Colors.white),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 6),
                       Text(
                         subtitle,
-                        style: const TextStyle(
-                          fontSize: 14,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: AppColors.primaryFixed,
                         ),
                       ),
                     ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -252,63 +253,64 @@ class _SecondaryActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        constraints: const BoxConstraints(minHeight: 160),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceContainerLowest,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.outlineVariant),
+    const radius = BorderRadius.all(Radius.circular(16));
+    return Semantics(
+      button: true,
+      label: title,
+      child: Material(
+        color: AppColors.surfaceContainerLowest,
+        shape: const RoundedRectangleBorder(
+          borderRadius: radius,
+          side: BorderSide(color: AppColors.outlineVariant),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceContainerLow,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      icon,
-                      color: AppColors.primaryContainer,
-                      size: 32,
-                    ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: radius,
+          child: Container(
+            width: double.infinity,
+            constraints: const BoxConstraints(minHeight: 132),
+            padding: const EdgeInsets.all(18),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: const BoxDecoration(
+                    color: AppColors.surfaceContainerLow,
+                    borderRadius: BorderRadius.all(Radius.circular(10)),
                   ),
-                  const Icon(Icons.arrow_forward, color: AppColors.outline),
-                ],
-              ),
-              const SizedBox(height: 24),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.onSurface,
-                    ),
+                  child: Icon(
+                    icon,
+                    color: AppColors.primaryContainer,
+                    size: 28,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: AppColors.onSurfaceVariant,
-                    ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        subtitle,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: AppColors.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ],
+                ),
+                const Padding(
+                  padding: EdgeInsets.only(top: 10),
+                  child: Icon(Icons.arrow_forward, color: AppColors.outline),
+                ),
+              ],
+            ),
           ),
         ),
       ),

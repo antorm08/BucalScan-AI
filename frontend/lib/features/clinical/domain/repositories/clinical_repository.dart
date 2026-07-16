@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import '../entities/clinical_entities.dart';
 
 abstract class ClinicalRepository {
@@ -29,4 +31,8 @@ abstract class ClinicalRepository {
     DateTime? observedAt,
     String? estimatedDuration,
   }) => throw UnimplementedError('Lesion update is not implemented.');
+  Future<Uint8List> exportEvaluationPdf({
+    required String lesionId,
+    required String evaluationId,
+  }) => throw UnimplementedError('Evaluation PDF export is not implemented.');
 }

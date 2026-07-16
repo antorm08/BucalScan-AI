@@ -6,6 +6,7 @@ import 'package:bucalscan_ai/core/presentation/localized_status.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
 import 'package:bucalscan_ai/core/widgets/app_app_bar.dart';
+import 'package:bucalscan_ai/core/widgets/responsive_content.dart';
 import 'package:bucalscan_ai/features/dashboard/presentation/viewmodels/summary_viewmodel.dart';
 import 'package:bucalscan_ai/features/history/presentation/viewmodels/history_viewmodel.dart';
 import 'package:bucalscan_ai/features/prediction/presentation/viewmodels/prediction_viewmodel.dart';
@@ -84,61 +85,27 @@ class _ResultViewState extends ConsumerState<ResultView> {
     );
   }
 
-  String _normalizePrediction(String prediction) {
-    return prediction.trim().toLowerCase();
-  }
+  String _normalizePrediction(String prediction) =>
+      prediction.trim().toLowerCase();
 
   Color _getPredictionColor(String prediction) {
-    switch (_normalizePrediction(prediction)) {
-      case 'benign':
-      case 'benigno':
-        return Colors.green;
-      case 'malignant':
-      case 'maligno':
-        return AppColors.error;
-      default:
-        return AppColors.secondary;
-    }
+    return switch (localizedModelOutput(prediction).tone) {
+      StatusTone.info => AppColors.primaryContainer,
+      StatusTone.warning => AppColors.secondary,
+      StatusTone.danger => AppColors.error,
+      StatusTone.success => AppColors.primaryContainer,
+      StatusTone.neutral => AppColors.secondary,
+    };
   }
 
-  IconData _getPredictionIcon(String prediction) {
-    switch (_normalizePrediction(prediction)) {
-      case 'benign':
-      case 'benigno':
-        return Icons.check_circle;
-      case 'malignant':
-      case 'maligno':
-        return Icons.error;
-      default:
-        return Icons.help;
-    }
-  }
+  IconData _getPredictionIcon(String prediction) =>
+      localizedModelOutput(prediction).icon;
 
-  String _getDisplayLabel(String prediction) {
-    switch (_normalizePrediction(prediction)) {
-      case 'benign':
-      case 'benigno':
-        return 'Benigno';
-      case 'malignant':
-      case 'maligno':
-        return 'Maligno';
-      default:
-        return 'No disponible';
-    }
-  }
+  String _getDisplayLabel(String prediction) =>
+      localizedModelOutput(prediction).label;
 
-  String _getClinicalHeadline(String prediction) {
-    switch (_normalizePrediction(prediction)) {
-      case 'benign':
-      case 'benigno':
-        return 'Lesion compatible con patron benigno';
-      case 'malignant':
-      case 'maligno':
-        return 'Hallazgos compatibles con posible lesion maligna';
-      default:
-        return 'Salida del modelo no disponible';
-    }
-  }
+  String _getClinicalHeadline(String prediction) =>
+      'Salida orientativa del modelo: ${localizedModelOutput(prediction).label.toLowerCase()}';
 
   String _getConfidenceLevel(double confidence) {
     if (confidence >= 0.8) {
@@ -150,15 +117,7 @@ class _ResultViewState extends ConsumerState<ResultView> {
     return 'Baja';
   }
 
-  Color _getConfidenceAccent(double confidence) {
-    if (confidence >= 0.8) {
-      return Colors.green;
-    }
-    if (confidence >= 0.65) {
-      return Colors.orange;
-    }
-    return AppColors.secondary;
-  }
+  Color _getConfidenceAccent(double confidence) => AppColors.secondary;
 
   String _getConfidenceMessage(double confidence, String prediction) {
     final label = _getDisplayLabel(prediction).toLowerCase();
@@ -376,274 +335,279 @@ class _ResultViewState extends ConsumerState<ResultView> {
 
     return Scaffold(
       appBar: const AppAppBar(title: 'Resultado del análisis'),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _AnalyzedImageCard(
-              imageFile: widget.imageFile,
-              heatmapUrl: result.heatmapUrl,
-            ),
-            const SizedBox(height: 16),
-            Card(
-              color: color.withValues(alpha: 0.1),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: BorderSide(color: color.withValues(alpha: 0.2)),
+      body: ResponsiveContent(
+        maxWidth: 840,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _AnalyzedImageCard(
+                imageFile: widget.imageFile,
+                heatmapUrl: result.heatmapUrl,
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Icon(icon, size: 64, color: color),
-                    const SizedBox(height: 16),
-                    if (viewModel.patientName != null) ...[
+              const SizedBox(height: 16),
+              Card(
+                color: color.withValues(alpha: 0.1),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: BorderSide(color: color.withValues(alpha: 0.2)),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Icon(icon, size: 64, color: color),
+                      const SizedBox(height: 16),
+                      if (viewModel.patientName != null) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.person_outline,
+                                size: 14,
+                                color: AppColors.onSurfaceVariant,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                [
+                                  if (viewModel.patientName != null)
+                                    viewModel.patientName!,
+                                  if (viewModel.clinicalCode != null)
+                                    'Código: ${viewModel.clinicalCode!}',
+                                ].join(' · '),
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: AppColors.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      if (viewModel.lesionSite != null) ...[
+                        Text(
+                          'Lesión: ${viewModel.lesionSite}',
+                          style: const TextStyle(
+                            color: AppColors.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      const Text(
+                        'Clasificacion estimada',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        displayLabel.toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: color,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        clinicalHeadline,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Confianza del modelo: ${(result.confidence * 100).toStringAsFixed(1)}%',
+                        style: const TextStyle(fontSize: 18),
+                      ),
+                      if (result.processingTimeMs != null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          'Tiempo de inferencia: ${_formatProcessingTime(result.processingTimeMs!)}',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: AppColors.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 12),
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,
-                          vertical: 6,
+                          vertical: 8,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(8),
+                          color: confidenceAccent.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(999),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.person_outline,
-                              size: 14,
-                              color: AppColors.onSurfaceVariant,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              [
-                                if (viewModel.patientName != null)
-                                  viewModel.patientName!,
-                                if (viewModel.clinicalCode != null)
-                                  'Código: ${viewModel.clinicalCode!}',
-                              ].join(' · '),
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: AppColors.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
+                        child: Text(
+                          'Nivel de confianza: $confidenceLevel',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: confidenceAccent,
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 12),
-                    ],
-                    if (viewModel.lesionSite != null) ...[
+                      const SizedBox(height: 16),
+                      LinearProgressIndicator(
+                        value: result.confidence,
+                        backgroundColor: AppColors.surfaceContainerHighest,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          confidenceAccent,
+                        ),
+                        borderRadius: BorderRadius.circular(999),
+                        minHeight: 10,
+                      ),
+                      const SizedBox(height: 16),
                       Text(
-                        'Lesión: ${viewModel.lesionSite}',
+                        confidenceMessage,
+                        textAlign: TextAlign.center,
                         style: const TextStyle(
+                          fontSize: 14,
                           color: AppColors.onSurfaceVariant,
                         ),
                       ),
-                      const SizedBox(height: 12),
                     ],
-                    const Text(
-                      'Clasificacion estimada',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.onSurfaceVariant,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              if (result.priority case final priority?) ...[
+                ClinicalPriorityResultCard(priority: priority),
+                const SizedBox(height: 16),
+              ],
+              Card(
+                color: AppColors.surfaceContainerLowest,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Orientación de la salida del modelo',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      displayLabel.toUpperCase(),
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: color,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      clinicalHeadline,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Confianza del modelo: ${(result.confidence * 100).toStringAsFixed(1)}%',
-                      style: const TextStyle(fontSize: 18),
-                    ),
-                    if (result.processingTimeMs != null) ...[
                       const SizedBox(height: 8),
                       Text(
-                        'Tiempo de inferencia: ${_formatProcessingTime(result.processingTimeMs!)}',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: AppColors.onSurfaceVariant,
+                        translatedRecommendation,
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Card(
+                color: AppColors.surfaceContainerLowest,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Distribución de la salida del modelo',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      ...orderedProbabilities.map(
+                        (entry) => Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Row(
+                            children: [
+                              SizedBox(
+                                width: 100,
+                                child: Text(
+                                  _getDisplayLabel(entry.key).toUpperCase(),
+                                  style: const TextStyle(fontSize: 14),
+                                ),
+                              ),
+                              Expanded(
+                                child: LinearProgressIndicator(
+                                  value: entry.value ?? 0,
+                                  backgroundColor:
+                                      AppColors.surfaceContainerHighest,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    _getPredictionColor(entry.key),
+                                  ),
+                                  borderRadius: BorderRadius.circular(999),
+                                  minHeight: 10,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              SizedBox(
+                                width: 56,
+                                child: Text(
+                                  entry.value == null
+                                      ? 'N/D'
+                                      : '${(entry.value! * 100).toStringAsFixed(1)}%',
+                                  textAlign: TextAlign.right,
+                                  style: const TextStyle(fontSize: 14),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: confidenceAccent.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Text(
-                        'Nivel de confianza: $confidenceLevel',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: confidenceAccent,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    LinearProgressIndicator(
-                      value: result.confidence,
-                      backgroundColor: AppColors.surfaceContainerHighest,
-                      valueColor: AlwaysStoppedAnimation<Color>(color),
-                      borderRadius: BorderRadius.circular(999),
-                      minHeight: 10,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      confidenceMessage,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: AppColors.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
-            if (result.priority case final priority?) ...[
-              ClinicalPriorityResultCard(priority: priority),
               const SizedBox(height: 16),
+              Card(
+                color: AppColors.secondaryFixed.withValues(alpha: 0.45),
+                child: const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.info_outline, color: AppColors.secondary),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'La salida del modelo y la prioridad clínica orientativa son apoyos independientes. No constituyen diagnóstico, probabilidad de cáncer ni reemplazan la evaluación profesional.',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: AppColors.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              _ResultActions(
+                onNewAnalysis: _goToNewAnalysis,
+                onAnotherImage: _goToAnotherImage,
+                onRetry: () => _retryAnalysis(viewModel),
+                onHistory: _goToHistory,
+              ),
             ],
-            Card(
-              color: AppColors.surfaceContainerLowest,
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Orientación de la salida del modelo',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      translatedRecommendation,
-                      style: const TextStyle(fontSize: 16),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Card(
-              color: AppColors.surfaceContainerLowest,
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Distribución de la salida del modelo',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    ...orderedProbabilities.map(
-                      (entry) => Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: Row(
-                          children: [
-                            SizedBox(
-                              width: 100,
-                              child: Text(
-                                _getDisplayLabel(entry.key).toUpperCase(),
-                                style: const TextStyle(fontSize: 14),
-                              ),
-                            ),
-                            Expanded(
-                              child: LinearProgressIndicator(
-                                value: entry.value ?? 0,
-                                backgroundColor:
-                                    AppColors.surfaceContainerHighest,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  _getPredictionColor(entry.key),
-                                ),
-                                borderRadius: BorderRadius.circular(999),
-                                minHeight: 10,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            SizedBox(
-                              width: 56,
-                              child: Text(
-                                entry.value == null
-                                    ? 'N/D'
-                                    : '${(entry.value! * 100).toStringAsFixed(1)}%',
-                                textAlign: TextAlign.right,
-                                style: const TextStyle(fontSize: 14),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Card(
-              color: AppColors.secondaryFixed.withValues(alpha: 0.45),
-              child: const Padding(
-                padding: EdgeInsets.all(16),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(Icons.info_outline, color: AppColors.secondary),
-                    SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'La salida del modelo y la prioridad clínica orientativa son apoyos independientes. No constituyen diagnóstico, probabilidad de cáncer ni reemplazan la evaluación profesional.',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: AppColors.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            _ResultActions(
-              onNewAnalysis: _goToNewAnalysis,
-              onAnotherImage: _goToAnotherImage,
-              onRetry: () => _retryAnalysis(viewModel),
-              onHistory: _goToHistory,
-            ),
-          ],
+          ),
         ),
       ),
     );

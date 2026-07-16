@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import '../entities/clinical_entities.dart';
 import '../repositories/clinical_repository.dart';
 
@@ -103,5 +105,18 @@ class UpdateLesionUseCase {
     notes: notes,
     observedAt: observedAt,
     estimatedDuration: estimatedDuration,
+  );
+}
+
+class ExportEvaluationPdfUseCase {
+  final ClinicalRepository _repository;
+  const ExportEvaluationPdfUseCase(this._repository);
+
+  Future<Uint8List> call({
+    required String lesionId,
+    required String evaluationId,
+  }) => _repository.exportEvaluationPdf(
+    lesionId: lesionId,
+    evaluationId: evaluationId,
   );
 }

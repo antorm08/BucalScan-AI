@@ -4,6 +4,7 @@ import 'package:bucalscan_ai/features/dashboard/di/dashboard_providers.dart';
 import 'package:bucalscan_ai/features/dashboard/domain/entities/daily_summary.dart';
 import 'package:bucalscan_ai/features/dashboard/domain/repositories/dashboard_repository.dart';
 import 'package:bucalscan_ai/features/home/presentation/views/home_tab_view.dart';
+import 'package:bucalscan_ai/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -42,6 +43,7 @@ Future<void> _pump(
     ProviderScope(
       overrides: [dashboardRepositoryProvider.overrideWithValue(repository)],
       child: MaterialApp(
+        theme: AppTheme.light,
         home: MediaQuery(
           data: MediaQueryData(textScaler: TextScaler.linear(textScale)),
           child: HomeTabView(
@@ -56,7 +58,9 @@ Future<void> _pump(
 }
 
 void main() {
-  testWidgets('home exposes loading, empty, error and retry states', (tester) async {
+  testWidgets('home exposes loading, empty, error and retry states', (
+    tester,
+  ) async {
     final deferred = _DeferredSummaryRepository();
     await _pump(tester, deferred);
     await tester.pump();
@@ -104,7 +108,9 @@ void main() {
     );
   }
 
-  testWidgets('home action targets satisfy Android minimum size', (tester) async {
+  testWidgets('home action targets satisfy Android minimum size', (
+    tester,
+  ) async {
     final semantics = tester.ensureSemantics();
     await _pump(tester, const _SummaryRepository());
     await tester.pumpAndSettle();

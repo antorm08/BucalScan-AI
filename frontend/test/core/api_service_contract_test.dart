@@ -8,7 +8,9 @@ class _ContractInterceptor extends Interceptor {
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     requests.add(options);
-    final data = options.path.endsWith('/history')
+    final data = options.responseType == ResponseType.bytes
+        ? <int>[37, 80, 68, 70, 45, 49]
+        : options.path.endsWith('/history')
         ? <Object>[]
         : <String, Object>{'total': 0};
     handler.resolve(Response(requestOptions: options, data: data));
@@ -58,6 +60,20 @@ void main() {
 
     expect(interceptor.requests.single.headers['X-Workspace-ID'], '84');
     expect(interceptor.requests.single.extra['workspaceScoped'], isTrue);
+  });
+
+  test('PDF bytes use authenticated workspace request semantics', () async {
+    final interceptor = _ContractInterceptor();
+    final api = ApiService(interceptors: [interceptor]);
+    api.setActiveWorkspace('21');
+
+    final bytes = await api.getBytes('/report.pdf', workspaceScoped: true);
+
+    final request = interceptor.requests.single;
+    expect(request.headers['X-Workspace-ID'], '21');
+    expect(request.extra['workspaceScoped'], isTrue);
+    expect(request.responseType, ResponseType.bytes);
+    expect(bytes, [37, 80, 68, 70, 45, 49]);
   });
 
   test('suspended account detail is preserved before generic 403', () async {

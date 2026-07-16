@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
@@ -18,6 +18,7 @@ from schemas import (
     PatientCreate,
     PatientResponse,
 )
+from services.evaluation_pdf_report import build_evaluation_pdf
 
 router = APIRouter(prefix="/api/v1", tags=["clinical"])
 
@@ -177,6 +178,62 @@ def lesion_detail(lesion_id: int, request: Request, access: WorkspaceAccess = De
             ),
         })
     return {"lesion": lesion, "evaluations": evaluations}
+
+
+@router.get("/lesions/{lesion_id}/evaluations/{evaluation_id}/report.pdf")
+def evaluation_pdf_report(
+    lesion_id: int,
+    evaluation_id: int,
+    access: WorkspaceAccess = Depends(get_workspace_access),
+    db: Session = Depends(get_db),
+):
+    evaluation = (
+        db.query(models.ClinicalEvaluation)
+        .join(models.OralLesion, models.OralLesion.id == models.ClinicalEvaluation.lesion_id)
+        .join(models.Patient, models.Patient.id == models.ClinicalEvaluation.patient_id)
+        .options(
+            joinedload(models.ClinicalEvaluation.lesion),
+            joinedload(models.ClinicalEvaluation.image),
+            joinedload(models.ClinicalEvaluation.prediction),
+            joinedload(models.ClinicalEvaluation.assessment_snapshot).joinedload(
+                models.ClinicalAssessmentSnapshot.priority_result
+            ),
+        )
+        .filter(
+            models.ClinicalEvaluation.id == evaluation_id,
+            models.ClinicalEvaluation.lesion_id == lesion_id,
+            models.ClinicalEvaluation.workspace_id == access.workspace.id,
+            models.OralLesion.id == lesion_id,
+            models.OralLesion.workspace_id == access.workspace.id,
+            models.Patient.workspace_id == access.workspace.id,
+        )
+        .first()
+    )
+    if evaluation is None:
+        raise HTTPException(status_code=404, detail="Evaluation not found.")
+
+    patient = db.query(models.Patient).filter_by(
+        id=evaluation.patient_id, workspace_id=access.workspace.id
+    ).first()
+    professional = db.query(models.User).filter_by(id=evaluation.professional_id).first()
+    if patient is None or professional is None:
+        raise HTTPException(status_code=404, detail="Evaluation not found.")
+
+    pdf = build_evaluation_pdf(
+        patient=patient,
+        lesion=evaluation.lesion,
+        evaluation=evaluation,
+        professional=professional,
+    )
+    filename = f"bucalscan-evaluacion-{evaluation.id}.pdf"
+    return Response(
+        content=pdf,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Cache-Control": "private, no-store",
+        },
+    )
 
 
 def _update_lesion(lesion_id: int, payload: LesionUpdate, access: WorkspaceAccess, db: Session):

@@ -31,7 +31,7 @@ class AppTextField extends StatelessWidget {
         Text(
           label,
           style: const TextStyle(
-            fontSize: 12,
+            fontSize: 14,
             fontWeight: FontWeight.w600,
             letterSpacing: 0.5,
             color: AppColors.onSurface,
@@ -46,28 +46,7 @@ class AppTextField extends StatelessWidget {
             prefixIcon: Icon(icon, color: AppColors.outline, size: 20),
             suffixIcon: suffixIcon,
             hintText: hint,
-            hintStyle: const TextStyle(color: AppColors.outlineVariant),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: AppColors.outline),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: AppColors.outline),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(
-                color: AppColors.primary,
-                width: 1.5,
-              ),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 12,
-            ),
-            filled: true,
-            fillColor: AppColors.surfaceContainerLowest,
+            hintStyle: const TextStyle(color: AppColors.onSurfaceVariant),
           ),
           style: const TextStyle(fontSize: 16),
           validator: validator,

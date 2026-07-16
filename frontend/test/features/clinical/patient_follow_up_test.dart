@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:bucalscan_ai/core/session/user_sensitive_state.dart';
 import 'package:bucalscan_ai/features/clinical/data/models/clinical_models.dart';
@@ -10,6 +11,7 @@ import 'package:bucalscan_ai/features/clinical/presentation/viewmodels/patient_f
 import 'package:bucalscan_ai/features/clinical/presentation/views/lesion_detail_view.dart';
 import 'package:bucalscan_ai/features/clinical/presentation/views/patient_detail_view.dart';
 import 'package:bucalscan_ai/features/clinical/presentation/views/patient_lesion_picker.dart';
+import 'package:bucalscan_ai/features/clinical/domain/services/pdf_share_service.dart';
 import 'package:bucalscan_ai/features/home/presentation/views/home_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -103,6 +105,49 @@ class _CreateLesionRepository extends _FollowUpRepository {
     String? estimatedDuration,
     String? notes,
   }) => created.future;
+}
+
+class _ExportRepository extends _FollowUpRepository {
+  final exported = Completer<Uint8List>();
+  int exportCalls = 0;
+  String? exportedLesionId;
+  String? exportedEvaluationId;
+
+  @override
+  Future<Uint8List> exportEvaluationPdf({
+    required String lesionId,
+    required String evaluationId,
+  }) {
+    exportCalls++;
+    exportedLesionId = lesionId;
+    exportedEvaluationId = evaluationId;
+    return exported.future;
+  }
+}
+
+class _FailingExportRepository extends _FollowUpRepository {
+  @override
+  Future<Uint8List> exportEvaluationPdf({
+    required String lesionId,
+    required String evaluationId,
+  }) => throw Exception('technical failure');
+}
+
+class _RecordingPdfShareService implements PdfShareService {
+  Uint8List? bytes;
+  String? evaluationId;
+  ShareOrigin? origin;
+
+  @override
+  Future<void> share(
+    Uint8List bytes, {
+    required String evaluationId,
+    required ShareOrigin origin,
+  }) async {
+    this.bytes = bytes;
+    this.evaluationId = evaluationId;
+    this.origin = origin;
+  }
 }
 
 Map<String, dynamic> _detailJson() => {
@@ -374,6 +419,10 @@ void main() {
   testWidgets('lesion timeline is chronological and repeat returns context', (
     tester,
   ) async {
+    tester.view.physicalSize = const Size(800, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     final repository = _FollowUpRepository()
       ..detail = LesionDetailModel.fromJson(_detailJson()).toEntity();
     Patient? repeatedPatient;
@@ -406,6 +455,170 @@ void main() {
     await tester.pump();
     expect(repeatedPatient?.id, _patient.id);
     expect(repeatedLesion?.id, '1');
+  });
+
+  testWidgets('evaluation PDF export has isolated progress and shares once', (
+    tester,
+  ) async {
+    final repository = _ExportRepository()
+      ..detail = LesionDetailModel.fromJson(_detailJson()).toEntity();
+    final share = _RecordingPdfShareService();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          clinicalRepositoryProvider.overrideWithValue(repository),
+          pdfShareServiceProvider.overrideWithValue(share),
+        ],
+        child: MaterialApp(
+          home: LesionDetailView(
+            patient: _patient,
+            lesionId: '1',
+            onRepeatAnalysis: (_, _) {},
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final button = find.byKey(const Key('exportEvaluationPdf-20'));
+    await tester.scrollUntilVisible(button, 300);
+    await tester.ensureVisible(button);
+    await tester.pumpAndSettle();
+    await tester.tap(button);
+    await tester.pump();
+
+    expect(repository.exportCalls, 1);
+    expect(repository.exportedLesionId, '1');
+    expect(repository.exportedEvaluationId, '20');
+    expect(find.text('Preparando informe…'), findsOneWidget);
+    await tester.tap(button);
+    expect(repository.exportCalls, 1);
+
+    repository.exported.complete(Uint8List.fromList([37, 80, 68, 70, 45]));
+    await tester.pumpAndSettle();
+
+    expect(share.evaluationId, '20');
+    expect(share.bytes, [37, 80, 68, 70, 45]);
+    expect(share.origin?.width, greaterThan(0));
+    expect(find.text('Exportar informe PDF'), findsWidgets);
+  });
+
+  testWidgets('evaluation PDF export reports a controlled failure', (
+    tester,
+  ) async {
+    final repository = _FailingExportRepository()
+      ..detail = LesionDetailModel.fromJson(_detailJson()).toEntity();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [clinicalRepositoryProvider.overrideWithValue(repository)],
+        child: MaterialApp(
+          home: LesionDetailView(
+            patient: _patient,
+            lesionId: '1',
+            onRepeatAnalysis: (_, _) {},
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final button = find.byKey(const Key('exportEvaluationPdf-20'));
+    await tester.scrollUntilVisible(button, 300);
+    await tester.ensureVisible(button);
+    await tester.pumpAndSettle();
+    await tester.tap(button);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('No se pudo exportar el informe PDF. Inténtelo nuevamente.'),
+      findsOneWidget,
+    );
+    expect(tester.widget<OutlinedButton>(button).onPressed, isNotNull);
+  });
+
+  testWidgets('workspace change discards an in-flight PDF export', (
+    tester,
+  ) async {
+    final repository = _ExportRepository()
+      ..detail = LesionDetailModel.fromJson(_detailJson()).toEntity();
+    final share = _RecordingPdfShareService();
+    final container = ProviderContainer(
+      overrides: [
+        clinicalRepositoryProvider.overrideWithValue(repository),
+        pdfShareServiceProvider.overrideWithValue(share),
+      ],
+    );
+    addTearDown(container.dispose);
+    container
+        .read(clinicalControllerProvider.notifier)
+        .selectWorkspace(_workspace);
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+          home: LesionDetailView(
+            patient: _patient,
+            lesionId: '1',
+            onRepeatAnalysis: (_, _) {},
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final button = find.byKey(const Key('exportEvaluationPdf-20'));
+    await tester.scrollUntilVisible(button, 300);
+    await tester.ensureVisible(button);
+    await tester.drag(find.byType(ListView), const Offset(0, -100));
+    await tester.pumpAndSettle();
+    await tester.tap(button);
+    await tester.pump();
+    expect(repository.exportCalls, 1);
+
+    container
+        .read(clinicalControllerProvider.notifier)
+        .selectWorkspace(
+          const ClinicalWorkspace(
+            id: 'workspace-2',
+            name: 'Centro Sur',
+            type: 'clinic',
+            status: 'active',
+            membershipStatus: MembershipStatus.active,
+          ),
+        );
+    repository.exported.complete(Uint8List.fromList([37, 80, 68, 70, 45]));
+    await tester.pumpAndSettle();
+
+    expect(share.bytes, isNull);
+  });
+
+  testWidgets('evaluation PDF action remains reachable with large text', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final repository = _FollowUpRepository()
+      ..detail = LesionDetailModel.fromJson(_detailJson()).toEntity();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [clinicalRepositoryProvider.overrideWithValue(repository)],
+        child: MediaQuery(
+          data: const MediaQueryData(textScaler: TextScaler.linear(1.6)),
+          child: MaterialApp(
+            home: LesionDetailView(
+              patient: _patient,
+              lesionId: '1',
+              onRepeatAnalysis: (_, _) {},
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final button = find.byKey(const Key('exportEvaluationPdf-20'));
+    await tester.scrollUntilVisible(button, 300);
+
+    expect(button, findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('workspace reset clears workspace patient lesion and follow-up', (

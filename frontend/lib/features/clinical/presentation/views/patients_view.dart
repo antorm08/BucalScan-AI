@@ -1,4 +1,5 @@
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
+import 'package:bucalscan_ai/core/widgets/responsive_content.dart';
 import 'package:bucalscan_ai/features/clinical/domain/entities/clinical_entities.dart';
 import 'package:bucalscan_ai/features/clinical/presentation/viewmodels/patient_follow_up_controller.dart';
 import 'package:bucalscan_ai/features/clinical/presentation/views/patient_detail_view.dart';
@@ -48,78 +49,81 @@ class _PatientsViewState extends ConsumerState<PatientsView> {
     final state = ref.watch(patientFollowUpControllerProvider);
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: RefreshIndicator(
-        onRefresh: () => ref
-            .read(patientFollowUpControllerProvider.notifier)
-            .searchPatients(_search.text.trim()),
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            const Text(
-              'Seguimiento longitudinal',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              'Pacientes compartidos por profesionales autorizados del centro. Busca por código clínico, documento o nombre.',
-              style: TextStyle(color: AppColors.onSurfaceVariant),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              key: const Key('patientsSearchField'),
-              controller: _search,
-              textInputAction: TextInputAction.search,
-              onSubmitted: (value) => ref
-                  .read(patientFollowUpControllerProvider.notifier)
-                  .searchPatients(value.trim()),
-              decoration: InputDecoration(
-                labelText: 'Buscar pacientes',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: IconButton(
-                  tooltip: 'Buscar',
+      body: ResponsiveContent(
+        maxWidth: 920,
+        child: RefreshIndicator(
+          onRefresh: () => ref
+              .read(patientFollowUpControllerProvider.notifier)
+              .searchPatients(_search.text.trim()),
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              const Text(
+                'Seguimiento longitudinal',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Pacientes compartidos por profesionales autorizados del centro. Busca por código clínico, documento o nombre.',
+                style: TextStyle(color: AppColors.onSurfaceVariant),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                key: const Key('patientsSearchField'),
+                controller: _search,
+                textInputAction: TextInputAction.search,
+                onSubmitted: (value) => ref
+                    .read(patientFollowUpControllerProvider.notifier)
+                    .searchPatients(value.trim()),
+                decoration: InputDecoration(
+                  labelText: 'Buscar pacientes',
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: IconButton(
+                    tooltip: 'Buscar',
+                    onPressed: () => ref
+                        .read(patientFollowUpControllerProvider.notifier)
+                        .searchPatients(_search.text.trim()),
+                    icon: const Icon(Icons.arrow_forward),
+                  ),
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              if (state.status == FollowUpStatus.loading)
+                const Center(child: CircularProgressIndicator())
+              else if (state.status == FollowUpStatus.error)
+                _Message(
+                  icon: Icons.cloud_off_outlined,
+                  text: state.error ?? 'No se pudieron cargar los pacientes.',
+                  action: 'Reintentar',
                   onPressed: () => ref
                       .read(patientFollowUpControllerProvider.notifier)
                       .searchPatients(_search.text.trim()),
-                  icon: const Icon(Icons.arrow_forward),
-                ),
-                border: const OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            if (state.status == FollowUpStatus.loading)
-              const Center(child: CircularProgressIndicator())
-            else if (state.status == FollowUpStatus.error)
-              _Message(
-                icon: Icons.cloud_off_outlined,
-                text: state.error ?? 'No se pudieron cargar los pacientes.',
-                action: 'Reintentar',
-                onPressed: () => ref
-                    .read(patientFollowUpControllerProvider.notifier)
-                    .searchPatients(_search.text.trim()),
-              )
-            else if (state.status == FollowUpStatus.empty)
-              const _Message(
-                icon: Icons.person_search_outlined,
-                text: 'No se encontraron pacientes en este espacio.',
-              )
-            else
-              ...state.patients.map(
-                (patient) => Card(
-                  child: ListTile(
-                    key: Key('patient-${patient.id}'),
-                    leading: const CircleAvatar(
-                      child: Icon(Icons.person_outline),
+                )
+              else if (state.status == FollowUpStatus.empty)
+                const _Message(
+                  icon: Icons.person_search_outlined,
+                  text: 'No se encontraron pacientes en este espacio.',
+                )
+              else
+                ...state.patients.map(
+                  (patient) => Card(
+                    child: ListTile(
+                      key: Key('patient-${patient.id}'),
+                      leading: const CircleAvatar(
+                        child: Icon(Icons.person_outline),
+                      ),
+                      title: Text(patient.fullName),
+                      subtitle: Text(
+                        '${patient.clinicalCode}${patient.identityDocument == null ? '' : ' · ${patient.identityDocument}'}',
+                      ),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => _open(patient),
                     ),
-                    title: Text(patient.fullName),
-                    subtitle: Text(
-                      '${patient.clinicalCode}${patient.identityDocument == null ? '' : ' · ${patient.identityDocument}'}',
-                    ),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => _open(patient),
                   ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:bucalscan_ai/core/constants/app_constants.dart';
 import 'package:bucalscan_ai/data/services/api_service.dart';
@@ -7,6 +9,7 @@ class _RecordingApiService extends ApiService {
   String? lastPath;
   Map<String, dynamic>? lastQuery;
   Map<String, dynamic>? lastPayload;
+  bool? lastWorkspaceScoped;
 
   @override
   Future<List<Map<String, dynamic>>> getList(
@@ -41,6 +44,16 @@ class _RecordingApiService extends ApiService {
       'status': data['status'],
     };
   }
+
+  @override
+  Future<Uint8List> getBytes(
+    String path, {
+    bool workspaceScoped = false,
+  }) async {
+    lastPath = path;
+    lastWorkspaceScoped = workspaceScoped;
+    return Uint8List.fromList([37, 80, 68, 70, 45]);
+  }
 }
 
 void main() {
@@ -73,5 +86,22 @@ void main() {
     expect(api.lastPath, '/api/v1/patients/patient-1/lesions');
     expect(api.lastPayload?['estimated_duration'], 'dos semanas');
     expect(api.lastPayload?.containsKey('temporal_description'), isFalse);
+  });
+
+  test('evaluation report uses workspace-scoped binary endpoint', () async {
+    final api = _RecordingApiService();
+    final repository = ClinicalRepositoryImpl(api);
+
+    final bytes = await repository.exportEvaluationPdf(
+      lesionId: 'lesion-1',
+      evaluationId: 'evaluation-9',
+    );
+
+    expect(
+      api.lastPath,
+      '/api/v1/lesions/lesion-1/evaluations/evaluation-9/report.pdf',
+    );
+    expect(api.lastWorkspaceScoped, isTrue);
+    expect(bytes, [37, 80, 68, 70, 45]);
   });
 }

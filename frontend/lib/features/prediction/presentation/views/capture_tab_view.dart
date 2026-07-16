@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
+import 'package:bucalscan_ai/core/widgets/responsive_content.dart';
 import 'package:bucalscan_ai/features/prediction/presentation/viewmodels/prediction_viewmodel.dart';
 import 'package:bucalscan_ai/features/prediction/presentation/views/result_view.dart';
 import 'package:bucalscan_ai/features/clinical/presentation/views/patient_lesion_picker.dart';
@@ -179,183 +180,186 @@ class _CaptureTabViewState extends ConsumerState<CaptureTabView> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const PatientLesionPicker(),
-            const SizedBox(height: 12),
-            if (clinical.patient != null && clinical.lesion != null) ...[
-              Container(
-                key: const Key('selectedClinicalContext'),
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryFixed,
-                  borderRadius: BorderRadius.circular(12),
+      body: ResponsiveContent(
+        maxWidth: 840,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const PatientLesionPicker(),
+              const SizedBox(height: 12),
+              if (clinical.patient != null && clinical.lesion != null) ...[
+                Container(
+                  key: const Key('selectedClinicalContext'),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryFixed,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.link, color: AppColors.primary),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          '${clinical.patient!.fullName} · ${clinical.patient!.clinicalCode}\nLesión: ${clinical.lesion!.anatomicalSite}',
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: 'Limpiar paciente y lesión',
+                        onPressed: _startClean,
+                        icon: const Icon(Icons.close),
+                      ),
+                    ],
+                  ),
                 ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.link, color: AppColors.primary),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        '${clinical.patient!.fullName} · ${clinical.patient!.clinicalCode}\nLesión: ${clinical.lesion!.anatomicalSite}',
-                        style: const TextStyle(fontWeight: FontWeight.w600),
+                const Padding(
+                  padding: EdgeInsets.only(top: 8),
+                  child: Text(
+                    'Una imagen corresponde a una sola lesión y evaluación. Use otro análisis para una lesión o imagen diferente.',
+                    style: TextStyle(color: AppColors.onSurfaceVariant),
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+              _CaptureHeroCard(hasImage: hasImage),
+              const SizedBox(height: 12),
+              _CaptureTipsCard(hasImage: hasImage),
+              const SizedBox(height: 12),
+              _CapturePreviewCard(selectedImage: _selectedImage),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: viewModel.isLoading
+                          ? null
+                          : () => _pickImage(ImageSource.camera),
+                      icon: const Icon(Icons.camera_alt_outlined, size: 18),
+                      label: Text(
+                        _selectedImage == null ? 'Tomar foto' : 'Nueva foto',
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                     ),
-                    IconButton(
-                      tooltip: 'Limpiar paciente y lesión',
-                      onPressed: _startClean,
-                      icon: const Icon(Icons.close),
-                    ),
-                  ],
-                ),
-              ),
-              const Padding(
-                padding: EdgeInsets.only(top: 8),
-                child: Text(
-                  'Una imagen corresponde a una sola lesión y evaluación. Use otro análisis para una lesión o imagen diferente.',
-                  style: TextStyle(color: AppColors.onSurfaceVariant),
-                ),
-              ),
-              const SizedBox(height: 12),
-            ],
-            _CaptureHeroCard(hasImage: hasImage),
-            const SizedBox(height: 12),
-            _CaptureTipsCard(hasImage: hasImage),
-            const SizedBox(height: 12),
-            _CapturePreviewCard(selectedImage: _selectedImage),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: viewModel.isLoading
-                        ? null
-                        : () => _pickImage(ImageSource.camera),
-                    icon: const Icon(Icons.camera_alt_outlined, size: 18),
-                    label: Text(
-                      _selectedImage == null ? 'Tomar foto' : 'Nueva foto',
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: viewModel.isLoading
-                        ? null
-                        : () => _pickImage(ImageSource.gallery),
-                    icon: const Icon(Icons.photo_library_outlined, size: 18),
-                    label: Text(
-                      _selectedImage == null
-                          ? 'Elegir archivo'
-                          : 'Cambiar imagen',
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceContainerLowest,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.outlineVariant),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    _selectedImage == null
-                        ? Icons.info_outline
-                        : Icons.check_circle_outline,
-                    color: _selectedImage == null
-                        ? AppColors.secondary
-                        : AppColors.primary,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Text(
-                      _selectedImage == null
-                          ? 'Elija una foto clara de la cavidad oral para habilitar el análisis.'
-                          : 'Imagen lista. Confirme que la lesión sea visible antes de continuar.',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: AppColors.onSurfaceVariant,
+                    child: OutlinedButton.icon(
+                      onPressed: viewModel.isLoading
+                          ? null
+                          : () => _pickImage(ImageSource.gallery),
+                      icon: const Icon(Icons.photo_library_outlined, size: 18),
+                      label: Text(
+                        _selectedImage == null
+                            ? 'Elegir archivo'
+                            : 'Cambiar imagen',
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                     ),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              key: const Key('clinicalObservationsField'),
-              controller: _clinicalObservationsController,
-              maxLines: 4,
-              decoration: const InputDecoration(
-                labelText: 'Hallazgos de la evaluación actual (opcional)',
-                hintText:
-                    'Ej.: bordes, color, superficie y síntomas observados hoy',
-                helperText:
-                    'Se guardan en esta evaluación, separados de las notas longitudinales de la lesión.',
-                border: OutlineInputBorder(),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceContainerLowest,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.outlineVariant),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      _selectedImage == null
+                          ? Icons.info_outline
+                          : Icons.check_circle_outline,
+                      color: _selectedImage == null
+                          ? AppColors.secondary
+                          : AppColors.primary,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        _selectedImage == null
+                            ? 'Elija una foto clara de la cavidad oral para habilitar el análisis.'
+                            : 'Imagen lista. Confirme que la lesión sea visible antes de continuar.',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: AppColors.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            const ClinicalAssessmentCard(),
-            const SizedBox(height: 12),
-            _ConsentCard(
-              isEnabled: hasImage && !viewModel.isLoading,
-              value: _hasStorageConsent,
-              onChanged: (value) {
-                setState(() => _hasStorageConsent = value ?? false);
-              },
-            ),
-            const SizedBox(height: 12),
-            ElevatedButton.icon(
-              onPressed:
-                  _selectedImage == null ||
-                      viewModel.isLoading ||
-                      clinical.patient == null ||
-                      clinical.lesion == null ||
-                      !_hasStorageConsent ||
-                      (priority.available && !priority.complete)
-                  ? null
-                  : _analyzeImage,
-              icon: viewModel.isLoading
-                  ? const SizedBox(
-                      height: 18,
-                      width: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.analytics_outlined, size: 18),
-              label: Text(
-                viewModel.isLoading
-                    ? 'Preparando análisis...'
-                    : priority.available && !priority.complete
-                    ? 'Complete la evaluación estructurada'
-                    : hasImage
-                    ? _hasStorageConsent
-                          ? 'Confirmar y analizar imagen'
-                          : 'Confirme la autorizacion para continuar'
-                    : 'Seleccione una imagen para continuar',
+              const SizedBox(height: 12),
+              TextField(
+                key: const Key('clinicalObservationsField'),
+                controller: _clinicalObservationsController,
+                maxLines: 4,
+                decoration: const InputDecoration(
+                  labelText: 'Hallazgos de la evaluación actual (opcional)',
+                  hintText:
+                      'Ej.: bordes, color, superficie y síntomas observados hoy',
+                  helperText:
+                      'Se guardan en esta evaluación, separados de las notas longitudinales de la lesión.',
+                  border: OutlineInputBorder(),
+                ),
               ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.onPrimary,
-                padding: const EdgeInsets.symmetric(vertical: 14),
+              const SizedBox(height: 12),
+              const ClinicalAssessmentCard(),
+              const SizedBox(height: 12),
+              _ConsentCard(
+                isEnabled: hasImage && !viewModel.isLoading,
+                value: _hasStorageConsent,
+                onChanged: (value) {
+                  setState(() => _hasStorageConsent = value ?? false);
+                },
               ),
-            ),
-            const SizedBox(height: 24),
-          ],
+              const SizedBox(height: 12),
+              ElevatedButton.icon(
+                onPressed:
+                    _selectedImage == null ||
+                        viewModel.isLoading ||
+                        clinical.patient == null ||
+                        clinical.lesion == null ||
+                        !_hasStorageConsent ||
+                        (priority.available && !priority.complete)
+                    ? null
+                    : _analyzeImage,
+                icon: viewModel.isLoading
+                    ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.analytics_outlined, size: 18),
+                label: Text(
+                  viewModel.isLoading
+                      ? 'Preparando análisis...'
+                      : priority.available && !priority.complete
+                      ? 'Complete la evaluación estructurada'
+                      : hasImage
+                      ? _hasStorageConsent
+                            ? 'Confirmar y analizar imagen'
+                            : 'Confirme la autorizacion para continuar'
+                      : 'Seleccione una imagen para continuar',
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: AppColors.onPrimary,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+              ),
+              const SizedBox(height: 24),
+            ],
+          ),
         ),
       ),
     );

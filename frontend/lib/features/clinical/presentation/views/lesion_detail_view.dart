@@ -1,10 +1,16 @@
 import 'package:bucalscan_ai/core/theme/app_colors.dart';
 import 'package:bucalscan_ai/core/presentation/localized_status.dart';
 import 'package:bucalscan_ai/features/clinical/domain/entities/clinical_entities.dart';
+import 'package:bucalscan_ai/features/clinical/domain/entities/lesion_comparison.dart';
+import 'package:bucalscan_ai/features/clinical/domain/services/pdf_share_service.dart';
+import 'package:bucalscan_ai/features/clinical/di/clinical_providers.dart';
+import 'package:bucalscan_ai/features/clinical/presentation/views/lesion_comparison_view.dart';
 import 'package:bucalscan_ai/features/clinical/presentation/viewmodels/patient_follow_up_controller.dart';
+import 'package:bucalscan_ai/features/clinical/presentation/viewmodels/clinical_controller.dart';
 import 'package:bucalscan_ai/features/priority/presentation/priority_copy.dart';
 import 'package:flutter/material.dart';
 import 'package:bucalscan_ai/core/widgets/heatmap_overlay_image.dart';
+import 'package:bucalscan_ai/core/widgets/responsive_content.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class LesionDetailView extends ConsumerStatefulWidget {
@@ -24,6 +30,8 @@ class LesionDetailView extends ConsumerStatefulWidget {
 }
 
 class _LesionDetailViewState extends ConsumerState<LesionDetailView> {
+  final Set<String> _exportingEvaluationIds = {};
+
   @override
   void initState() {
     super.initState();
@@ -129,10 +137,54 @@ class _LesionDetailViewState extends ConsumerState<LesionDetailView> {
     }
   }
 
+  Future<void> _exportEvaluation(
+    OralLesion lesion,
+    LesionEvaluation evaluation,
+    ShareOrigin origin,
+  ) async {
+    if (_exportingEvaluationIds.contains(evaluation.id)) return;
+    final workspaceId = ref
+        .read(clinicalControllerProvider)
+        .activeWorkspace
+        ?.id;
+    setState(() => _exportingEvaluationIds.add(evaluation.id));
+    try {
+      final bytes = await ref.read(exportEvaluationPdfUseCaseProvider)(
+        lesionId: lesion.id,
+        evaluationId: evaluation.id,
+      );
+      if (!mounted ||
+          ref.read(clinicalControllerProvider).activeWorkspace?.id !=
+              workspaceId) {
+        return;
+      }
+      await ref
+          .read(pdfShareServiceProvider)
+          .share(bytes, evaluationId: evaluation.id, origin: origin);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'No se pudo exportar el informe PDF. Inténtelo nuevamente.',
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _exportingEvaluationIds.remove(evaluation.id));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(patientFollowUpControllerProvider);
     final detail = state.lesionDetail;
+    final comparableCount = detail == null
+        ? 0
+        : comparableEvaluations(detail.evaluations).length;
     return Scaffold(
       appBar: AppBar(title: const Text('Seguimiento de lesión')),
       body: detail == null && state.status == FollowUpStatus.loading
@@ -152,76 +204,113 @@ class _LesionDetailViewState extends ConsumerState<LesionDetailView> {
                 ],
               ),
             )
-          : ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          detail.lesion.anatomicalSite,
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          '${detail.lesion.temporalDescription} · ${_label(detail.lesion.status)}',
-                        ),
-                        if (detail.lesion.notes != null) ...[
-                          const SizedBox(height: 10),
-                          const Text(
-                            'Notas longitudinales',
-                            style: TextStyle(fontWeight: FontWeight.w700),
-                          ),
-                          Text(detail.lesion.notes!),
-                        ],
-                        const SizedBox(height: 12),
-                        OutlinedButton.icon(
-                          onPressed:
-                              state.actionStatus ==
-                                  FollowUpActionStatus.updating
-                              ? null
-                              : () => _edit(detail),
-                          icon: const Icon(Icons.edit_outlined),
-                          label: const Text('Editar estado y notas'),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                FilledButton.icon(
-                  key: const Key('repeatAnalysisButton'),
-                  onPressed: () =>
-                      widget.onRepeatAnalysis(widget.patient, detail.lesion),
-                  icon: const Icon(Icons.add_a_photo_outlined),
-                  label: const Text('Nuevo análisis para esta lesión'),
-                ),
-                const SizedBox(height: 22),
-                Text(
-                  'Línea de tiempo',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 10),
-                if (detail.evaluations.isEmpty)
-                  const Card(
+          : ResponsiveContent(
+              maxWidth: 840,
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  Card(
                     child: Padding(
-                      padding: EdgeInsets.all(18),
-                      child: Text('Esta lesión aún no tiene evaluaciones.'),
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            detail.lesion.anatomicalSite,
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            '${detail.lesion.temporalDescription} · ${_label(detail.lesion.status)}',
+                          ),
+                          if (detail.lesion.notes != null) ...[
+                            const SizedBox(height: 10),
+                            const Text(
+                              'Notas longitudinales',
+                              style: TextStyle(fontWeight: FontWeight.w700),
+                            ),
+                            Text(detail.lesion.notes!),
+                          ],
+                          const SizedBox(height: 12),
+                          OutlinedButton.icon(
+                            onPressed:
+                                state.actionStatus ==
+                                    FollowUpActionStatus.updating
+                                ? null
+                                : () => _edit(detail),
+                            icon: const Icon(Icons.edit_outlined),
+                            label: const Text('Editar estado y notas'),
+                          ),
+                        ],
+                      ),
                     ),
-                  )
-                else
-                  ...detail.evaluations.map(
-                    (evaluation) => _EvaluationCard(evaluation: evaluation),
                   ),
-                if (state.actionError != null)
+                  const SizedBox(height: 12),
+                  FilledButton.icon(
+                    key: const Key('repeatAnalysisButton'),
+                    onPressed: () =>
+                        widget.onRepeatAnalysis(widget.patient, detail.lesion),
+                    icon: const Icon(Icons.add_a_photo_outlined),
+                    label: const Text('Nuevo análisis para esta lesión'),
+                  ),
+                  const SizedBox(height: 22),
+                  OutlinedButton.icon(
+                    key: const Key('compareEvaluationsButton'),
+                    onPressed: comparableCount < 2
+                        ? null
+                        : () => Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => LesionComparisonView(
+                                lesion: detail.lesion,
+                                evaluations: detail.evaluations,
+                              ),
+                            ),
+                          ),
+                    icon: const Icon(Icons.compare_outlined),
+                    label: const Text('Comparar dos evaluaciones'),
+                  ),
+                  if (comparableCount < 2)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 6),
+                      child: Text(
+                        'Disponible cuando existan dos evaluaciones con imagen y resultado.',
+                        style: TextStyle(color: AppColors.onSurfaceVariant),
+                      ),
+                    ),
+                  const SizedBox(height: 22),
                   Text(
-                    state.actionError!,
-                    style: const TextStyle(color: AppColors.error),
+                    'Línea de tiempo',
+                    style: Theme.of(context).textTheme.titleLarge,
                   ),
-              ],
+                  const SizedBox(height: 10),
+                  if (detail.evaluations.isEmpty)
+                    const Card(
+                      child: Padding(
+                        padding: EdgeInsets.all(18),
+                        child: Text('Esta lesión aún no tiene evaluaciones.'),
+                      ),
+                    )
+                  else
+                    ...detail.evaluations.map(
+                      (evaluation) => _EvaluationCard(
+                        evaluation: evaluation,
+                        isExporting: _exportingEvaluationIds.contains(
+                          evaluation.id,
+                        ),
+                        onExport: (origin) => _exportEvaluation(
+                          detail.lesion,
+                          evaluation,
+                          origin,
+                        ),
+                      ),
+                    ),
+                  if (state.actionError != null)
+                    Text(
+                      state.actionError!,
+                      style: const TextStyle(color: AppColors.error),
+                    ),
+                ],
+              ),
             ),
     );
   }
@@ -231,7 +320,14 @@ String _label(String status) => localizedLesionStatus(status).label;
 
 class _EvaluationCard extends StatelessWidget {
   final LesionEvaluation evaluation;
-  const _EvaluationCard({required this.evaluation});
+  final bool isExporting;
+  final ValueChanged<ShareOrigin> onExport;
+
+  const _EvaluationCard({
+    required this.evaluation,
+    required this.isExporting,
+    required this.onExport,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -335,11 +431,48 @@ class _EvaluationCard extends StatelessWidget {
                 ),
               ),
             ],
+            const SizedBox(height: 12),
+            Builder(
+              builder: (buttonContext) => SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  key: Key('exportEvaluationPdf-${evaluation.id}'),
+                  onPressed: isExporting
+                      ? null
+                      : () => onExport(_shareOrigin(buttonContext)),
+                  icon: isExporting
+                      ? const SizedBox.square(
+                          dimension: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.picture_as_pdf_outlined),
+                  label: Text(
+                    isExporting
+                        ? 'Preparando informe…'
+                        : 'Exportar informe PDF',
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
+}
+
+ShareOrigin _shareOrigin(BuildContext context) {
+  final box = context.findRenderObject() as RenderBox?;
+  if (box == null || !box.hasSize) {
+    return const ShareOrigin(left: 0, top: 0, width: 1, height: 1);
+  }
+  final offset = box.localToGlobal(Offset.zero);
+  return ShareOrigin(
+    left: offset.dx,
+    top: offset.dy,
+    width: box.size.width,
+    height: box.size.height,
+  );
 }
 
 String _format(DateTime date) =>

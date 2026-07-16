@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:bucalscan_ai/core/constants/app_constants.dart';
 import 'package:bucalscan_ai/data/services/api_service.dart';
 import 'package:bucalscan_ai/features/clinical/domain/entities/clinical_entities.dart';
@@ -106,6 +108,15 @@ class ClinicalRepositoryImpl implements ClinicalRepository {
       'estimated_duration': estimatedDuration,
     }, workspaceScoped: true),
   ).toEntity();
+
+  @override
+  Future<Uint8List> exportEvaluationPdf({
+    required String lesionId,
+    required String evaluationId,
+  }) => _api.getBytes(
+    ClinicalEndpoints.evaluationReport(lesionId, evaluationId),
+    workspaceScoped: true,
+  );
 
   ClinicalWorkspace _workspace(Map<String, dynamic> json) {
     final workspace = json['workspace'] is Map

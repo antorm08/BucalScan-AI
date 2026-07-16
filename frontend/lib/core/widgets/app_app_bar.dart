@@ -82,7 +82,7 @@ class AppAppBar extends StatelessWidget implements PreferredSizeWidget {
                   ),
                   title: const Text('Perfil y cuenta'),
                   subtitle: const Text(
-                    'Edita tus datos desde la pestaña Perfil.',
+                    'Abre Perfil y cuenta desde el menú superior.',
                   ),
                   onTap: () => Navigator.pop(context),
                 ),
@@ -94,7 +94,7 @@ class AppAppBar extends StatelessWidget implements PreferredSizeWidget {
                   ),
                   title: const Text('Modelo clínico'),
                   subtitle: const Text(
-                    'Consulta arquitectura y métricas en Perfil > Acerca del modelo.',
+                    'Consulta arquitectura y métricas desde Acerca del modelo.',
                   ),
                   onTap: () => Navigator.pop(context),
                 ),

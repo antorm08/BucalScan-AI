@@ -1,5 +1,6 @@
 import 'package:bucalscan_ai/core/constants/app_constants.dart';
 import 'package:flutter/material.dart';
+import 'package:bucalscan_ai/core/widgets/responsive_content.dart';
 
 class HelpCenterView extends StatefulWidget {
   const HelpCenterView({super.key});
@@ -75,37 +76,40 @@ class _HelpCenterViewState extends State<HelpCenterView> {
         .toList();
     return Scaffold(
       appBar: AppBar(title: const Text('Centro de ayuda')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          TextField(
-            key: const Key('helpSearchField'),
-            onChanged: (value) => setState(() => _query = value),
-            decoration: const InputDecoration(
-              labelText: 'Buscar ayuda',
-              prefixIcon: Icon(Icons.search),
-              border: OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 12),
-          if (sections.isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(24),
-              child: Text('No se encontraron temas relacionados.'),
-            ),
-          ...sections.map(
-            (item) => Card(
-              child: ExpansionTile(
-                key: ValueKey(item.title),
-                leading: Icon(item.icon),
-                title: Text(item.title),
-                childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                expandedCrossAxisAlignment: CrossAxisAlignment.start,
-                children: [Text(item.body)],
+      body: ResponsiveContent(
+        maxWidth: 760,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            TextField(
+              key: const Key('helpSearchField'),
+              onChanged: (value) => setState(() => _query = value),
+              decoration: const InputDecoration(
+                labelText: 'Buscar ayuda',
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(),
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: 12),
+            if (sections.isEmpty)
+              const Padding(
+                padding: EdgeInsets.all(24),
+                child: Text('No se encontraron temas relacionados.'),
+              ),
+            ...sections.map(
+              (item) => Card(
+                child: ExpansionTile(
+                  key: ValueKey(item.title),
+                  leading: Icon(item.icon),
+                  title: Text(item.title),
+                  childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  expandedCrossAxisAlignment: CrossAxisAlignment.start,
+                  children: [Text(item.body)],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

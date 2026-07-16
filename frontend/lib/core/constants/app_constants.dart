@@ -30,4 +30,6 @@ class ClinicalEndpoints {
   static String patient(String patientId) => '$patients/$patientId';
   static String lesion(String lesionId) =>
       '${AppConstants.apiVersion}/lesions/$lesionId';
+  static String evaluationReport(String lesionId, String evaluationId) =>
+      '${lesion(lesionId)}/evaluations/$evaluationId/report.pdf';
 }

@@ -3,6 +3,8 @@ import 'package:bucalscan_ai/features/auth/di/auth_providers.dart';
 import 'package:bucalscan_ai/features/clinical/data/repositories/clinical_repository_impl.dart';
 import 'package:bucalscan_ai/features/clinical/domain/repositories/clinical_repository.dart';
 import 'package:bucalscan_ai/features/clinical/domain/usecases/clinical_usecases.dart';
+import 'package:bucalscan_ai/features/clinical/domain/services/pdf_share_service.dart';
+import 'package:bucalscan_ai/features/clinical/data/services/share_plus_pdf_share_service.dart';
 
 final clinicalRepositoryProvider = Provider<ClinicalRepository>((ref) {
   return ClinicalRepositoryImpl(ref.watch(authApiServiceProvider));
@@ -46,4 +48,12 @@ final getLesionDetailUseCaseProvider = Provider<GetLesionDetailUseCase>(
 
 final updateLesionUseCaseProvider = Provider<UpdateLesionUseCase>(
   (ref) => UpdateLesionUseCase(ref.watch(clinicalRepositoryProvider)),
+);
+
+final exportEvaluationPdfUseCaseProvider = Provider<ExportEvaluationPdfUseCase>(
+  (ref) => ExportEvaluationPdfUseCase(ref.watch(clinicalRepositoryProvider)),
+);
+
+final pdfShareServiceProvider = Provider<PdfShareService>(
+  (ref) => const SharePlusPdfShareService(),
 );

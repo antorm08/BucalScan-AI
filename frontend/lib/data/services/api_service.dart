@@ -2,6 +2,7 @@
 
 import 'dart:io';
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:bucalscan_ai/core/constants/app_constants.dart';
 
@@ -191,6 +192,31 @@ class ApiService {
     } on DioException catch (e) {
       throw Exception(
         _buildApiErrorMessage(e, fallback: 'No se pudieron cargar los datos.'),
+      );
+    }
+  }
+
+  Future<Uint8List> getBytes(
+    String path, {
+    bool workspaceScoped = false,
+  }) async {
+    try {
+      final options = workspaceScoped ? _workspaceOptions() : Options();
+      options.responseType = ResponseType.bytes;
+      final response = await _dio.get<List<int>>(path, options: options);
+      final bytes = Uint8List.fromList(response.data ?? const []);
+      if (bytes.length < 5 || String.fromCharCodes(bytes.take(5)) != '%PDF-') {
+        throw const FormatException('Invalid PDF response.');
+      }
+      return bytes;
+    } on FormatException {
+      throw Exception('El servidor no devolvió un informe PDF válido.');
+    } on DioException catch (e) {
+      throw Exception(
+        _buildApiErrorMessage(
+          e,
+          fallback: 'No se pudo descargar el informe PDF.',
+        ),
       );
     }
   }
