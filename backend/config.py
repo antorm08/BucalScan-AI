@@ -66,6 +66,13 @@ class Settings:
     )
     model_architecture: str = os.getenv("MODEL_ARCHITECTURE", "ResNet50")
     model_version: str = os.getenv("MODEL_VERSION", Path(model_path).stem)
+    image_min_width: int = int(os.getenv("IMAGE_MIN_WIDTH", "224"))
+    image_min_height: int = int(os.getenv("IMAGE_MIN_HEIGHT", "224"))
+    image_blur_threshold: float = float(os.getenv("IMAGE_BLUR_THRESHOLD", "100"))
+    image_dark_luminance: int = int(os.getenv("IMAGE_DARK_LUMINANCE", "20"))
+    image_bright_luminance: int = int(os.getenv("IMAGE_BRIGHT_LUMINANCE", "235"))
+    image_max_dark_ratio: float = float(os.getenv("IMAGE_MAX_DARK_RATIO", "0.40"))
+    image_max_bright_ratio: float = float(os.getenv("IMAGE_MAX_BRIGHT_RATIO", "0.40"))
     cloudinary_cloud_name: Optional[str] = os.getenv("CLOUDINARY_CLOUD_NAME")
     cloudinary_api_key: Optional[str] = os.getenv("CLOUDINARY_API_KEY")
     cloudinary_api_secret: Optional[str] = os.getenv("CLOUDINARY_API_SECRET")
@@ -77,6 +84,15 @@ class Settings:
     cors_origins: list[str] = None
 
     def __post_init__(self):
+        if self.image_min_width <= 0 or self.image_min_height <= 0:
+            raise ValueError("Image minimum dimensions must be positive.")
+        if self.image_blur_threshold < 0:
+            raise ValueError("IMAGE_BLUR_THRESHOLD must be non-negative.")
+        if not 0 <= self.image_dark_luminance < self.image_bright_luminance <= 255:
+            raise ValueError("Image luminance thresholds must satisfy 0 <= dark < bright <= 255.")
+        if not 0 <= self.image_max_dark_ratio <= 1 or not 0 <= self.image_max_bright_ratio <= 1:
+            raise ValueError("Image illumination ratios must be between 0 and 1.")
+
         object.__setattr__(
             self,
             "cors_origins",

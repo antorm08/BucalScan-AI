@@ -1,6 +1,7 @@
 import io
 from datetime import datetime
 
+import numpy as np
 from PIL import Image
 
 from auth.jwt import create_access_token
@@ -47,7 +48,9 @@ def _patient_payload(code="P-001", name="Maria Patient", identity="ID-001", **ex
 
 def _png_bytes():
     output = io.BytesIO()
-    Image.new("RGB", (8, 8), "white").save(output, format="PNG")
+    grid = np.indices((256, 256)).sum(axis=0) % 2
+    pixels = np.where(grid[:, :, None] == 0, 80, 180).astype(np.uint8)
+    Image.fromarray(np.repeat(pixels, 3, axis=2), mode="RGB").save(output, format="PNG")
     return output.getvalue()
 
 

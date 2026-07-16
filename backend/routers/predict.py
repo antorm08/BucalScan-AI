@@ -20,6 +20,7 @@ from schemas import ClinicalAssessmentInput, PredictionResponse
 from routers.priority import persist_priority, require_priority_available
 from services.clinical_priority import result_dict
 from services.cloudinary_storage import upload_image
+from services.image_quality_validator import ImageQualityResult, validate_image_quality
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +37,20 @@ def _build_recommendation(prediction: str) -> str:
     if prediction == "malignant":
         return "This model output supports timely professional review and does not establish a diagnosis."
     return "Continue professional evaluation; this model output cannot rule out clinical concern."
+
+
+def _quality_rejection_message(result: ImageQualityResult) -> str:
+    messages = {
+        "low_resolution": "the resolution is too low",
+        "blurry": "the image is too blurry",
+        "too_dark": "the image is too dark",
+        "overexposed": "the image is overexposed",
+    }
+    details = ", ".join(messages[reason] for reason in result.reasons)
+    return (
+        f"Image quality is insufficient: {details}. "
+        "Please recapture the oral image with steady focus and even lighting."
+    )
 
 
 @router.post("/predict", response_model=PredictionResponse)
@@ -98,6 +113,30 @@ async def predict(
         raise HTTPException(status_code=400, detail="Cannot decode image file.")
     except Exception:
         raise HTTPException(status_code=400, detail="Cannot decode image file.")
+
+    try:
+        quality_result = validate_image_quality(image)
+    except Exception as exc:
+        logger.exception("Image quality validation error for user_id=%s", access.user.id)
+        raise HTTPException(
+            status_code=500,
+            detail="Image quality validation failed. Please try again later.",
+        ) from exc
+
+    if not quality_result.is_valid:
+        logger.warning(
+            "Image quality rejected user_id=%s workspace_id=%s resolution=%sx%s "
+            "blur_score=%.2f dark_ratio=%.4f bright_ratio=%.4f reasons=%s",
+            access.user.id,
+            access.workspace.id,
+            quality_result.width,
+            quality_result.height,
+            quality_result.blur_score,
+            quality_result.dark_ratio,
+            quality_result.bright_ratio,
+            ",".join(quality_result.reasons),
+        )
+        raise HTTPException(status_code=422, detail=_quality_rejection_message(quality_result))
 
     try:
         _t0 = time.perf_counter()

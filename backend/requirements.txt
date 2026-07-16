@@ -14,5 +14,6 @@ python-jose[cryptography]==3.5.0
 python-dotenv==1.0.1
 cloudinary==1.41.0
 onnxruntime==1.25.1
+opencv-python-headless==4.10.0.84
 pytest==8.3.4
 # Training-only deps (torch, torchvision) → see requirements-train.txt
