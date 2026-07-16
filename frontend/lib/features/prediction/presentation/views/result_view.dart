@@ -9,7 +9,7 @@ import 'package:bucalscan_ai/core/widgets/app_app_bar.dart';
 import 'package:bucalscan_ai/features/dashboard/presentation/viewmodels/summary_viewmodel.dart';
 import 'package:bucalscan_ai/features/history/presentation/viewmodels/history_viewmodel.dart';
 import 'package:bucalscan_ai/features/prediction/presentation/viewmodels/prediction_viewmodel.dart';
-import 'package:bucalscan_ai/features/priority/domain/entities/clinical_priority.dart';
+import 'package:bucalscan_ai/features/priority/presentation/widgets/clinical_priority_result_card.dart';
 
 class ResultView extends ConsumerStatefulWidget {
   final File imageFile;
@@ -528,7 +528,7 @@ class _ResultViewState extends ConsumerState<ResultView> {
             ),
             const SizedBox(height: 16),
             if (result.priority case final priority?) ...[
-              _PriorityResultCard(priority: priority),
+              ClinicalPriorityResultCard(priority: priority),
               const SizedBox(height: 16),
             ],
             Card(
@@ -700,68 +700,6 @@ class _ResultActions extends StatelessWidget {
           ],
         ),
       ],
-    );
-  }
-}
-
-class _PriorityResultCard extends StatelessWidget {
-  final ClinicalPriorityResult priority;
-
-  const _PriorityResultCard({required this.priority});
-
-  @override
-  Widget build(BuildContext context) {
-    final emergency = priority.priorityCode == 'emergency';
-    return Card(
-      key: const Key('priorityResultCard'),
-      color: emergency
-          ? AppColors.errorContainer
-          : AppColors.surfaceContainerLowest,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Prioridad clínica orientativa',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              localizedPriorityStatus(priority.priorityCode).label,
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
-                color: emergency ? AppColors.error : AppColors.primary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            ...priority.reasons.map(
-              (reason) => Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Text('• $reason'),
-              ),
-            ),
-            if (emergency)
-              const Text(
-                'Busque atención de emergencia según el contexto. Esta herramienta no reemplaza los servicios de emergencia ni el juicio profesional.',
-                style: TextStyle(fontWeight: FontWeight.w700),
-              )
-            else
-              const Text(
-                'Orienta el tiempo de atención a partir de datos estructurados; no establece diagnóstico.',
-              ),
-            const SizedBox(height: 8),
-            Text(
-              'Ruleset ${priority.rulesetVersion} · motor ${priority.engineVersion}${priority.evaluatedAt == null ? '' : ' · resultado guardado'}',
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

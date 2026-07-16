@@ -35,9 +35,7 @@ class _ClinicalAssessmentCardState
             children: [
               Icon(Icons.hourglass_top_outlined),
               SizedBox(width: 12),
-              Expanded(
-                child: Text('Consultando apoyo de prioridad clínica...'),
-              ),
+              Expanded(child: Text('Consultando el semáforo orientativo...')),
             ],
           ),
         ),
@@ -57,7 +55,7 @@ class _ClinicalAssessmentCardState
                 child: Text(
                   state.capability?.mode == ClinicalPriorityMode.unsupported
                       ? 'La versión de prioridad clínica del servidor no es compatible. El análisis del modelo continúa sin calcular prioridad en el dispositivo.'
-                      : 'La prioridad clínica orientativa está desactivada. El análisis del modelo continúa de forma independiente.',
+                      : 'El semáforo orientativo está desactivado. El análisis del modelo continúa de forma independiente.',
                 ),
               ),
             ],
@@ -71,7 +69,7 @@ class _ClinicalAssessmentCardState
       child: ExpansionTile(
         initiallyExpanded: true,
         leading: const Icon(Icons.fact_check_outlined),
-        title: const Text('Evaluación estructurada de prioridad clínica'),
+        title: const Text('Checklist orientativo de atención'),
         subtitle: Text(
           state.complete
               ? 'Completa. La prioridad será calculada únicamente por el servidor.'

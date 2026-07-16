@@ -10,6 +10,7 @@ import 'package:bucalscan_ai/features/history/domain/entities/analysis.dart';
 import 'package:bucalscan_ai/features/history/domain/entities/history_query.dart';
 import 'package:bucalscan_ai/features/history/presentation/viewmodels/history_viewmodel.dart';
 import 'package:bucalscan_ai/features/history/presentation/widgets/history_card.dart';
+import 'package:bucalscan_ai/features/priority/presentation/priority_copy.dart';
 import 'package:flutter/material.dart';
 import 'package:bucalscan_ai/core/widgets/heatmap_overlay_image.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -214,14 +215,14 @@ class _HistoryTabViewState extends ConsumerState<HistoryTabView> {
             if (analysis.priority case final priority?) ...[
               const Divider(height: 28),
               _Detail(
-                label: 'Prioridad clínica orientativa',
+                label: 'Semáforo orientativo de atención',
                 value: localizedPriorityStatus(priority.priorityCode).label,
               ),
               _Detail(
                 label: 'Motivos registrados',
-                value: priority.reasons.isEmpty
+                value: localizedPriorityReasons(priority).isEmpty
                     ? 'No disponibles'
-                    : priority.reasons.join('\n'),
+                    : localizedPriorityReasons(priority).join('\n'),
               ),
               _Detail(
                 label: 'Proveniencia de prioridad',

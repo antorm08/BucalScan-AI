@@ -2,6 +2,7 @@ import 'package:bucalscan_ai/core/theme/app_colors.dart';
 import 'package:bucalscan_ai/core/presentation/localized_status.dart';
 import 'package:bucalscan_ai/features/clinical/domain/entities/clinical_entities.dart';
 import 'package:bucalscan_ai/features/clinical/presentation/viewmodels/patient_follow_up_controller.dart';
+import 'package:bucalscan_ai/features/priority/presentation/priority_copy.dart';
 import 'package:flutter/material.dart';
 import 'package:bucalscan_ai/core/widgets/heatmap_overlay_image.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -304,11 +305,11 @@ class _EvaluationCard extends StatelessWidget {
             if (evaluation.priority case final priority?) ...[
               const Divider(height: 24),
               const Text(
-                'Prioridad clínica orientativa',
+                'Semáforo orientativo de atención',
                 style: TextStyle(fontWeight: FontWeight.w700),
               ),
               Text(localizedPriorityStatus(priority.priorityCode).label),
-              ...priority.reasons.map(Text.new),
+              ...localizedPriorityReasons(priority).map(Text.new),
               Text(
                 'Ruleset ${priority.rulesetVersion} · motor ${priority.engineVersion}',
                 style: const TextStyle(

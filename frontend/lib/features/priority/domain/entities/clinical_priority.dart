@@ -42,7 +42,7 @@ class ClinicalPriorityResult {
   });
 }
 
-const supportedClinicalPriorityRuleset = 'clinical-priority-v1';
+const supportedClinicalPriorityRuleset = 'clinical-priority-v1-draft';
 
 const clinicalAssessmentFields = <String, String>{
   'ulceration': 'Ulceración',

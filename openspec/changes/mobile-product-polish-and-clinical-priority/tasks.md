@@ -104,6 +104,7 @@
 - [x] 11.5 Extend lesion timeline and History presentation to show the immutable priority result/snapshot provenance associated with each evaluation without recalculating historical records.
 - [x] 11.6 Integrate assessment into new-analysis, retry, start-over, workspace switch, patient/lesion change, logout, and stale-response cleanup so no assessment/result crosses context boundaries.
 - [ ] 11.7 Add Flutter unit/widget/navigation tests for all capability modes/categories, unknown/required inputs, emergency/incomplete copy, version mismatch, strict model/priority separation, retry snapshot, historical provenance, stale responses, accessibility semantics, and large-text layouts.
+- [x] 11.8 Operationalize the academic attention semaphore by aligning the supported draft ruleset, localizing stable reason codes, applying distinct non-color category presentation, and testing every category without deriving priority from ResNet50 confidence.
 
 ## 12. Automated Quality and Release Artifact
 
