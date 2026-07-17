@@ -11,7 +11,7 @@ import 'package:bucalscan_ai/features/clinical/presentation/viewmodels/patient_f
 import 'package:bucalscan_ai/features/clinical/presentation/views/lesion_detail_view.dart';
 import 'package:bucalscan_ai/features/clinical/presentation/views/patient_detail_view.dart';
 import 'package:bucalscan_ai/features/clinical/presentation/views/patient_lesion_picker.dart';
-import 'package:bucalscan_ai/features/clinical/domain/services/pdf_share_service.dart';
+import 'package:bucalscan_ai/features/clinical/domain/services/pdf_save_service.dart';
 import 'package:bucalscan_ai/features/home/presentation/views/home_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -108,6 +108,36 @@ class _CreateLesionRepository extends _FollowUpRepository {
   }) => created.future;
 }
 
+class _UpdateLesionRepository extends _FollowUpRepository {
+  String? status;
+  String? notes;
+  DateTime? observedAt;
+  String? estimatedDuration;
+
+  @override
+  Future<OralLesion> updateLesion({
+    required String lesionId,
+    required String status,
+    String? notes,
+    DateTime? observedAt,
+    String? estimatedDuration,
+  }) async {
+    this.status = status;
+    this.notes = notes;
+    this.observedAt = observedAt;
+    this.estimatedDuration = estimatedDuration;
+    return OralLesion(
+      id: lesionId,
+      patientId: 'patient-1',
+      anatomicalSite: 'Lengua',
+      status: status,
+      notes: notes,
+      observedAt: observedAt,
+      estimatedDuration: estimatedDuration,
+    );
+  }
+}
+
 class _ExportRepository extends _FollowUpRepository {
   final exported = Completer<Uint8List>();
   int exportCalls = 0;
@@ -134,20 +164,18 @@ class _FailingExportRepository extends _FollowUpRepository {
   }) => throw Exception('technical failure');
 }
 
-class _RecordingPdfShareService implements PdfShareService {
+class _RecordingPdfSaveService implements PdfSaveService {
   Uint8List? bytes;
   String? evaluationId;
-  ShareOrigin? origin;
 
   @override
-  Future<void> share(
+  Future<PdfSaveResult> save(
     Uint8List bytes, {
     required String evaluationId,
-    required ShareOrigin origin,
   }) async {
     this.bytes = bytes;
     this.evaluationId = evaluationId;
-    this.origin = origin;
+    return PdfSaveResult.saved;
   }
 }
 
@@ -157,7 +185,9 @@ Map<String, dynamic> _detailJson() => {
     'patient_id': 2,
     'anatomical_site': 'Lengua',
     'status': 'monitoring',
+    'observed_at': '2026-01-05',
     'estimated_duration': 'dos semanas',
+    'clinical_notes': 'Seguimiento estable',
     'created_at': '2026-01-01T08:00:00',
   },
   'evaluations': [
@@ -476,17 +506,68 @@ void main() {
     expect(repeatedLesion?.id, '1');
   });
 
-  testWidgets('evaluation PDF export has isolated progress and shares once', (
+  testWidgets('lesion editor preloads and saves date with separated fields', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final repository = _UpdateLesionRepository()
+      ..detail = LesionDetailModel.fromJson(_detailJson()).toEntity();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [clinicalRepositoryProvider.overrideWithValue(repository)],
+        child: MaterialApp(
+          home: LesionDetailView(
+            patient: _patient,
+            lesionId: '1',
+            onRepeatAnalysis: (_, _) {},
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Editar estado y notas'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Observada el 05/01/2026'), findsOneWidget);
+    expect(
+      tester
+          .widget<TextField>(find.byKey(const Key('editLesionNotes')))
+          .controller
+          ?.text,
+      'Seguimiento estable',
+    );
+    final dateBottom = tester
+        .getBottomLeft(find.byKey(const Key('editLesionObservedAt')))
+        .dy;
+    final durationTop = tester
+        .getTopLeft(find.byKey(const Key('editLesionDuration')))
+        .dy;
+    expect(durationTop - dateBottom, greaterThanOrEqualTo(12));
+
+    await tester.tap(find.byKey(const Key('editLesionSubmit')));
+    await tester.pumpAndSettle();
+
+    expect(repository.observedAt, DateTime(2026, 1, 5));
+    expect(repository.estimatedDuration, 'dos semanas');
+    expect(repository.notes, 'Seguimiento estable');
+    expect(find.text('Seguimiento actualizado correctamente.'), findsOneWidget);
+  });
+
+  testWidgets('evaluation PDF export has isolated progress and saves once', (
     tester,
   ) async {
     final repository = _ExportRepository()
       ..detail = LesionDetailModel.fromJson(_detailJson()).toEntity();
-    final share = _RecordingPdfShareService();
+    final save = _RecordingPdfSaveService();
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           clinicalRepositoryProvider.overrideWithValue(repository),
-          pdfShareServiceProvider.overrideWithValue(share),
+          pdfSaveServiceProvider.overrideWithValue(save),
         ],
         child: MaterialApp(
           home: LesionDetailView(
@@ -508,17 +589,17 @@ void main() {
     expect(repository.exportCalls, 1);
     expect(repository.exportedLesionId, '1');
     expect(repository.exportedEvaluationId, '20');
-    expect(find.text('Preparando informe…'), findsOneWidget);
+    expect(find.text('Preparando descarga…'), findsOneWidget);
     await tester.tap(button);
     expect(repository.exportCalls, 1);
 
     repository.exported.complete(Uint8List.fromList([37, 80, 68, 70, 45]));
     await tester.pumpAndSettle();
 
-    expect(share.evaluationId, '20');
-    expect(share.bytes, [37, 80, 68, 70, 45]);
-    expect(share.origin?.width, greaterThan(0));
-    expect(find.text('Exportar informe PDF'), findsWidgets);
+    expect(save.evaluationId, '20');
+    expect(save.bytes, [37, 80, 68, 70, 45]);
+    expect(find.text('Descargar informe PDF'), findsWidgets);
+    expect(find.text('Informe PDF guardado correctamente.'), findsOneWidget);
   });
 
   testWidgets('evaluation PDF export reports a controlled failure', (
@@ -558,11 +639,11 @@ void main() {
   ) async {
     final repository = _ExportRepository()
       ..detail = LesionDetailModel.fromJson(_detailJson()).toEntity();
-    final share = _RecordingPdfShareService();
+    final save = _RecordingPdfSaveService();
     final container = ProviderContainer(
       overrides: [
         clinicalRepositoryProvider.overrideWithValue(repository),
-        pdfShareServiceProvider.overrideWithValue(share),
+        pdfSaveServiceProvider.overrideWithValue(save),
       ],
     );
     addTearDown(container.dispose);
@@ -605,7 +686,7 @@ void main() {
     repository.exported.complete(Uint8List.fromList([37, 80, 68, 70, 45]));
     await tester.pumpAndSettle();
 
-    expect(share.bytes, isNull);
+    expect(save.bytes, isNull);
   });
 
   testWidgets('evaluation PDF action remains reachable with large text', (

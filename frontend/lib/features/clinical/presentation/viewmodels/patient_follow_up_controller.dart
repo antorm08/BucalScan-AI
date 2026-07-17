@@ -224,6 +224,9 @@ class PatientFollowUpController extends Notifier<PatientFollowUpState> {
             .map((item) => item.id == lesion.id ? lesion : item)
             .toList(),
       );
+      if (ref.read(clinicalControllerProvider).lesion?.id == lesion.id) {
+        ref.read(clinicalControllerProvider.notifier).selectLesion(lesion);
+      }
       return true;
     } catch (_) {
       if (!_isCurrent(generation, workspaceId)) return false;

@@ -108,6 +108,19 @@ def test_admin_completes_center_location_before_approval(client, db_session):
     assert client.post(approval_path, headers=_headers(admin)).status_code == 200
     assert workspace.status == membership.status == "active"
 
+    response = client.patch(
+        update_path,
+        headers=_headers(admin),
+        json={"city": "Loja", "address": "Av. Universitaria 20"},
+    )
+    assert response.status_code == 200
+    assert response.json()["status"] == "active"
+    assert response.json()["city"] == "Loja"
+    assert response.json()["address"] == "Av. Universitaria 20"
+    db_session.refresh(workspace)
+    assert workspace.city == "Loja"
+    assert workspace.address == "Av. Universitaria 20"
+
 
 def test_membership_decisions_activate_independent_and_assign_allowed_role(client, db_session):
     admin = _user(db_session, "membership-admin", "platform_admin")

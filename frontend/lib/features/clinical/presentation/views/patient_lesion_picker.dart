@@ -77,11 +77,13 @@ class _PatientLesionPickerState extends ConsumerState<PatientLesionPicker> {
       final lesions = await ref.read(getLesionsUseCaseProvider)(patient.id);
       if (mounted && generation == _requestGeneration) {
         setState(() => _lesions = lesions);
-        if (previousLesion != null &&
-            lesions.any((item) => item.id == previousLesion.id)) {
+        final refreshedLesion = previousLesion == null
+            ? null
+            : lesions.where((item) => item.id == previousLesion.id).firstOrNull;
+        if (refreshedLesion != null) {
           ref
               .read(clinicalControllerProvider.notifier)
-              .selectLesion(previousLesion);
+              .selectLesion(refreshedLesion);
         }
       }
     } catch (_) {

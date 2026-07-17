@@ -83,8 +83,7 @@ class ClinicalRepositoryImpl implements ClinicalRepository {
   }) async => OralLesionModel.fromJson(
     await _api.postJson(ClinicalEndpoints.patientLesions(patientId), {
       'anatomical_site': anatomicalSite,
-      if (observedAt != null)
-        'observed_at': observedAt.toIso8601String().split('T').first,
+      if (observedAt != null) 'observed_at': _dateOnly(observedAt),
       if (estimatedDuration?.isNotEmpty == true)
         'estimated_duration': estimatedDuration,
       'status': 'active',
@@ -103,11 +102,15 @@ class ClinicalRepositoryImpl implements ClinicalRepository {
     await _api.patchJson(ClinicalEndpoints.lesion(lesionId), {
       'status': status,
       'clinical_notes': notes,
-      if (observedAt != null)
-        'observed_at': observedAt.toIso8601String().split('T').first,
+      'observed_at': observedAt == null ? null : _dateOnly(observedAt),
       'estimated_duration': estimatedDuration,
     }, workspaceScoped: true),
   ).toEntity();
+
+  String _dateOnly(DateTime value) =>
+      '${value.year.toString().padLeft(4, '0')}-'
+      '${value.month.toString().padLeft(2, '0')}-'
+      '${value.day.toString().padLeft(2, '0')}';
 
   @override
   Future<Uint8List> exportEvaluationPdf({

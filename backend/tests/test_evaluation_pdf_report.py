@@ -137,9 +137,9 @@ def _records(db, suffix="report", *, with_priority=False):
     return professional, workspace, patient, lesion, evaluation
 
 
-def _png_bytes():
+def _png_bytes(width=32, height=24):
     output = io.BytesIO()
-    Image.new("RGB", (32, 24), "#5b8f96").save(output, format="PNG")
+    Image.new("RGB", (width, height), "#5b8f96").save(output, format="PNG")
     return output.getvalue()
 
 
@@ -182,6 +182,23 @@ def test_report_service_embeds_available_source_and_cam(db_session, monkeypatch)
     assert pdf.startswith(b"%PDF-")
     assert b"Imagen no disponible" not in pdf
     assert b"Mapa CAM no disponible" not in pdf
+
+
+def test_report_service_bounds_tall_images(db_session, monkeypatch):
+    professional, _, patient, lesion, evaluation = _records(db_session, "tall")
+    monkeypatch.setattr(
+        "services.evaluation_pdf_report._asset_bytes",
+        lambda _: _png_bytes(120, 1600),
+    )
+
+    pdf = build_evaluation_pdf(
+        patient=patient,
+        lesion=lesion,
+        evaluation=evaluation,
+        professional=professional,
+    )
+
+    assert pdf.startswith(b"%PDF-")
 
 
 def test_report_service_rejects_untrusted_remote_assets():

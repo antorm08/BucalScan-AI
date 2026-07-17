@@ -287,11 +287,27 @@ def test_lesion_detail_and_update_are_workspace_scoped(client, db_session):
     updated = client.patch(
         f"/api/v1/lesions/{lesion.id}",
         headers=_headers(owner, workspace),
-        json={"status": "monitoring", "clinical_notes": "Review in 30 days"},
+        json={
+            "status": "monitoring",
+            "clinical_notes": "Review in 30 days",
+            "observed_at": "2026-07-06",
+        },
     )
     assert updated.status_code == 200
     assert updated.json()["status"] == "monitoring"
     assert updated.json()["clinical_notes"] == "Review in 30 days"
+    assert updated.json()["observed_at"] == "2026-07-06"
+    assert client.get(
+        f"/api/v1/lesions/{lesion.id}", headers=_headers(owner, workspace)
+    ).json()["lesion"]["observed_at"] == "2026-07-06"
+
+    cleared = client.patch(
+        f"/api/v1/lesions/{lesion.id}",
+        headers=_headers(owner, workspace),
+        json={"observed_at": None, "estimated_duration": "three weeks"},
+    )
+    assert cleared.status_code == 200
+    assert cleared.json()["observed_at"] is None
 
     legacy = client.patch(
         f"/api/v1/lesions/{lesion.id}/status",

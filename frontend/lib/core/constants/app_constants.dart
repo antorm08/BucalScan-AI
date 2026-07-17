@@ -1,5 +1,7 @@
 class AppConstants {
   static const String appName = 'BucalScan AI';
+  static const String appVersion = '1.2.3';
+  static const String buildNumber = '7';
   static const String apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
     defaultValue: 'https://bucalscan-ai.onrender.com',

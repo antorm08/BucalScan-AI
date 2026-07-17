@@ -195,6 +195,7 @@ def evaluation_pdf_report(
             joinedload(models.ClinicalEvaluation.lesion),
             joinedload(models.ClinicalEvaluation.image),
             joinedload(models.ClinicalEvaluation.prediction),
+            joinedload(models.ClinicalEvaluation.consent_attestation),
             joinedload(models.ClinicalEvaluation.assessment_snapshot).joinedload(
                 models.ClinicalAssessmentSnapshot.priority_result
             ),

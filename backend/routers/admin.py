@@ -204,15 +204,12 @@ def update_center(
     current_user: models.User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    row = db.query(models.ClinicalWorkspace, models.User).outerjoin(
-        models.User, models.User.id == models.ClinicalWorkspace.initial_requester_id
-    ).filter(
+    workspace = db.query(models.ClinicalWorkspace).filter(
         models.ClinicalWorkspace.id == workspace_id,
         models.ClinicalWorkspace.workspace_type != "independent",
     ).with_for_update().first()
-    if row is None:
+    if workspace is None:
         raise HTTPException(status_code=404, detail="Center not found.")
-    workspace, requester = row
     if workspace.status == "rejected":
         raise HTTPException(status_code=409, detail="Rejected centers cannot be updated.")
     city = payload.city.strip()
@@ -223,6 +220,7 @@ def update_center(
     workspace.address = address
     db.commit()
     db.refresh(workspace)
+    requester = db.query(models.User).filter_by(id=workspace.initial_requester_id).first()
     _attach_approvers(db, [workspace])
     return _workspace_request(workspace, requester)
 

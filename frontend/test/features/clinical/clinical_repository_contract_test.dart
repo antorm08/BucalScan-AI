@@ -46,6 +46,26 @@ class _RecordingApiService extends ApiService {
   }
 
   @override
+  Future<Map<String, dynamic>> patchJson(
+    String path,
+    Map<String, dynamic> data, {
+    bool workspaceScoped = false,
+  }) async {
+    lastPath = path;
+    lastPayload = data;
+    lastWorkspaceScoped = workspaceScoped;
+    return {
+      'id': 'lesion-1',
+      'patient_id': 'patient-1',
+      'anatomical_site': 'lengua',
+      'status': data['status'],
+      'clinical_notes': data['clinical_notes'],
+      'observed_at': data['observed_at'],
+      'estimated_duration': data['estimated_duration'],
+    };
+  }
+
+  @override
   Future<Uint8List> getBytes(
     String path, {
     bool workspaceScoped = false,
@@ -87,6 +107,36 @@ void main() {
     expect(api.lastPayload?['estimated_duration'], 'dos semanas');
     expect(api.lastPayload?.containsKey('temporal_description'), isFalse);
   });
+
+  test(
+    'lesion update sends a date-only value and supports clearing it',
+    () async {
+      final api = _RecordingApiService();
+      final repository = ClinicalRepositoryImpl(api);
+
+      final updated = await repository.updateLesion(
+        lesionId: 'lesion-1',
+        status: 'monitoring',
+        observedAt: DateTime(2026, 7, 6),
+        estimatedDuration: 'tres semanas',
+        notes: 'Sin cambios relevantes',
+      );
+
+      expect(api.lastPath, '/api/v1/lesions/lesion-1');
+      expect(api.lastWorkspaceScoped, isTrue);
+      expect(api.lastPayload?['observed_at'], '2026-07-06');
+      expect(updated.observedAt, DateTime(2026, 7, 6));
+
+      await repository.updateLesion(
+        lesionId: 'lesion-1',
+        status: 'monitoring',
+        observedAt: null,
+        estimatedDuration: 'tres semanas',
+      );
+      expect(api.lastPayload?.containsKey('observed_at'), isTrue);
+      expect(api.lastPayload?['observed_at'], isNull);
+    },
+  );
 
   test('evaluation report uses workspace-scoped binary endpoint', () async {
     final api = _RecordingApiService();
