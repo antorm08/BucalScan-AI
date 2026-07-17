@@ -1,258 +1,341 @@
 # BucalScan AI
 
-BucalScan AI es una aplicacion movil para apoyo al tamizaje de lesiones orales. Permite registrar profesionales de salud, iniciar sesion, capturar o cargar imagenes de lesiones, enviarlas a una API y obtener una clasificacion binaria asistida por inteligencia artificial: `benign` o `malignant`.
+BucalScan AI es una aplicacion movil academica de apoyo al tamizaje preliminar de lesiones orales. Integra una app Flutter, una API FastAPI y un clasificador ResNet50 en formato ONNX para producir una clasificacion binaria `benign` o `malignant`, probabilidades, confianza y un mapa de activacion de clase (CAM).
 
-> Esta herramienta es de apoyo y no reemplaza el diagnostico clinico de un profesional de salud.
+> BucalScan AI no realiza un diagnostico medico u odontologico, no reemplaza la evaluacion profesional y no cuenta con validacion clinica para uso asistencial.
 
-## Estado Del Proyecto
+## Estado del proyecto
 
-- Frontend movil desarrollado con Flutter.
-- Backend REST desarrollado con FastAPI.
-- Inferencia local en el backend con modelo ONNX configurable; el nuevo modelo ganador puede usarse como `ResNet50` mediante `MODEL_PATH`.
-- Autenticacion con JWT.
-- Persistencia de usuarios e historial de analisis en base de datos SQL.
-- Almacenamiento de imagenes en Cloudinary si esta configurado; en caso contrario, almacenamiento local en `backend/uploads`.
-- Backend publicado en Render: `https://bucalscan-ai.onrender.com`.
+La implementacion local incluye:
+
+- Registro, inicio de sesion, restauracion de sesion y perfil profesional.
+- Centros clinicos (workspaces), membresias, aprobaciones y aislamiento de datos por `X-Workspace-ID`.
+- Pacientes, multiples lesiones por paciente y evaluaciones longitudinales.
+- Captura desde camara o galeria y control automatico de calidad de imagen.
+- Inferencia ResNet50 con ONNX Runtime y generacion de CAM.
+- Historial paginado, busqueda, filtros, resumen diario y linea de tiempo por lesion.
+- Comparacion de dos evaluaciones de una misma lesion.
+- Exportacion individual de evaluaciones en PDF.
+- Panel para administrar centros, solicitudes de acceso y usuarios.
+- Persistencia clinica normalizada con SQLAlchemy y migraciones Alembic.
+- Motor determinista de prioridad clinica separado del modelo de IA.
+
+La prioridad clinica esta implementada, pero `CLINICAL_PRIORITY_MODE` permanece en `disabled` por defecto. Puede exponerse en modo `academic` para demostraciones, con un ruleset en borrador y sin validacion clinica.
+
+La app tiene configurada por defecto la URL `https://bucalscan-ai.onrender.com`. La existencia de esa URL no demuestra que la revision actual, sus migraciones o su configuracion esten desplegadas y verificadas. La validacion de produccion, la instalacion del artefacto actual en dispositivos fisicos y los gates clinicos permanecen pendientes.
+
+## Arquitectura
+
+```text
+Flutter / Riverpod
+        |
+        | HTTPS JSON o multipart/form-data
+        | Authorization: Bearer <JWT>
+        | X-Workspace-ID: <workspace activo>
+        v
+FastAPI
+  |-- autenticacion y workspaces
+  |-- pacientes, lesiones y evaluaciones
+  |-- prediccion, historial y resumen
+  |-- administracion, prioridad y PDF
+  |
+  |-- calidad de imagen (OpenCV)
+  |-- ResNet50 ONNX + CAM
+  |-- almacenamiento de imagenes
+  `-- persistencia SQLAlchemy / Alembic
+          |-- PostgreSQL en produccion
+          `-- SQLite en desarrollo y pruebas
+```
+
+El frontend usa una organizacion feature-first inspirada en Clean Architecture:
+
+- `presentation`: vistas, widgets, controladores y providers Riverpod.
+- `domain`: entidades, casos de uso y contratos de repositorio.
+- `data`: DTO, datasources, servicios HTTP y repositorios concretos.
+- `di`: composicion e inyeccion de dependencias.
+
+## Flujo clinico principal
+
+1. El profesional se registra o inicia sesion.
+2. Accede a un workspace mediante una membresia activa.
+3. Selecciona o registra un paciente.
+4. Selecciona o registra una lesion oral.
+5. Captura una imagen o la elige desde la galeria.
+6. Confirma que obtuvo autorizacion para almacenar la evaluacion.
+7. El backend valida autenticacion, workspace, archivo y calidad de imagen.
+8. ResNet50 procesa la imagen y genera la salida binaria y el CAM.
+9. La evaluacion se persiste en el esquema clinico normalizado.
+10. La app muestra el resultado preliminar y lo incorpora al historial y a la linea de tiempo de la lesion.
 
 ## Tecnologias
 
-| Capa | Tecnologia |
-|------|------------|
-| Aplicacion movil | Flutter, Dart, Riverpod, Dio |
+| Capa | Tecnologias |
+|------|-------------|
+| Aplicacion | Flutter, Dart, Riverpod |
+| Cliente HTTP | Dio, interceptor JWT |
+| Sesion local | `flutter_secure_storage`, `shared_preferences` |
+| Imagenes y archivos | `image_picker`, `file_picker` |
 | API | FastAPI, Uvicorn, Pydantic |
-| Autenticacion | JWT, bcrypt |
-| Base de datos | SQLite local; compatible con PostgreSQL mediante `DATABASE_URL` |
-| IA | ONNX Runtime, ResNet50/ONNX configurable |
-| Imagenes | Pillow, Cloudinary opcional |
-| Pruebas | pytest, flutter test |
+| Seguridad | JWT, Passlib, bcrypt |
+| Persistencia | SQLAlchemy, Alembic, PostgreSQL, SQLite |
+| IA | ONNX Runtime, ResNet50, NumPy, Pillow |
+| Calidad y CAM | OpenCV, grafo ONNX con salidas CAM |
+| Almacenamiento | Cloudinary en produccion; filesystem solo en desarrollo |
+| PDF | ReportLab |
+| Pruebas | pytest, `flutter_test`, `integration_test` |
 
-## Estructura
+## Modelo de datos
+
+La fuente de verdad del flujo actual esta formada por:
+
+- `users`
+- `clinical_workspaces`
+- `workspace_memberships`
+- `patients`
+- `oral_lesions`
+- `clinical_evaluations`
+- `lesion_images`
+- `model_predictions`
+- `consent_attestations`
+- `clinical_assessment_snapshots`
+- `clinical_priority_results`
+
+La tabla `analyses` se conserva en el historial de migraciones y en el modelo heredado para compatibilidad y rollback. Las nuevas predicciones, el historial y el resumen diario no escriben ni leen esa tabla como fuente de verdad.
+
+## Roles y acceso
+
+- Roles globales: `platform_admin` y `professional`.
+- Roles de membresia: `clinic_admin`, `professional` y `assistant`.
+- Estados principales: `pending`, `active`, `rejected`, `inactive` o `suspended`, segun el recurso.
+- Las operaciones clinicas requieren JWT, `X-Workspace-ID` y membresia activa.
+- `clinic_admin` y `professional` pueden realizar operaciones clinicas.
+- `assistant` no puede crear pacientes, lesiones ni predicciones.
+- `platform_admin` no obtiene acceso clinico automatico; necesita una membresia activa explicita.
+
+## Inferencia y calidad de imagen
+
+El runtime carga por defecto `backend/models/resnet50_oral_cam.onnx` mediante `CAM_MODEL_PATH`.
+
+- Entrada: JPEG, PNG o WEBP de hasta 10 MB.
+- Resolucion minima predeterminada: `224x224`.
+- Control de desenfoque, oscuridad y sobreexposicion.
+- Preprocesamiento: RGB, `224x224`, normalizacion ImageNet y tensor `float32 [1,3,224,224]`.
+- Salida: clase, confianza, probabilidades, recomendacion no diagnostica, version y tiempo de procesamiento.
+- Explicabilidad: CAM calculado en la misma inferencia ONNX.
+
+El CAM no es Grad-CAM, segmentacion, localizacion diagnostica ni evidencia autonoma de malignidad.
+
+### Metricas academicas de ResNet50
+
+| Accuracy | Precision | Recall | F1-score | AUC-ROC |
+|---------:|----------:|-------:|---------:|--------:|
+| 0.8980 | 0.8519 | 0.9583 | 0.9020 | 0.9367 |
+
+Las metricas corresponden a un conjunto de prueba reducido dentro de un protocolo academico. No demuestran generalizacion clinica, desempeno en poblaciones externas ni equivalencia con especialistas.
+
+## Estructura del repositorio
 
 ```text
-DeepOral-Dx/
-├── backend/
-│   ├── auth/                  # JWT y seguridad de contrasenas
-│   ├── docs/                  # Contratos tecnicos de API
-│   ├── models/                # Modelos SQLAlchemy e inferencia ONNX
-│   ├── routers/               # Endpoints FastAPI
-│   ├── services/              # Servicios externos, como Cloudinary
-│   ├── tests/                 # Pruebas automatizadas del backend
-│   ├── main.py                # Entrada de la API
-│   ├── config.py              # Configuracion por variables de entorno
-│   ├── database.py            # Conexion y esquema de base de datos
-│   ├── requirements.txt       # Dependencias de ejecucion
-│   └── requirements-train.txt # Dependencias para entrenamiento
-├── frontend/
-│   ├── lib/
-│   │   ├── core/              # Constantes, tema y configuracion base
-│   │   ├── data/              # Servicios compartidos, como cliente API y auth
-│   │   ├── features/          # Modulos por feature con data, domain y presentation
-│   │   └── main.dart          # Entrada de la app Flutter
-│   ├── test/                  # Pruebas Flutter
-│   └── pubspec.yaml           # Dependencias Flutter
-└── README.md
+BucalScan_AI/
+|-- backend/
+|   |-- alembic/             # Migraciones de base de datos
+|   |-- auth/                # JWT y autorizacion por workspace
+|   |-- docs/                # Contratos, validacion y operacion
+|   |-- models/              # ORM, ONNX e inferencia
+|   |-- routers/             # Routers FastAPI
+|   |-- rulesets/            # Ruleset academico de prioridad
+|   |-- scripts/             # Verificacion, CAM y migracion
+|   |-- services/            # Calidad, almacenamiento, prioridad y PDF
+|   |-- tests/               # Pruebas backend
+|   |-- main.py
+|   `-- requirements.txt
+|-- frontend/
+|   |-- lib/
+|   |   |-- core/            # Tema, sesion, startup y widgets comunes
+|   |   |-- data/            # Servicios compartidos
+|   |   `-- features/        # Modulos data/domain/presentation/di
+|   |-- integration_test/
+|   |-- test/
+|   `-- pubspec.yaml
+|-- openspec/                # Propuestas, disenos, specs y tareas
+`-- README.md
 ```
 
 ## Requisitos
 
-- Python 3.12 o compatible con las dependencias del backend.
-- Flutter SDK con Dart `^3.11.5`.
-- Un emulador, dispositivo fisico o plataforma de escritorio habilitada para Flutter.
+- Python 3.12.
+- Flutter con Dart compatible con `^3.11.5`.
 - Git.
+- Android SDK, Xcode u otro toolchain segun la plataforma objetivo.
+- PostgreSQL y Cloudinary para un entorno configurado como produccion.
 
-## Configuracion Del Backend
+Los runners de Android, iOS, web y escritorio existen en el repositorio. La evidencia disponible se concentra en Android; la compatibilidad completa de todas las plataformas no esta validada. El flujo de prediccion usa `dart:io`, por lo que no debe asumirse soporte web sin adaptaciones.
 
-1. Entrar al directorio del backend:
+## Ejecucion local
+
+### 1. Backend
+
+Desde la raiz del repositorio:
 
 ```bash
 cd backend
-```
-
-2. Crear y activar un entorno virtual:
-
-```bash
 python -m venv venv
 ```
 
-```bash
-# Windows
-venv\Scripts\activate
+Activar el entorno:
 
+```powershell
+# Windows PowerShell
+.\venv\Scripts\Activate.ps1
+```
+
+```bash
 # Linux/macOS
 source venv/bin/activate
 ```
 
-3. Instalar dependencias:
+Instalar dependencias y crear la configuracion local:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-4. Crear el archivo `.env` desde el ejemplo:
-
-```bash
-copy .env.example .env
+```powershell
+# Windows PowerShell
+Copy-Item .env.example .env
 ```
 
-En Linux/macOS:
-
 ```bash
+# Linux/macOS
 cp .env.example .env
 ```
 
-5. Ajustar el archivo `.env` con los valores del entorno local.
+Edita `.env` y reemplaza al menos `JWT_SECRET`. No publiques ese archivo ni credenciales reales.
 
-No publiques credenciales, secretos JWT ni claves de servicios externos en el README o en el repositorio.
+Aplicar las migraciones de forma explicita:
 
-6. Ejecutar la API:
+```bash
+alembic upgrade head
+```
+
+Iniciar la API:
 
 ```bash
 uvicorn main:app --reload
 ```
 
-La API local queda disponible en `http://localhost:8000`.
+Servicios locales:
 
-Documentacion interactiva:
-
+- API: `http://localhost:8000`
 - Swagger UI: `http://localhost:8000/docs`
 - ReDoc: `http://localhost:8000/redoc`
+- Liveness: `http://localhost:8000/live`
+- Readiness: `http://localhost:8000/ready`
 
-## Configuracion Del Frontend
+`/ready` valida la conexion a la base de datos, la revision de esquema requerida, el modelo ONNX y sus salidas CAM. Las migraciones no se ejecutan durante el arranque.
 
-1. Entrar al directorio del frontend:
+### 2. Frontend
+
+En otra terminal, desde la raiz:
 
 ```bash
 cd frontend
-```
-
-2. Instalar dependencias:
-
-```bash
 flutter pub get
-```
-
-3. Ejecutar la aplicacion usando el backend desplegado:
-
-```bash
-flutter run
-```
-
-Por defecto, la app usa `https://bucalscan-ai.onrender.com`.
-
-Para usar un backend local:
-
-```bash
 flutter run --dart-define=API_BASE_URL=http://localhost:8000
 ```
 
-Para usar otro backend desplegado:
+En el emulador Android usa la direccion especial del host:
 
 ```bash
-flutter run --dart-define=API_BASE_URL=https://tu-backend.onrender.com
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000
 ```
 
-## Ambientes De Ejecucion
+En un dispositivo fisico usa la IP accesible de la maquina donde se ejecuta FastAPI.
 
-El proyecto cuenta con dos ambientes principales: prueba/local y produccion. Esta separacion permite validar el funcionamiento del sistema antes de usar la version estable conectada al backend desplegado.
+Si no se proporciona `API_BASE_URL`, la app usa `https://bucalscan-ai.onrender.com`. Verifica `/ready` y la revision desplegada antes de tratar esa URL como un entorno operativo.
 
-### Ambiente De Prueba
+## Variables de entorno principales
 
-El ambiente de prueba se ejecuta localmente para validar funcionalidades con datos controlados. En este ambiente, el backend FastAPI puede ejecutarse en `http://localhost:8000`, la base de datos puede ser SQLite local y se utilizan usuarios, imagenes y datos de prueba para verificar el flujo de registro, inicio de sesion, prediccion e historial.
+| Variable | Desarrollo | Produccion |
+|----------|------------|------------|
+| `JWT_SECRET` | Obligatoria | Obligatoria y robusta |
+| `DATABASE_URL` | SQLite permitido | PostgreSQL obligatorio |
+| `MODEL_PATH` | Modelo base aprobado | Modelo base aprobado |
+| `CAM_MODEL_PATH` | Grafo CAM del runtime | Grafo CAM del runtime |
+| `MODEL_ARCHITECTURE` | `ResNet50` | `ResNet50` |
+| `CLOUDINARY_CLOUD_NAME` | Opcional | Obligatoria |
+| `CLOUDINARY_API_KEY` | Opcional | Obligatoria |
+| `CLOUDINARY_API_SECRET` | Opcional | Obligatoria |
+| `CLINICAL_PRIORITY_MODE` | `disabled` o `academic` | `disabled` salvo aprobacion formal |
+| `CORS_ORIGINS` | Origenes permitidos | Lista explicita recomendada |
 
-Comandos principales:
+Consulta `backend/.env.example` para ver la lista completa y los umbrales de calidad de imagen.
 
-```bash
-cd backend
-uvicorn main:app --reload
-```
+## API
 
-```bash
-cd frontend
-flutter run --dart-define=API_BASE_URL=http://localhost:8000
-```
+La API publica 45 operaciones HTTP. Estos son sus grupos principales:
 
-En emulador Android, si el backend corre en la maquina local, puede usarse `http://10.0.2.2:8000` en lugar de `http://localhost:8000`.
+| Grupo | Rutas principales | Requisitos |
+|-------|-------------------|------------|
+| Disponibilidad | `/`, `/health`, `/live`, `/ready` | Publicas |
+| Autenticacion | `/api/v1/auth/register`, `/login`, `/me` | JWT salvo registro/login |
+| Workspaces | `/api/v1/workspaces`, `/mine`, membresias | JWT; permisos segun operacion |
+| Clinica | `/api/v1/patients`, `/lesions`, evaluaciones y PDF | JWT + `X-Workspace-ID` |
+| Prediccion | `POST /api/v1/predict` | JWT + workspace + paciente + lesion + atestacion |
+| Historial | `GET /api/v1/history` | JWT + `X-Workspace-ID` |
+| Resumen | `GET /api/v1/summary/today` | JWT + `X-Workspace-ID` |
+| Prioridad | `/api/v1/clinical-priority/*` | JWT + workspace; modo configurable |
+| Administracion | `/api/v1/admin/*` | `platform_admin` |
 
-### Ambiente De Produccion
+La documentacion OpenAPI generada por FastAPI en `/docs` es la referencia ejecutable de los parametros y respuestas de la revision en uso.
 
-El ambiente de produccion corresponde a la version estable del sistema. El backend esta publicado en Render en `https://bucalscan-ai.onrender.com` y la aplicacion movil Flutter se conecta por defecto a esa URL mediante la variable `API_BASE_URL`.
-
-La app puede ejecutarse contra produccion con:
-
-```bash
-cd frontend
-flutter run
-```
-
-Tambien puede indicarse explicitamente la URL de produccion:
-
-```bash
-flutter run --dart-define=API_BASE_URL=https://bucalscan-ai.onrender.com
-```
-
-Texto sugerido para sustentacion:
-
-> El proyecto cuenta con dos ambientes. El ambiente de prueba se ejecuta localmente, usando el backend FastAPI en `http://localhost:8000`, base de datos SQLite local, usuarios de prueba e imagenes controladas para validar el flujo de autenticacion, prediccion e historial. El ambiente de produccion utiliza el backend desplegado en Render en `https://bucalscan-ai.onrender.com`, al cual se conecta por defecto la aplicacion movil Flutter mediante la variable `API_BASE_URL`.
-
-## Endpoints Principales
-
-| Metodo | Endpoint | Autenticacion | Descripcion |
-|--------|----------|---------------|-------------|
-| `GET` | `/` | No | Informacion basica de la API |
-| `GET` | `/health` | No | Verificacion de salud del servicio |
-| `POST` | `/api/v1/auth/register` | No | Registro de usuario medico |
-| `POST` | `/api/v1/auth/login` | No | Inicio de sesion y emision de token JWT |
-| `GET` | `/api/v1/auth/me` | Si | Perfil del usuario autenticado |
-| `POST` | `/api/v1/predict` | Si | Clasificacion de imagen oral |
-| `GET` | `/api/v1/history` | Si | Historial de analisis del usuario |
-| `GET` | `/api/v1/summary/today` | Si | Resumen del dia para el usuario |
-
-El contrato tecnico del endpoint de prediccion esta en `backend/docs/predict_contract.md`.
-
-## Flujo De Uso
-
-1. El profesional se registra o inicia sesion en la app.
-2. La app guarda el token JWT de sesion.
-3. El usuario captura o selecciona una imagen de lesion oral.
-4. El frontend envia la imagen a `/api/v1/predict` con el token JWT.
-5. El backend valida la imagen, ejecuta la inferencia ONNX y guarda el analisis.
-6. La app muestra la prediccion, confianza, recomendacion e historial.
-
-## Pruebas
+## Pruebas y analisis
 
 Backend:
 
 ```bash
 cd backend
-pytest
+python -m pytest -q
 ```
 
 Frontend:
 
 ```bash
 cd frontend
+flutter analyze
 flutter test
 ```
 
-## Evidencias Para Sustentacion
+Prueba de integracion Flutter disponible:
 
-Para demostrar el despliegue completo del sistema, se recomienda registrar las siguientes evidencias:
+```bash
+flutter test integration_test/app_smoke_test.dart
+```
 
-| Componente | Evidencia sugerida |
-|------------|--------------------|
-| Frontend movil | Capturas o video de la app ejecutandose en emulador o dispositivo fisico |
-| Backend local | Captura de `http://localhost:8000/docs` o respuesta de `GET /health` |
-| Backend produccion | Captura de `https://bucalscan-ai.onrender.com/health` o Swagger si esta habilitado |
-| Base de datos | Registro de usuarios, analisis o historial guardado |
-| Modelo IA | Respuesta de `/api/v1/predict` con clase, confianza y recomendacion |
-| Ambiente de prueba | App conectada a `http://localhost:8000` o `http://10.0.2.2:8000` |
-| Ambiente de produccion | App conectada a `https://bucalscan-ai.onrender.com` |
-| Pruebas backend | Resultado de ejecucion de `pytest` |
-| Pruebas frontend | Resultado de ejecucion de `flutter test` |
+La evidencia registrada mas reciente incluye 119 pruebas backend aprobadas y una ejecucion de 208 pruebas Flutter sin incidencias de `flutter analyze`. Son resultados de revisiones registradas, no una garantia sobre un entorno productivo ni sustituyen pruebas clinicas, de dispositivo o E2E contra servicios reales.
 
-## Despliegue En Render
+## Build Android
 
-Configuracion sugerida para el backend:
+```bash
+cd frontend
+flutter build apk --release
+```
+
+No incluyas en Git ni distribuyas publicamente:
+
+- `.env`
+- `key.properties`
+- keystores `.jks`
+- bases `.db`
+- tokens, secretos JWT o credenciales Cloudinary
+
+La construccion exitosa de un APK no demuestra instalacion, conectividad productiva, funcionamiento de camara/galeria ni validacion clinica.
+
+## Configuracion objetivo de produccion
+
+El backend exige PostgreSQL y Cloudinary cuando `ENVIRONMENT=production`.
+
+Configuracion orientativa para Render:
 
 | Campo | Valor |
 |-------|-------|
@@ -260,11 +343,41 @@ Configuracion sugerida para el backend:
 | Build Command | `pip install -r requirements.txt` |
 | Start Command | `uvicorn main:app --host 0.0.0.0 --port $PORT` |
 
-Configura las variables de produccion directamente en el panel de Render. No las documentes con valores reales dentro del repositorio.
+Procedimiento minimo:
 
-## Notas
+1. Configurar secretos en el proveedor, nunca en el repositorio.
+2. Respaldar la base de datos.
+3. Ejecutar `alembic upgrade head` de forma explicita.
+4. Desplegar la revision identificada.
+5. Verificar `/live` y `/ready`.
+6. Probar autenticacion, aislamiento por workspace, Cloudinary, inferencia, CAM, persistencia e historial.
+7. Mantener la prioridad clinica deshabilitada mientras no complete gobernanza y validacion.
 
-- El modelo activo se configura con `MODEL_PATH`; para ResNet50 usa, por ejemplo, `backend/models/resnet50_oral.onnx`.
-- Las clases de salida son `benign` y `malignant`.
-- Si `CLOUDINARY_*` no esta configurado, las imagenes se guardan localmente.
-- En Android con emulador, si el backend corre en la maquina local, puede ser necesario usar `http://10.0.2.2:8000` en lugar de `http://localhost:8000`.
+La documentacion operativa esta en `backend/docs/migration_and_deployment.md`.
+
+## Limitaciones conocidas
+
+- Dataset y conjunto de prueba reducidos, sin validacion externa representativa.
+- Sin validacion clinica, aprobacion regulatoria ni evaluacion formal con pacientes.
+- Prioridad clinica con ruleset en borrador, deshabilitada por defecto.
+- Sin evidencia completa de la revision actual desplegada y migrada en produccion.
+- Sin prueba E2E real contra Render, Neon, Cloudinary, camara y galeria.
+- Sin verificacion vigente del artefacto actual en dispositivo fisico.
+- Auditorias manuales de accesibilidad, retencion, eliminacion y seguridad pendientes.
+- URLs de Cloudinary publicas; no existe entrega privada avanzada ni automatizacion de retencion.
+- Sin recuperacion de contrasena, MFA, OAuth o revocacion persistida de tokens.
+- Sin CI/CD versionado en el repositorio.
+
+## Documentacion relacionada
+
+- `backend/docs/model_validation.md`: contrato y metricas del modelo.
+- `backend/docs/clinical_priority_governance.md`: gates de prioridad clinica.
+- `backend/docs/migration_and_deployment.md`: migracion y operacion.
+- `backend/docs/privacy_retention.md`: consideraciones de privacidad y retencion.
+- `openspec/changes/`: especificaciones y tareas de evolucion del producto.
+
+Algunos documentos tecnicos historicos pueden describir contratos anteriores. Ante una discrepancia, contrasta el documento con OpenAPI, los routers, los modelos y las migraciones de la revision ejecutada.
+
+## Aviso de uso
+
+BucalScan AI es un artefacto academico de ingenieria de software y aprendizaje automatico. Todo resultado debe interpretarse como una salida preliminar del modelo y revisarse por profesionales cualificados dentro de procesos clinicos, eticos y legales aprobados.
