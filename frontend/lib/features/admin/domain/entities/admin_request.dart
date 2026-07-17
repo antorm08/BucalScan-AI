@@ -74,6 +74,9 @@ class AdminWorkspaceRequest {
     this.approvedBy,
     this.requester,
   });
+
+  bool get hasLocation =>
+      city?.trim().isNotEmpty == true && address?.trim().isNotEmpty == true;
 }
 
 class AdminMembershipRequest {

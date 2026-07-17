@@ -677,36 +677,48 @@ class _CenterDetail extends ConsumerWidget {
   const _CenterDetail({required this.item});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) => _DetailLayout(
-    title: item.name,
-    status: item.status,
-    sections: [
-      _DetailSection('Centro', [
-        _Field('Tipo', _workspaceType(item.workspaceType)),
-        _Field('Ciudad', item.city),
-        _Field('Dirección', item.address),
-        _Field('Identificación tributaria', item.taxIdentifier),
-        _Field('Teléfono', item.telephone),
-        _Field('Correo institucional', item.institutionalEmail),
-      ]),
-      _requesterSection(item.requester),
-      _DetailSection('Fechas y resolución', [
-        _Field('Solicitud', _date(item.createdAt)),
-        _Field('Última actualización', _date(item.updatedAt)),
-        _Field('Resolución', _date(item.approvedAt)),
-        _Field('Resuelto por', item.approvedBy?.fullName),
-      ]),
-    ],
-    disclaimer: item.status == 'pending' ? _accessDisclaimer : null,
-    actions: item.status == 'pending'
-        ? _DecisionActions(
-            busy: ref.watch(adminCentersControllerProvider).actingId == item.id,
-            canApprove: item.requester?.isSuspended != true,
-            onApprove: () => _decideCenter(context, ref, item, true),
-            onReject: () => _decideCenter(context, ref, item, false),
-          )
-        : null,
-  );
+  Widget build(BuildContext context, WidgetRef ref) {
+    final busy = ref.watch(adminCentersControllerProvider).actingId == item.id;
+    final missingLocation = !item.hasLocation;
+    return _DetailLayout(
+      title: item.name,
+      status: item.status,
+      sections: [
+        _DetailSection('Centro', [
+          _Field('Tipo', _workspaceType(item.workspaceType)),
+          _Field('Ciudad', item.city),
+          _Field('Dirección', item.address),
+          _Field('Identificación tributaria', item.taxIdentifier),
+          _Field('Teléfono', item.telephone),
+          _Field('Correo institucional', item.institutionalEmail),
+        ]),
+        _requesterSection(item.requester),
+        _DetailSection('Fechas y resolución', [
+          _Field('Solicitud', _date(item.createdAt)),
+          _Field('Última actualización', _date(item.updatedAt)),
+          _Field('Resolución', _date(item.approvedAt)),
+          _Field('Resuelto por', item.approvedBy?.fullName),
+        ]),
+      ],
+      warning: item.requester?.isSuspended == true
+          ? 'La cuenta del solicitante está suspendida. Este centro no puede aprobarse.'
+          : missingLocation && item.status == 'pending'
+          ? 'Complete la ciudad y la dirección institucional antes de aprobar el centro.'
+          : null,
+      disclaimer: item.status == 'pending' ? _accessDisclaimer : null,
+      actions: item.status == 'rejected'
+          ? null
+          : _CenterActions(
+              busy: busy,
+              pending: item.status == 'pending',
+              canApprove:
+                  item.hasLocation && item.requester?.isSuspended != true,
+              onEdit: () => _editCenter(context, ref, item),
+              onApprove: () => _decideCenter(context, ref, item, true),
+              onReject: () => _decideCenter(context, ref, item, false),
+            ),
+    );
+  }
 }
 
 class _AccessDetail extends ConsumerWidget {
@@ -1036,6 +1048,46 @@ class _DecisionActions extends StatelessWidget {
   );
 }
 
+class _CenterActions extends StatelessWidget {
+  final bool busy;
+  final bool pending;
+  final bool canApprove;
+  final VoidCallback onEdit;
+  final VoidCallback onApprove;
+  final VoidCallback onReject;
+
+  const _CenterActions({
+    required this.busy,
+    required this.pending,
+    required this.canApprove,
+    required this.onEdit,
+    required this.onApprove,
+    required this.onReject,
+  });
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      OutlinedButton.icon(
+        key: const Key('editCenterLocation'),
+        onPressed: busy ? null : onEdit,
+        icon: const Icon(Icons.edit_location_alt_outlined),
+        label: const Text('Editar ciudad y dirección'),
+      ),
+      if (pending) ...[
+        const SizedBox(height: 10),
+        _DecisionActions(
+          busy: busy,
+          canApprove: canApprove,
+          onApprove: onApprove,
+          onReject: onReject,
+        ),
+      ],
+    ],
+  );
+}
+
 class _UserAction extends StatelessWidget {
   final bool busy;
   final String label;
@@ -1191,15 +1243,112 @@ Future<void> _showAdminSheet(BuildContext context, Widget child) =>
       isScrollControlled: true,
       useSafeArea: true,
       showDragHandle: false,
-      constraints: BoxConstraints(
-        maxWidth: 720,
-        maxHeight: MediaQuery.sizeOf(context).height * 0.94,
-      ),
-      builder: (sheetContext) => SizedBox(
-        height: MediaQuery.sizeOf(sheetContext).height * 0.94,
-        child: child,
-      ),
+      constraints: const BoxConstraints(maxWidth: 720),
+      builder: (sheetContext) =>
+          FractionallySizedBox(heightFactor: 0.94, child: child),
     );
+
+Future<void> _editCenter(
+  BuildContext context,
+  WidgetRef ref,
+  AdminWorkspaceRequest item,
+) async {
+  final city = TextEditingController(text: item.city);
+  final address = TextEditingController(text: item.address);
+  final formKey = GlobalKey<FormState>();
+  final values = await showDialog<({String city, String address})>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: const Text('Datos del centro'),
+      content: SizedBox(
+        width: 420,
+        child: Form(
+          key: formKey,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  'Complete la ubicación institucional antes de aprobar el acceso inicial.',
+                  style: TextStyle(
+                    color: AppColors.onSurfaceVariant,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                TextFormField(
+                  key: const Key('adminCenterCityField'),
+                  controller: city,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: const InputDecoration(
+                    labelText: 'Ciudad *',
+                    prefixIcon: Icon(Icons.location_city_outlined),
+                  ),
+                  validator: (value) => (value?.trim().length ?? 0) >= 2
+                      ? null
+                      : 'Ingrese la ciudad.',
+                ),
+                const SizedBox(height: 18),
+                TextFormField(
+                  key: const Key('adminCenterAddressField'),
+                  controller: address,
+                  textCapitalization: TextCapitalization.sentences,
+                  maxLines: 2,
+                  decoration: const InputDecoration(
+                    labelText: 'Dirección *',
+                    prefixIcon: Icon(Icons.place_outlined),
+                    alignLabelWithHint: true,
+                  ),
+                  validator: (value) => (value?.trim().length ?? 0) >= 3
+                      ? null
+                      : 'Ingrese la dirección.',
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(dialogContext),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          key: const Key('saveCenterLocation'),
+          onPressed: () {
+            if (!formKey.currentState!.validate()) return;
+            Navigator.pop(dialogContext, (
+              city: city.text.trim(),
+              address: address.text.trim(),
+            ));
+          },
+          child: const Text('Guardar datos'),
+        ),
+      ],
+    ),
+  );
+  if (values == null || !context.mounted) return;
+  final authGeneration = ref.read(authViewModelProvider).generation;
+  final ok = await runAdminAction(
+    controller: ref.read(adminCentersControllerProvider.notifier),
+    id: item.id,
+    action: () => ref
+        .read(adminApprovalsUseCaseProvider)
+        .updateCenter(id: item.id, city: values.city, address: values.address),
+    sessionGeneration: authGeneration,
+    currentSessionGeneration: () => ref.read(authViewModelProvider).generation,
+  );
+  if (!context.mounted ||
+      authGeneration != ref.read(authViewModelProvider).generation) {
+    return;
+  }
+  await _refreshAdmin(ref);
+  if (!context.mounted) return;
+  _showResult(context, ok, 'Datos del centro actualizados.');
+  if (ok) Navigator.pop(context);
+}
 
 Future<void> _decideCenter(
   BuildContext context,

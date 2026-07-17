@@ -216,17 +216,6 @@ async def predict(
         professional_id=access.user.id,
         authorization_obtained=True,
     ))
-    db.add(models.Analysis(
-        user_id=access.user.id,
-        prediction=result["prediction"],
-        confidence=result["confidence"],
-        image_path=image_path,
-        patient_id=patient.clinical_code,
-        patient_name=patient.full_name,
-        model_version=_MODEL_VERSION,
-        processing_time_ms=processing_time_ms,
-        evaluation_id=evaluation.id,
-    ))
     priority_result = None
     priority_snapshot = None
     if assessment_input is not None:

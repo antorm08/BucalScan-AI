@@ -66,6 +66,13 @@ def test_new_workspace_registration_and_platform_approval(client, db_session):
     assert membership["workspace"]["name"] == "Nueva Clinica"
     assert membership["workspace"]["status"] == "pending"
 
+    update = client.patch(
+        f"/api/v1/admin/centers/{membership['workspace_id']}",
+        headers=_headers(admin),
+        json={"city": "Quito", "address": "Av. Central 123"},
+    )
+    assert update.status_code == 200
+
     approval = client.post(
         f"/api/v1/workspaces/{membership['workspace_id']}/approve",
         headers=_headers(admin),
@@ -214,7 +221,7 @@ def test_multiple_lesions_and_repeated_evaluations(client, db_session, monkeypat
     }
 
 
-def test_active_prediction_ignores_legacy_patient_name_and_writes_canonical_history(client, db_session, monkeypatch):
+def test_active_prediction_uses_canonical_history_without_legacy_analysis(client, db_session, monkeypatch):
     professional = _user(db_session, "active-contract")
     workspace, _ = _workspace(db_session, professional, "active-contract")
     headers = _headers(professional, workspace)
@@ -243,9 +250,12 @@ def test_active_prediction_ignores_legacy_patient_name_and_writes_canonical_hist
     )
 
     assert response.status_code == 200
-    analysis = db_session.query(models.Analysis).one()
-    assert analysis.patient_name == "Canonical Patient"
-    assert analysis.patient_id == "ACTIVE-1"
+    assert db_session.query(models.Analysis).count() == 0
+    history = client.get("/api/v1/history", headers=headers).json()["items"]
+    assert len(history) == 1
+    assert history[0]["patient_name"] == "Canonical Patient"
+    assert history[0]["patient_id"] == "ACTIVE-1"
+    assert history[0]["evaluation_id"] == response.json()["evaluation_id"]
 
 
 def test_lesion_detail_and_update_are_workspace_scoped(client, db_session):

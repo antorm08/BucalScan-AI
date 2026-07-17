@@ -28,6 +28,11 @@ class AdminApprovalsUseCase {
 
   Future<void> decideWorkspace(int id, bool approve) =>
       repository.decideWorkspace(id, approve: approve);
+  Future<AdminWorkspaceRequest> updateCenter({
+    required int id,
+    required String city,
+    required String address,
+  }) => repository.updateCenter(id: id, city: city, address: address);
   Future<void> decideMembership(int id, bool approve, String role) =>
       repository.decideMembership(id, approve: approve, role: role);
 }

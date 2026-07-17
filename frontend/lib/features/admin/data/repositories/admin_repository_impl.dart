@@ -88,6 +88,17 @@ class AdminRepositoryImpl implements AdminRepository {
       _remoteDataSource.decideWorkspace(id, approve: approve);
 
   @override
+  Future<AdminWorkspaceRequest> updateCenter({
+    required int id,
+    required String city,
+    required String address,
+  }) async => (await _remoteDataSource.updateCenter(
+    id: id,
+    city: city,
+    address: address,
+  )).value;
+
+  @override
   Future<void> decideMembership(
     int id, {
     required bool approve,

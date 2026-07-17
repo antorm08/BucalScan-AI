@@ -52,17 +52,14 @@ async def get_history(
         raise HTTPException(status_code=422, detail="Clinical priority filtering is unavailable.")
 
     query = db.query(
-        models.Analysis,
         models.ClinicalEvaluation,
         models.Patient,
         models.OralLesion,
         models.User,
         models.ModelPrediction,
+        models.LesionImage,
         models.ClinicalPriorityResult,
         models.ClinicalAssessmentSnapshot,
-    ).join(
-        models.ClinicalEvaluation,
-        models.Analysis.evaluation_id == models.ClinicalEvaluation.id,
     ).join(
         models.Patient,
         models.Patient.id == models.ClinicalEvaluation.patient_id,
@@ -72,9 +69,12 @@ async def get_history(
     ).join(
         models.User,
         models.User.id == models.ClinicalEvaluation.professional_id,
-    ).outerjoin(
+    ).join(
         models.ModelPrediction,
         models.ModelPrediction.evaluation_id == models.ClinicalEvaluation.id,
+    ).join(
+        models.LesionImage,
+        models.LesionImage.id == models.ModelPrediction.image_id,
     ).outerjoin(
         models.ClinicalPriorityResult,
         models.ClinicalPriorityResult.evaluation_id == models.ClinicalEvaluation.id,
@@ -122,8 +122,6 @@ async def get_history(
             models.User.id.in_(professional_ids),
             models.Patient.normalized_name.ilike(normalized_term),
             func.lower(models.Patient.clinical_code).like(raw_term),
-            func.lower(models.Analysis.patient_id).like(raw_term),
-            func.lower(models.Analysis.patient_name).like(raw_term),
             func.lower(models.OralLesion.anatomical_site).like(raw_term),
             func.lower(models.User.full_name).like(raw_term),
             func.lower(models.User.doctor_id).like(raw_term),
@@ -131,7 +129,7 @@ async def get_history(
             func.lower(models.User.specialty).like(raw_term),
         ))
     if model_label is not None:
-        query = query.filter(func.lower(models.Analysis.prediction) == model_label)
+        query = query.filter(func.lower(models.ModelPrediction.predicted_label) == model_label)
     if priority is not None:
         query = query.filter(models.ClinicalPriorityResult.priority_code == priority)
     if start is not None:
@@ -141,24 +139,24 @@ async def get_history(
 
     sort_columns = {
         "evaluated_at": models.ClinicalEvaluation.evaluated_at,
-        "confidence": models.Analysis.confidence,
+        "confidence": models.ModelPrediction.confidence,
         "patient_name": models.Patient.normalized_name,
-        "model_version": models.Analysis.model_version,
+        "model_version": models.ModelPrediction.model_version,
         "lesion_site": models.OralLesion.anatomical_site,
     }
     direction = desc if sort_direction == "desc" else asc
-    query = query.order_by(direction(sort_columns[sort_by]), direction(models.Analysis.id))
+    query = query.order_by(direction(sort_columns[sort_by]), direction(models.ClinicalEvaluation.id))
     total = query.order_by(None).count()
     rows = query.offset((page - 1) * page_size).limit(page_size).all()
 
     serialized = []
-    for analysis, evaluation, patient, lesion, professional, prediction, priority_result, snapshot in rows:
+    for evaluation, patient, lesion, professional, prediction, image, priority_result, snapshot in rows:
         image_url = None
-        if analysis.image_path:
-            if analysis.image_path.startswith(("http://", "https://")):
-                image_url = analysis.image_path
+        if image.storage_url:
+            if image.storage_url.startswith(("http://", "https://")):
+                image_url = image.storage_url
             else:
-                filename = Path(analysis.image_path).name
+                filename = Path(image.storage_url).name
                 image_url = str(request.url_for("uploads", path=filename))
         heatmap_url = None
         if prediction and prediction.heatmap_url:
@@ -170,21 +168,21 @@ async def get_history(
 
         serialized.append(
             {
-                "id": analysis.id,
-                "prediction": analysis.prediction,
-                "confidence": analysis.confidence,
-                "timestamp": _as_utc(analysis.timestamp),
+                "id": evaluation.id,
+                "prediction": prediction.predicted_label,
+                "confidence": prediction.confidence,
+                "timestamp": _as_utc(prediction.created_at),
                 "image_url": image_url,
                 "heatmap_url": heatmap_url,
-                "patient_id": analysis.patient_id,
-                "patient_name": analysis.patient_name,
-                "model_version": analysis.model_version,
-                "processing_time_ms": analysis.processing_time_ms,
+                "patient_id": patient.clinical_code,
+                "patient_name": patient.full_name,
+                "model_version": prediction.model_version,
+                "processing_time_ms": prediction.processing_time_ms,
                 "created_by_id": professional.id,
                 "created_by_name": professional.full_name,
                 "created_by_email": professional.email,
                 "created_by_doctor_id": professional.doctor_id,
-                "evaluation_id": analysis.evaluation_id,
+                "evaluation_id": evaluation.id,
                 "patient_record_id": patient.id,
                 "lesion_id": lesion.id,
                 "lesion_site": lesion.anatomical_site,

@@ -2,7 +2,7 @@ from datetime import UTC, date as date_type, datetime, timedelta
 from typing import Optional
 
 from sqlalchemy import case, func
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session
 from models import models
 from schemas import UserCreate, UserUpdate
 from auth.security import get_password_hash
@@ -34,26 +34,6 @@ def create_user(db: Session, user: UserCreate, *, commit: bool = True):
         db.flush()
     return db_user
 
-def get_user_analyses(db: Session, user_id: int, skip: int = 0, limit: int = 100):
-    return db.query(models.Analysis).options(joinedload(models.Analysis.owner)).filter(
-        models.Analysis.user_id == user_id
-    ).order_by(models.Analysis.timestamp.desc()).offset(skip).limit(limit).all()
-
-
-def get_all_analyses(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.Analysis).options(joinedload(models.Analysis.owner)).order_by(
-        models.Analysis.timestamp.desc()
-    ).offset(skip).limit(limit).all()
-
-
-def get_workspace_analyses(db: Session, workspace_id: int, skip: int = 0, limit: int = 100):
-    return db.query(models.Analysis).options(joinedload(models.Analysis.owner)).join(
-        models.ClinicalEvaluation, models.Analysis.evaluation_id == models.ClinicalEvaluation.id
-    ).filter(models.ClinicalEvaluation.workspace_id == workspace_id).order_by(
-        models.Analysis.timestamp.desc()
-    ).offset(skip).limit(limit).all()
-
-
 def get_daily_summary(
     db: Session,
     user_id: Optional[int] = None,
@@ -65,21 +45,22 @@ def get_daily_summary(
     end_of_day = start_of_day + timedelta(days=1)
 
     query = db.query(
-        func.count(models.Analysis.id).label("total"),
-        func.sum(case((models.Analysis.prediction == "benign", 1), else_=0)).label("benign"),
-        func.sum(case((models.Analysis.prediction == "malignant", 1), else_=0)).label("malignant"),
-        func.max(models.Analysis.timestamp).label("latest_analysis_at"),
+        func.count(models.ModelPrediction.id).label("total"),
+        func.sum(case((models.ModelPrediction.predicted_label == "benign", 1), else_=0)).label("benign"),
+        func.sum(case((models.ModelPrediction.predicted_label == "malignant", 1), else_=0)).label("malignant"),
+        func.max(models.ModelPrediction.created_at).label("latest_analysis_at"),
+    ).join(
+        models.ClinicalEvaluation,
+        models.ModelPrediction.evaluation_id == models.ClinicalEvaluation.id,
     ).filter(
-        models.Analysis.timestamp >= start_of_day,
-        models.Analysis.timestamp < end_of_day,
+        models.ModelPrediction.created_at >= start_of_day,
+        models.ModelPrediction.created_at < end_of_day,
     )
 
     if user_id is not None:
-        query = query.filter(models.Analysis.user_id == user_id)
+        query = query.filter(models.ClinicalEvaluation.professional_id == user_id)
     if workspace_id is not None:
-        query = query.join(
-            models.ClinicalEvaluation, models.Analysis.evaluation_id == models.ClinicalEvaluation.id
-        ).filter(models.ClinicalEvaluation.workspace_id == workspace_id)
+        query = query.filter(models.ClinicalEvaluation.workspace_id == workspace_id)
 
     row = query.one()
 
@@ -117,20 +98,3 @@ def update_user_status(db: Session, user_id: int, status: str):
     db.commit()
     db.refresh(user)
     return user
-
-
-def create_analysis(db: Session, user_id: int, prediction: str, confidence: float, image_path: str = None, patient_id: str = None, patient_name: str = None, model_version: str = None, processing_time_ms: float = None):
-    db_analysis = models.Analysis(
-        user_id=user_id,
-        prediction=prediction,
-        confidence=confidence,
-        image_path=image_path,
-        patient_id=patient_id,
-        patient_name=patient_name,
-        model_version=model_version,
-        processing_time_ms=processing_time_ms,
-    )
-    db.add(db_analysis)
-    db.commit()
-    db.refresh(db_analysis)
-    return db_analysis

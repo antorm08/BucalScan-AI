@@ -65,6 +65,12 @@ class _AuthRepository implements AuthRepository {
 }
 
 class _Repository implements AdminRepository {
+  String? city;
+  String? address;
+  int updateCenterCalls = 0;
+
+  _Repository({this.city = 'Quito', this.address = 'Av. Central 123'});
+
   @override
   Future<AdminPage<AdminWorkspaceRequest>> getCentersPage(
     AdminQuery query,
@@ -75,8 +81,8 @@ class _Repository implements AdminRepository {
         name: 'Centro Norte',
         workspaceType: 'clinic',
         status: 'pending',
-        city: 'Quito',
-        address: 'Av. Central 123',
+        city: city,
+        address: address,
         institutionalEmail: 'centro@example.org',
         createdAt: DateTime(2026, 1, 2),
         requester: _requester,
@@ -127,17 +133,38 @@ class _Repository implements AdminRepository {
   );
 
   @override
+  Future<AdminWorkspaceRequest> updateCenter({
+    required int id,
+    required String city,
+    required String address,
+  }) async {
+    updateCenterCalls++;
+    this.city = city;
+    this.address = address;
+    return AdminWorkspaceRequest(
+      id: id,
+      name: 'Centro Norte',
+      workspaceType: 'clinic',
+      status: 'pending',
+      city: city,
+      address: address,
+      requester: _requester,
+    );
+  }
+
+  @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 Future<ProviderContainer> _pump(
   WidgetTester tester, {
   double textScale = 1,
+  _Repository? repository,
 }) async {
   final container = ProviderContainer(
     overrides: [
       authRepositoryProvider.overrideWithValue(_AuthRepository()),
-      adminRepositoryProvider.overrideWithValue(_Repository()),
+      adminRepositoryProvider.overrideWithValue(repository ?? _Repository()),
     ],
   );
   await container
@@ -229,6 +256,45 @@ void main() {
       tester.getTopLeft(find.byKey(const Key('adminDetailActionFooter'))).dy,
       footerTop,
     );
+  });
+
+  testWidgets('admin completes center location before approval', (
+    tester,
+  ) async {
+    final repository = _Repository(city: null, address: null);
+    final container = await _pump(tester, repository: repository);
+    addTearDown(container.dispose);
+
+    await tester.tap(find.text('Centro Norte').first);
+    await tester.pumpAndSettle();
+    expect(
+      find.textContaining('Complete la ciudad y la dirección'),
+      findsOneWidget,
+    );
+    expect(
+      tester
+          .widget<FilledButton>(find.widgetWithText(FilledButton, 'Aprobar'))
+          .onPressed,
+      isNull,
+    );
+
+    await tester.tap(find.byKey(const Key('editCenterLocation')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('adminCenterCityField')),
+      'Cuenca',
+    );
+    await tester.enterText(
+      find.byKey(const Key('adminCenterAddressField')),
+      'Calle Larga 10',
+    );
+    await tester.tap(find.byKey(const Key('saveCenterLocation')));
+    await tester.pumpAndSettle();
+
+    expect(repository.updateCenterCalls, 1);
+    expect(repository.city, 'Cuenca');
+    expect(repository.address, 'Calle Larga 10');
+    expect(find.text('Datos del centro actualizados.'), findsOneWidget);
   });
 
   testWidgets(

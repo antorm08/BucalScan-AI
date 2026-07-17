@@ -80,3 +80,18 @@ El cliente SHALL aplicar una respuesta administrativa solo si la sesión, token 
 #### Scenario: Recarga nueva supera una anterior
 - **WHEN** una carga anterior completa después de una recarga más reciente
 - **THEN** el controlador conserva el resultado vigente y descarta el anterior
+
+### Requirement: Ubicación institucional administrada
+El solicitante SHALL poder pedir el registro con nombre y tipo, y únicamente `platform_admin` SHALL completar o corregir ciudad y dirección de centros institucionales pendientes o activos; la aprobación MUST rechazarse mientras falte cualquiera de esos datos.
+
+#### Scenario: Administrador completa ubicación pendiente
+- **WHEN** un administrador registra ciudad y dirección válidas para un centro pendiente
+- **THEN** el sistema persiste ambos campos, actualiza la vista administrativa y habilita la aprobación si las demás condiciones se cumplen
+
+#### Scenario: Aprobación sin ubicación
+- **WHEN** se intenta aprobar un centro institucional sin ciudad o dirección
+- **THEN** el backend devuelve conflicto sin activar workspace, usuario ni membresía
+
+#### Scenario: Usuario no administrador intenta editar
+- **WHEN** un usuario sin rol `platform_admin` intenta actualizar la ubicación institucional
+- **THEN** el sistema rechaza la operación sin modificar el centro

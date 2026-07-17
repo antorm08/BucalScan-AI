@@ -50,6 +50,11 @@ abstract class AdminRepository {
   Future<List<AdminWorkspaceRequest>> getWorkspaceRequests();
   Future<List<AdminMembershipRequest>> getMembershipRequests();
   Future<void> decideWorkspace(int id, {required bool approve});
+  Future<AdminWorkspaceRequest> updateCenter({
+    required int id,
+    required String city,
+    required String address,
+  });
   Future<void> decideMembership(
     int id, {
     required bool approve,

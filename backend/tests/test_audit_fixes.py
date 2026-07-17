@@ -17,7 +17,7 @@ def _user(db, suffix, *, role="professional", status="active"):
 def _workspace(db, user, suffix, *, status="active", role="professional", member_status="active"):
     workspace = models.ClinicalWorkspace(
         name=f"Audit {suffix}", normalized_name=f"audit {suffix}", workspace_type="clinic",
-        status=status, initial_requester_id=user.id,
+        status=status, city="Quito", address="Av. Central 123", initial_requester_id=user.id,
     )
     db.add(workspace)
     db.flush()

@@ -22,7 +22,7 @@ def _headers(user, workspace=None):
 def _workspace(db, owner, suffix, *, workspace_type="clinic", status="active", role="clinic_admin", member_status="active"):
     workspace = models.ClinicalWorkspace(
         name=f"Center {suffix}", normalized_name=f"center {suffix}", workspace_type=workspace_type,
-        status=status, city="Quito", initial_requester_id=owner.id,
+        status=status, city="Quito", address="Av. Central 123", initial_requester_id=owner.id,
     )
     db.add(workspace)
     db.flush()

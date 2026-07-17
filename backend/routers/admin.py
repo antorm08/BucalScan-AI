@@ -15,6 +15,7 @@ from schemas import (
     AdminMembershipRequestResponse,
     AdminRequesterResponse,
     AdminSummaryResponse,
+    AdminWorkspaceUpdate,
     AdminWorkspaceRequestResponse,
     MembershipResponse,
     PaginatedResponse,
@@ -196,6 +197,36 @@ def get_center_detail(
     return _workspace_request(*row)
 
 
+@router.patch("/centers/{workspace_id}", response_model=AdminWorkspaceRequestResponse)
+def update_center(
+    workspace_id: int,
+    payload: AdminWorkspaceUpdate,
+    current_user: models.User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    row = db.query(models.ClinicalWorkspace, models.User).outerjoin(
+        models.User, models.User.id == models.ClinicalWorkspace.initial_requester_id
+    ).filter(
+        models.ClinicalWorkspace.id == workspace_id,
+        models.ClinicalWorkspace.workspace_type != "independent",
+    ).with_for_update().first()
+    if row is None:
+        raise HTTPException(status_code=404, detail="Center not found.")
+    workspace, requester = row
+    if workspace.status == "rejected":
+        raise HTTPException(status_code=409, detail="Rejected centers cannot be updated.")
+    city = payload.city.strip()
+    address = payload.address.strip()
+    if len(city) < 2 or len(address) < 3:
+        raise HTTPException(status_code=422, detail="City and address are required.")
+    workspace.city = city
+    workspace.address = address
+    db.commit()
+    db.refresh(workspace)
+    _attach_approvers(db, [workspace])
+    return _workspace_request(workspace, requester)
+
+
 @router.get("/access/{membership_id}", response_model=AdminMembershipRequestResponse)
 def get_access_detail(
     membership_id: int,
@@ -296,6 +327,8 @@ def approve_workspace_request(
         raise HTTPException(status_code=404, detail="Workspace not found.")
     if workspace.status != "pending":
         raise HTTPException(status_code=409, detail="Workspace request has already been resolved.")
+    if not (workspace.city or "").strip() or not (workspace.address or "").strip():
+        raise HTTPException(status_code=409, detail="Complete the center city and address before approval.")
     initial = _pending_membership(workspace.id, workspace.initial_requester_id, db)
     requester = db.query(models.User).filter_by(id=workspace.initial_requester_id).with_for_update().first()
     if requester is None or requester.status == "suspended":

@@ -81,6 +81,14 @@ class AdminRemoteDataSource {
   Future<void> decideWorkspace(int id, {required bool approve}) =>
       _apiService.decideAdminWorkspace(id, approve: approve);
 
+  Future<AdminWorkspaceRequestModel> updateCenter({
+    required int id,
+    required String city,
+    required String address,
+  }) async => AdminWorkspaceRequestModel.fromJson(
+    await _apiService.updateAdminCenter(id: id, city: city, address: address),
+  );
+
   Future<void> decideMembership(
     int id, {
     required bool approve,

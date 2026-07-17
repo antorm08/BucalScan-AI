@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Generic, Literal, Optional, TypeVar
 from datetime import date, datetime
 
@@ -193,6 +193,11 @@ class WorkspaceResponse(BaseModel):
     tax_identifier: Optional[str] = None
     telephone: Optional[str] = None
     institutional_email: Optional[str] = None
+
+
+class AdminWorkspaceUpdate(BaseModel):
+    city: str = Field(min_length=2, max_length=100)
+    address: str = Field(min_length=3, max_length=255)
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     approved_at: Optional[datetime] = None

@@ -371,6 +371,15 @@ class ApiService {
   Future<Map<String, dynamic>> getAdminDetail(String resource, int id) =>
       getJson('${AppConstants.apiVersion}/admin/$resource/$id');
 
+  Future<Map<String, dynamic>> updateAdminCenter({
+    required int id,
+    required String city,
+    required String address,
+  }) => patchJson('${AppConstants.apiVersion}/admin/centers/$id', {
+    'city': city,
+    'address': address,
+  });
+
   Future<Map<String, dynamic>> updateAdminUserStatus({
     required int userId,
     required String status,

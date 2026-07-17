@@ -82,6 +82,10 @@ def approve_workspace(workspace_id: int, admin: models.User = Depends(require_ad
         raise HTTPException(status_code=404, detail="Workspace not found.")
     if workspace.status != "pending":
         raise HTTPException(status_code=409, detail="Workspace request has already been resolved.")
+    if workspace.workspace_type != "independent" and (
+        not (workspace.city or "").strip() or not (workspace.address or "").strip()
+    ):
+        raise HTTPException(status_code=409, detail="Complete the center city and address before approval.")
     workspace.status = "active"
     workspace.approved_by_id = admin.id
     workspace.approved_at = datetime.now(UTC).replace(tzinfo=None)

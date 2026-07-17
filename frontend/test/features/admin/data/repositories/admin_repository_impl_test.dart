@@ -1,4 +1,6 @@
 import 'package:bucalscan_ai/features/admin/data/models/admin_user_model.dart';
+import 'package:bucalscan_ai/features/admin/data/models/admin_request_models.dart';
+import 'package:bucalscan_ai/features/admin/domain/entities/admin_request.dart';
 import 'package:bucalscan_ai/features/admin/data/repositories/admin_repository_impl.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
@@ -79,4 +81,35 @@ void main() {
       );
     },
   );
+
+  test('updateCenter mapea la ubicación institucional actualizada', () async {
+    when(
+      mockRemoteDataSource.updateCenter(
+        id: 8,
+        city: 'Cuenca',
+        address: 'Calle Larga 10',
+      ),
+    ).thenAnswer(
+      (_) async => const AdminWorkspaceRequestModel(
+        AdminWorkspaceRequest(
+          id: 8,
+          name: 'Centro Sur',
+          workspaceType: 'clinic',
+          status: 'pending',
+          city: 'Cuenca',
+          address: 'Calle Larga 10',
+        ),
+      ),
+    );
+
+    final result = await repository.updateCenter(
+      id: 8,
+      city: 'Cuenca',
+      address: 'Calle Larga 10',
+    );
+
+    expect(result.city, 'Cuenca');
+    expect(result.address, 'Calle Larga 10');
+    expect(result.hasLocation, true);
+  });
 }

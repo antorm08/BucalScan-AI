@@ -2,6 +2,7 @@ from datetime import datetime
 from types import SimpleNamespace
 
 from auth.jwt import create_access_token
+from crud import get_daily_summary
 from models import models
 
 
@@ -52,13 +53,20 @@ def _analysis(db, user, workspace, suffix, *, when, label="benign", confidence=0
     )
     db.add(evaluation)
     db.flush()
-    analysis = models.Analysis(
-        user_id=user.id, prediction=label, confidence=confidence,
-        patient_id=f"CÓD-{suffix}", patient_name=patient.full_name,
-        model_version="resnet-v1", evaluation_id=evaluation.id, timestamp=when,
+    image = models.LesionImage(
+        evaluation_id=evaluation.id,
+        storage_url=f"https://images.test/{suffix}.png",
+        content_type="image/png",
     )
-    db.add(analysis)
+    db.add(image)
     db.flush()
+    db.add(models.ModelPrediction(
+        evaluation_id=evaluation.id, image_id=image.id, model_version="resnet-v1",
+        predicted_label=label, confidence=confidence,
+        benign_probability=confidence if label == "benign" else 1 - confidence,
+        malignant_probability=confidence if label == "malignant" else 1 - confidence,
+        created_at=when,
+    ))
     if priority:
         snapshot = models.ClinicalAssessmentSnapshot(
             workspace_id=workspace.id, patient_id=patient.id, lesion_id=lesion.id,
@@ -76,7 +84,7 @@ def _analysis(db, user, workspace, suffix, *, when, label="benign", confidence=0
             evaluated_at=when,
         ))
     db.flush()
-    return analysis
+    return evaluation
 
 
 def test_history_tenant_search_filters_details_and_totals(client, db_session, monkeypatch):
@@ -152,3 +160,26 @@ def test_history_priority_filter_fails_closed_when_disabled(client, db_session, 
     assert ordinary.json()["priority_filter_enabled"] is False
     assert ordinary.json()["items"][0]["priority"]["priority_code"] == "urgent"
     assert client.get("/api/v1/history?priority=urgent", headers=headers).status_code == 422
+
+
+def test_daily_summary_uses_normalized_predictions_and_workspace_scope(db_session):
+    owner, workspace = _workspace(db_session, "summary-owner")
+    outsider, other = _workspace(db_session, "summary-other")
+    day = datetime(2026, 4, 5, 9)
+    _analysis(db_session, owner, workspace, "SUMMARY-A", when=day, label="benign")
+    _analysis(
+        db_session, owner, workspace, "SUMMARY-B",
+        when=datetime(2026, 4, 5, 11), label="malignant",
+    )
+    _analysis(db_session, outsider, other, "SUMMARY-C", when=day, label="malignant")
+    db_session.commit()
+
+    summary = get_daily_summary(db_session, date_target=day.date(), workspace_id=workspace.id)
+
+    assert summary == {
+        "total": 2,
+        "benign": 1,
+        "malignant": 1,
+        "latest_analysis_at": datetime(2026, 4, 5, 11),
+    }
+    assert db_session.query(models.Analysis).count() == 0

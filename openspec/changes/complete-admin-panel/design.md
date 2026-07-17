@@ -62,6 +62,10 @@ FastAPI puede devolver `detail` como string, mapa o lista. La capa de datos lo n
 
 La nueva ficha de paciente, línea temporal de lesión, repetición de análisis y cambio confirmado de workspace pertenecen exclusivamente a la raíz profesional validada. `HomeView` conserva el callback de navegación de nivel raíz, elimina rutas clínicas obsoletas y vuelve al `WorkspaceGateView`; ninguna vista de detalle crea una raíz sin guard. El estado administrativo se mantiene separado y solo se invalida en límites de autenticación, no al cambiar un workspace clínico.
 
+### 7. Los datos institucionales se completan administrativamente
+
+El solicitante propone únicamente el nombre y tipo del centro. Un `platform_admin` puede completar o corregir ciudad y dirección de un centro institucional pendiente o activo; un centro rechazado permanece inmutable. La aprobación institucional exige ambos campos para evitar activar registros sin ubicación operativa, pero esta captura no afirma verificación documental de domicilio.
+
 ## Risks / Trade-offs
 
 - [Dos administradores resuelven a la vez] -> Validar estado dentro de la transacción y responder conflicto sanitizado.

@@ -22,7 +22,7 @@ def _request(db, user, suffix, workspace_type="clinic", workspace_status="pendin
     workspace = models.ClinicalWorkspace(
         name=f"Workspace {suffix}", normalized_name=f"workspace {suffix}",
         workspace_type=workspace_type, status=workspace_status,
-        initial_requester_id=user.id,
+        city="Quito", address="Av. Central 123", initial_requester_id=user.id,
     )
     db.add(workspace)
     db.flush()
@@ -79,6 +79,34 @@ def test_workspace_approve_and_reject_update_initial_membership_atomically(clien
     assert response.status_code == 200
     db_session.refresh(rejected_membership)
     assert rejected_workspace.status == rejected_membership.status == "rejected"
+
+
+def test_admin_completes_center_location_before_approval(client, db_session):
+    admin = _user(db_session, "location-admin", "platform_admin")
+    requester = _user(db_session, "location-requester")
+    workspace, membership = _request(db_session, requester, "location")
+    workspace.city = None
+    workspace.address = None
+    db_session.flush()
+
+    approval_path = f"/api/v1/admin/workspaces/{workspace.id}/approve"
+    assert client.post(approval_path, headers=_headers(admin)).status_code == 409
+    update_path = f"/api/v1/admin/centers/{workspace.id}"
+    assert client.patch(
+        update_path,
+        headers=_headers(requester),
+        json={"city": "Cuenca", "address": "Calle Larga 10"},
+    ).status_code == 403
+    response = client.patch(
+        update_path,
+        headers=_headers(admin),
+        json={"city": "  Cuenca  ", "address": "  Calle Larga 10  "},
+    )
+    assert response.status_code == 200
+    assert response.json()["city"] == "Cuenca"
+    assert response.json()["address"] == "Calle Larga 10"
+    assert client.post(approval_path, headers=_headers(admin)).status_code == 200
+    assert workspace.status == membership.status == "active"
 
 
 def test_membership_decisions_activate_independent_and_assign_allowed_role(client, db_session):
