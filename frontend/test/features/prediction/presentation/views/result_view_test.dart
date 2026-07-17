@@ -31,6 +31,15 @@ class _ResultViewModel extends PredictionViewModel {
   );
 }
 
+class _QualityErrorViewModel extends PredictionViewModel {
+  @override
+  PredictionState build() => const PredictionState(
+    error:
+        'Exception: La imagen no cumple los requisitos de calidad: la imagen está desenfocada. Tome otra foto con enfoque estable, buena luz y la lesión claramente visible.',
+    status: AnalysisAttemptStatus.failed,
+  );
+}
+
 void main() {
   testWidgets('result prioritizes summary and collapses technical details', (
     tester,
@@ -84,5 +93,32 @@ void main() {
     expect(find.text('Versión del modelo'), findsOneWidget);
     expect(find.text('resnet50-v1'), findsOneWidget);
     expect(find.byKey(const Key('anotherImagePrimaryAction')), findsOneWidget);
+  });
+
+  testWidgets('quality rejection explains recapture instead of system error', (
+    tester,
+  ) async {
+    final image = File(
+      '${Directory.systemTemp.path}${Platform.pathSeparator}bucalscan-quality-test.jpg',
+    );
+    image.writeAsBytesSync(const []);
+    addTearDown(() {
+      if (image.existsSync()) image.deleteSync();
+    });
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          predictionViewModelProvider.overrideWith(_QualityErrorViewModel.new),
+        ],
+        child: MaterialApp(home: ResultView(imageFile: image)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Mejore la calidad de la imagen'), findsOneWidget);
+    expect(find.textContaining('imagen está desenfocada'), findsOneWidget);
+    expect(find.text('Error en el analisis'), findsNothing);
+    expect(find.text('Otra imagen para esta lesión'), findsOneWidget);
   });
 }

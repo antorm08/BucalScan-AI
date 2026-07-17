@@ -31,6 +31,13 @@ const _patient = Patient(
   fullName: 'Ana Pérez',
   identityDocument: '87654321',
 );
+const _patientTwo = Patient(
+  id: 'patient-2',
+  workspaceId: 'workspace-1',
+  clinicalCode: 'P-002',
+  fullName: 'Bruno Salas',
+  identityDocument: '12345678',
+);
 const _lesionOne = OralLesion(
   id: 'lesion-1',
   patientId: 'patient-1',
@@ -82,6 +89,14 @@ class _FollowUpRepository implements ClinicalRepository {
 class _ImmediateFollowUpRepository extends _FollowUpRepository {
   @override
   Future<List<Patient>> searchPatients(String query) async => const [_patient];
+}
+
+class _MultiplePatientRepository extends _FollowUpRepository {
+  @override
+  Future<List<Patient>> searchPatients(String query) async => const [
+    _patient,
+    _patientTwo,
+  ];
 }
 
 class _CreatePatientRepository extends _FollowUpRepository {
@@ -356,6 +371,30 @@ void main() {
     expect(
       container.read(patientFollowUpControllerProvider).patients.single.id,
       'patient-new',
+    );
+  });
+
+  testWidgets('Analyze patient results have distinct card spacing', (
+    tester,
+  ) async {
+    final repository = _MultiplePatientRepository();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [clinicalRepositoryProvider.overrideWithValue(repository)],
+        child: const MaterialApp(home: Scaffold(body: PatientLesionPicker())),
+      ),
+    );
+
+    await tester.tap(find.byIcon(Icons.search));
+    await tester.pumpAndSettle();
+
+    final first = find.byKey(const Key('patientSearchResult-patient-1'));
+    final second = find.byKey(const Key('patientSearchResult-patient-2'));
+    expect(first, findsOneWidget);
+    expect(second, findsOneWidget);
+    expect(
+      tester.widget<Container>(first).margin,
+      const EdgeInsets.only(bottom: 8),
     );
   });
 

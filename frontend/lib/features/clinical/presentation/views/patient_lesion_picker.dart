@@ -452,6 +452,7 @@ class _PatientLesionPickerState extends ConsumerState<PatientLesionPicker> {
               style: Theme.of(context).textTheme.titleMedium,
             ),
             if (patient == null) ...[
+              const SizedBox(height: 12),
               TextField(
                 controller: _search,
                 onSubmitted: (_) => _findPatients(),
@@ -463,11 +464,34 @@ class _PatientLesionPickerState extends ConsumerState<PatientLesionPicker> {
                   ),
                 ),
               ),
+              if (_patients.isNotEmpty) const SizedBox(height: 12),
               ..._patients.map(
-                (item) => ListTile(
-                  title: Text(item.fullName),
-                  subtitle: _PatientMetadata(patient: item),
-                  onTap: () => _choosePatient(item),
+                (item) => Container(
+                  key: Key('patientSearchResult-${item.id}'),
+                  margin: const EdgeInsets.only(bottom: 8),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surfaceContainerLow,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.outlineVariant,
+                    ),
+                  ),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 4,
+                    ),
+                    leading: const CircleAvatar(
+                      child: Icon(Icons.person_outline),
+                    ),
+                    title: Text(
+                      item.fullName,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    subtitle: _PatientMetadata(patient: item),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => _choosePatient(item),
+                  ),
                 ),
               ),
               if (_searched && _patients.isEmpty && !_loading && _error == null)

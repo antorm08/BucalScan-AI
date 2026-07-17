@@ -134,4 +134,26 @@ void main() {
       ),
     );
   });
+
+  test('image quality rejection becomes actionable Spanish guidance', () async {
+    final api = ApiService(
+      interceptors: [
+        _ErrorInterceptor({
+          'detail':
+              'Image quality is insufficient: the image is too blurry. Please recapture the oral image with steady focus and even lighting.',
+        }, 422),
+      ],
+    );
+
+    expect(
+      api.getList('/quality'),
+      throwsA(
+        predicate(
+          (error) =>
+              error.toString().contains('imagen está desenfocada') &&
+              error.toString().contains('Tome otra foto'),
+        ),
+      ),
+    );
+  });
 }

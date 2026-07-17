@@ -1,5 +1,6 @@
 import 'package:bucalscan_ai/features/dashboard/di/dashboard_providers.dart';
 import 'package:bucalscan_ai/features/home/presentation/views/home_view.dart';
+import 'package:bucalscan_ai/features/profile/presentation/views/profile_tab_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -44,5 +45,37 @@ void main() {
     expect(find.text('Centro de ayuda'), findsOneWidget);
     expect(find.text('Modelo y apoyo de decisión'), findsOneWidget);
     expect(find.text('Cerrar sesión'), findsOneWidget);
+  });
+
+  testWidgets('reselecting Analyze closes account pages on its navigator', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          dashboardRepositoryProvider.overrideWithValue(
+            FakeDashboardRepository(),
+          ),
+        ],
+        child: const MaterialApp(home: HomeView(initialIndex: 2)),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Imagen clínica'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('accountMenuButton')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cuenta y perfil'));
+    await tester.pumpAndSettle();
+    expect(find.byType(ProfileTabView), findsOneWidget);
+
+    await tester.tap(find.text('Analizar'));
+    await tester.pumpAndSettle();
+    expect(find.byType(ProfileTabView), findsNothing);
+    expect(find.text('Imagen clínica'), findsOneWidget);
+    expect(
+      tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
+      2,
+    );
   });
 }

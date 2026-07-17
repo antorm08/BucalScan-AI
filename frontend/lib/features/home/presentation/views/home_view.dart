@@ -40,10 +40,16 @@ class _HomeViewState extends ConsumerState<HomeView> {
     _visited = {_currentIndex};
   }
 
-  void _selectTab(int index) => setState(() {
-    _currentIndex = index;
-    _visited.add(index);
-  });
+  void _selectTab(int index) {
+    if (index == _currentIndex) {
+      _navigatorKeys[index].currentState?.popUntil((route) => route.isFirst);
+      return;
+    }
+    setState(() {
+      _currentIndex = index;
+      _visited.add(index);
+    });
+  }
 
   void _repeatAnalysis(Patient patient, OralLesion lesion) {
     ref.read(clinicalControllerProvider.notifier)

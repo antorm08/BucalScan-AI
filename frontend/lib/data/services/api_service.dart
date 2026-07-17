@@ -515,6 +515,21 @@ class ApiService {
   String _translateServerMessage(String message) {
     final normalized = message.toLowerCase();
 
+    if (normalized.contains('image quality is insufficient')) {
+      final problems = <String>[
+        if (normalized.contains('resolution is too low'))
+          'la resolución es insuficiente',
+        if (normalized.contains('too blurry')) 'la imagen está desenfocada',
+        if (normalized.contains('too dark')) 'la imagen está demasiado oscura',
+        if (normalized.contains('overexposed'))
+          'la imagen tiene demasiada iluminación',
+      ];
+      final detail = problems.isEmpty
+          ? 'no fue posible validar nitidez e iluminación'
+          : problems.join(', ');
+      return 'La imagen no cumple los requisitos de calidad: $detail. Tome otra foto con enfoque estable, buena luz y la lesión claramente visible.';
+    }
+
     if (normalized.contains('model inference failed') ||
         normalized.contains('model file not loaded')) {
       return 'No se pudo procesar la imagen porque el modelo de análisis no está disponible en el servidor. Intente nuevamente más tarde.';

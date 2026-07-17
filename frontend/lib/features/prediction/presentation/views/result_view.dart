@@ -38,6 +38,14 @@ class _ResultViewState extends ConsumerState<ResultView> {
   ) {
     final normalized = error.toLowerCase();
 
+    if (normalized.contains('no cumple los requisitos de calidad')) {
+      return (
+        title: 'Mejore la calidad de la imagen',
+        message: error.replaceFirst('Exception: ', ''),
+        icon: Icons.center_focus_strong_outlined,
+      );
+    }
+
     if (normalized.contains('invalid file type') ||
         normalized.contains('cannot decode image file')) {
       return (
@@ -214,60 +222,79 @@ class _ResultViewState extends ConsumerState<ResultView> {
 
       return Scaffold(
         appBar: const AppAppBar(title: 'Error en el análisis'),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _AnalyzedImageCard(imageFile: widget.imageFile, compact: true),
-                const SizedBox(height: 24),
-                Icon(errorUi.icon, size: 64, color: AppColors.error),
-                const SizedBox(height: 16),
-                Text(
-                  errorUi.title,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  errorUi.message,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 16),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Vuelva a intentarlo con otra imagen o regrese a la pantalla de captura.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppColors.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Row(
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 640),
+                child: Column(
                   children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: _goToAnotherImage,
-                        icon: const Icon(Icons.add_a_photo_outlined),
-                        label: const Text('Otra imagen para esta lesión'),
+                    _AnalyzedImageCard(
+                      imageFile: widget.imageFile,
+                      compact: true,
+                    ),
+                    const SizedBox(height: 24),
+                    Icon(errorUi.icon, size: 64, color: AppColors.error),
+                    const SizedBox(height: 16),
+                    Text(
+                      errorUi.title,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () => _retryAnalysis(viewModel),
-                        icon: const Icon(Icons.refresh),
-                        label: const Text('Reintentar'),
+                    const SizedBox(height: 12),
+                    Text(
+                      errorUi.message,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Vuelva a intentarlo con otra imagen o regrese a la pantalla de captura.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppColors.onSurfaceVariant,
                       ),
+                    ),
+                    const SizedBox(height: 24),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final another = OutlinedButton.icon(
+                          onPressed: _goToAnotherImage,
+                          icon: const Icon(Icons.add_a_photo_outlined),
+                          label: const Text('Otra imagen para esta lesión'),
+                        );
+                        final retry = ElevatedButton.icon(
+                          onPressed: () => _retryAnalysis(viewModel),
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Reintentar'),
+                        );
+                        if (constraints.maxWidth < 520) {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              another,
+                              const SizedBox(height: 10),
+                              retry,
+                            ],
+                          );
+                        }
+                        return Row(
+                          children: [
+                            Expanded(child: another),
+                            const SizedBox(width: 12),
+                            Expanded(child: retry),
+                          ],
+                        );
+                      },
                     ),
                   ],
                 ),
-              ],
+              ),
             ),
           ),
         ),

@@ -108,12 +108,16 @@ class _PatientsViewState extends ConsumerState<PatientsView> {
               else
                 ...state.patients.map(
                   (patient) => Card(
+                    margin: const EdgeInsets.only(bottom: 10),
                     child: ListTile(
                       key: Key('patient-${patient.id}'),
                       leading: const CircleAvatar(
                         child: Icon(Icons.person_outline),
                       ),
-                      title: Text(patient.fullName),
+                      title: Text(
+                        patient.fullName,
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
                       subtitle: _PatientIdentifiers(patient: patient),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () => _open(patient),
