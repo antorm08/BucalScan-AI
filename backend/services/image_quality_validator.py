@@ -23,7 +23,15 @@ def validate_image_quality(image: Image.Image) -> ImageQualityResult:
     height, width = rgb_image.shape[:2]
 
     gray_image = cv2.cvtColor(rgb_image, cv2.COLOR_RGB2GRAY)
-    blur_score = float(cv2.Laplacian(gray_image, cv2.CV_64F).var())
+    # Oral images contain large, naturally smooth mucosal regions. Measure a
+    # robust set of local regions instead of penalizing the whole photograph.
+    tile_rows = np.array_split(gray_image, 4, axis=0)
+    tile_scores = [
+        float(cv2.Laplacian(tile, cv2.CV_64F).var())
+        for row in tile_rows
+        for tile in np.array_split(row, 4, axis=1)
+    ]
+    blur_score = float(np.percentile(tile_scores, 75))
 
     luminance = cv2.cvtColor(rgb_image, cv2.COLOR_RGB2YUV)[:, :, 0]
     dark_ratio = float(np.mean(luminance <= settings.image_dark_luminance))

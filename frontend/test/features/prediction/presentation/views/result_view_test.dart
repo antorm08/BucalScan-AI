@@ -35,7 +35,7 @@ class _QualityErrorViewModel extends PredictionViewModel {
   @override
   PredictionState build() => const PredictionState(
     error:
-        'Exception: La imagen no cumple los requisitos de calidad: la imagen está desenfocada. Tome otra foto con enfoque estable, buena luz y la lesión claramente visible.',
+        'Exception: La imagen no cumple los requisitos de calidad: la resolución es insuficiente, la imagen está desenfocada.',
     status: AnalysisAttemptStatus.failed,
   );
 }
@@ -116,9 +116,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Mejore la calidad de la imagen'), findsOneWidget);
-    expect(find.textContaining('imagen está desenfocada'), findsOneWidget);
+    expect(find.text('Necesitamos otra foto'), findsOneWidget);
+    expect(find.text('Resolución insuficiente'), findsOneWidget);
+    expect(find.text('Falta de nitidez'), findsOneWidget);
     expect(find.text('Error en el analisis'), findsNothing);
-    expect(find.text('Otra imagen para esta lesión'), findsOneWidget);
+    expect(find.text('Usar otra foto'), findsOneWidget);
+    expect(find.text('Reintentar'), findsNothing);
   });
 }

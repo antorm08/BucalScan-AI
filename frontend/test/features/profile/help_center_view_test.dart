@@ -44,7 +44,7 @@ void main() {
       await tester.ensureVisible(find.text('Soporte'));
       await tester.tap(find.text('Soporte'));
       await tester.pumpAndSettle();
-      expect(find.textContaining('1.2.3 (7)'), findsOneWidget);
+      expect(find.textContaining('1.2.4 (8)'), findsOneWidget);
       expect(find.textContaining('soporte@bucalscan.local'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },

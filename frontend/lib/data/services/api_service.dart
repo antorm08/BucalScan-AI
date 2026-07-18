@@ -527,7 +527,7 @@ class ApiService {
       final detail = problems.isEmpty
           ? 'no fue posible validar nitidez e iluminación'
           : problems.join(', ');
-      return 'La imagen no cumple los requisitos de calidad: $detail. Tome otra foto con enfoque estable, buena luz y la lesión claramente visible.';
+      return 'La imagen no cumple los requisitos de calidad: $detail.';
     }
 
     if (normalized.contains('model inference failed') ||

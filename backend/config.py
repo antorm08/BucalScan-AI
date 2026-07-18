@@ -74,7 +74,7 @@ class Settings:
     model_version: str = os.getenv("MODEL_VERSION", Path(model_path).stem)
     image_min_width: int = int(os.getenv("IMAGE_MIN_WIDTH", "224"))
     image_min_height: int = int(os.getenv("IMAGE_MIN_HEIGHT", "224"))
-    image_blur_threshold: float = float(os.getenv("IMAGE_BLUR_THRESHOLD", "100"))
+    image_blur_threshold: float = float(os.getenv("IMAGE_BLUR_THRESHOLD", "10"))
     image_dark_luminance: int = int(os.getenv("IMAGE_DARK_LUMINANCE", "20"))
     image_bright_luminance: int = int(os.getenv("IMAGE_BRIGHT_LUMINANCE", "235"))
     image_max_dark_ratio: float = float(os.getenv("IMAGE_MAX_DARK_RATIO", "0.40"))

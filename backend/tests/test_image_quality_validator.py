@@ -1,8 +1,9 @@
 import io
+from pathlib import Path
 
 import numpy as np
 import pytest
-from PIL import Image
+from PIL import Image, ImageFilter
 
 from auth.jwt import create_access_token
 from auth.security import get_password_hash
@@ -43,9 +44,22 @@ def test_accepts_sharp_evenly_lit_image():
 
     assert result.is_valid is True
     assert result.reasons == ()
-    assert result.blur_score >= 100
+    assert result.blur_score >= 10
     assert result.dark_ratio == 0
     assert result.bright_ratio == 0
+
+
+def test_clinical_example_passes_but_blurred_copy_is_rejected():
+    image_path = Path(__file__).resolve().parents[1] / "test_images" / "ejemplo.png"
+    image = Image.open(image_path).convert("RGB")
+
+    sharp_result = validate_image_quality(image)
+    blurred_result = validate_image_quality(image.filter(ImageFilter.GaussianBlur(radius=2)))
+
+    assert "blurry" not in sharp_result.reasons
+    assert sharp_result.blur_score >= 10
+    assert "blurry" in blurred_result.reasons
+    assert blurred_result.blur_score < 10
 
 
 def test_predict_rejects_quality_before_inference_or_persistence(client, db_session, monkeypatch, caplog):

@@ -151,7 +151,7 @@ void main() {
         predicate(
           (error) =>
               error.toString().contains('imagen está desenfocada') &&
-              error.toString().contains('Tome otra foto'),
+              !error.toString().contains('Tome otra foto'),
         ),
       ),
     );
